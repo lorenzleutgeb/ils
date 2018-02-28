@@ -34,8 +34,45 @@ ofname = join(tmpdir, 'out')
 
 # Solve sudoku!
 f = open(ifname, 'w+')
-#f.write('p cnf 1 2\n1 0 -1 0')
-f.write('p cnf 1 1\n1 0')
+
+for i in range(1,9):
+    s = ""
+    for j in range(1,9):
+        for k in range(1,9):
+            s += "{}{}{} ".format(i*100, j*10, k)
+        s += "0"
+        f.write(s)
+
+for i in range(1,9):
+    for j in range(1,9):
+        for k in range(1,9):
+            for l in range(k+1,9):
+                f.write("-{}{}{} -{}{}{} 0".format(i*100,j*10,k,i*100,j*10,l))
+
+for i in range(1,9):
+    for j in range(1,9):
+        for k in range(j+1,9):
+            for d in range(1,9):
+                f.write("-{}{}{} -{}{}{} 0".format(i*100,j*10,d,i*100,k*10,d))
+
+for i in range(1,9):
+    for k in range(i+1,9):
+        for j in range(1,9):
+            for d in range(1,9):
+                f.write("-{}{}{} -{}{}{} 0".format(i*100,j*10,d,k*100,j*10,d))
+
+for d in range(1,9):
+    for i in range(1,9):
+        for j in range(i+1,9):
+            for ro in range(3):
+                for co in range(3):
+                    f.write("-{}{}{} -{}{}{}".format((3*ro + i)/ 3,(3*co + i)%3,d,(3*ro + j)/3,(3*co + j)%3,d))
+
+for i in range(len(sudoku)):
+    for j in range(len(sudoku[i])):
+        if sudoku[i][j] != 0:
+            f.write("{}{}{} 0".format((i+1)*100, (j+1)*10, sudoku[i][j]))
+
 f.close()
 
 proc = subprocess.run(['minisat', ifname, ofname])
