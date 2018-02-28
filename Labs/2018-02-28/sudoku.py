@@ -3,6 +3,7 @@ import os
 import subprocess
 from math import ceil
 
+from itertools import product
 from tempfile import mkdtemp
 from os.path import join
 
@@ -24,14 +25,21 @@ for raw in sys.stdin:
     elif len(raw) == 0:
         continue
 
+    line = []
     try:
         # Strip visual splitting characters away
         line = list(raw.strip().replace('|', '').replace('.', '0'))
         # Convert to integers
-        sudoku.append(list(map(int, line)))
+        line = list(map(int, line))
     except:
         print('Invalid input on line {}!'.format(lno))
         sys.exit(1)
+
+    if len(line) != 9:
+        print('Expected 9 cells on line {} but got {}'.format(lno, len(line)))
+        sys.exit(1)
+
+    sudoku.append(line)
 
 if len(sudoku) != 9:
     print('Invalid input!')
@@ -41,87 +49,77 @@ tmpdir = mkdtemp()
 ifname = join(tmpdir, 'in')
 ofname = join(tmpdir, 'out')
 
-nonz = 0
-for line in sudoku:
-    for cell in line:
-        if cell != 0:
-            nonz = nonz + 1
-
 clauses = 0
 cnf = []
 
-for i in range(1,10):
-    for j in range(1,10):
-        s = ''
-        for k in range(1,10):
-            s = s + "{}{}{} ".format(i, j, k)
-        cnf.append(s)
+digits = range(1,10)
 
-for i in range(1,10):
-    for j in range(1,10):
-        for k in range(1,10):
-            for l in range(k+1,10):
-                cnf.append("-{}{}{} -{}{}{}".format(i,j,k,i,j,l))
+def p(x, y, v):
+    return x * 100 + y * 10 + v - 110
 
-for i in range(1,10):
-    for j in range(1,10):
-        for k in range(j+1,10):
-            for d in range(1,10):
-                cnf.append("-{}{}{} -{}{}{}".format(i,j,d,i,k,d))
+for (i, j) in product(digits, digits):
+    # 1 (all cells filled)
+    cnf.append([p(i, j, k) for k in digits])
 
-for i in range(1,10):
-    for k in range(i+1,10):
-        for j in range(1,10):
-            for d in range(1,10):
-                cnf.append("-{}{}{} -{}{}{}".format(i,j,d,k,j,d))
+    # (input)
+    if sudoku[i - 1][j - 1] != 0:
+        cnf.append([p(i, j, sudoku[i - 1][j - 1])])
 
-for d in range(1, 10):
-    for boxRow in range(3):
-        for boxCol in range(3):
-            for innerRowA in range(1,4):
-                for innerColA in range(1,4):
-                    for innerRowB in range(innerRowA,4):
-                        for innerColB in range(innerColA,4):
-                            if innerRowA != innerRowB or innerColA != innerColB:
-                                cnf.append("-{}{}{} -{}{}{}".format(boxRow * 3 + innerRowA, boxCol * 3 + innerColA, d, boxRow * 3 + innerRowB, boxCol * 3 + innerColB, d))
+    for d in digits:
+        # 2 (unique)
+        cnf += [[-p(i, j, d), -p(i, j, e)] for e in range(d + 1, 10)]
 
-for i in range(len(sudoku)):
-    for j in range(len(sudoku[i])):
-        if sudoku[i][j] != 0:
-            cnf.append("{}{}{}".format((i+1), (j+1), sudoku[i][j]))
+        for l in range(i + 1, 10):
+            # 3 (row)
+            cnf.append([-p(j, i, d), -p(j, l, d)])
+            # 4 (column)
+            cnf.append([-p(i, j, d), -p(l, j, d)])
 
-f = open(ifname, 'w+')
-f.write('p cnf 999 {}\n'.format(len(cnf)))
-f.write(' 0\n'.join(cnf) + ' 0\n')
-f.close()
+for (br, bc, d) in product(range(3), range(3), digits):
+    for (ora, oca) in product(range(1, 4), range(1, 4)):
+        for (orb, ocb) in product(range(ora + 1, 4), range(oca + 1, 4)):
+            cnf.append([-p(br * 3 + ora, bc * 3 + oca, d), -p(br * 3 + orb, bc * 3 + ocb, d)])
 
-FNULL = open(os.devnull, 'w')
-proc = subprocess.run(['minisat', ifname, ofname], stdout=FNULL)
+with open(ifname, 'w+') as f:
+    f.write('p cnf 889 {}\n'.format(len(cnf)))
+    for clause in cnf:
+        f.write(' '.join(map(str, clause + [0])) + '\n')
+
+null = open(os.devnull, 'w')
+proc = subprocess.run(['minisat', ifname, ofname], stdout=null)
 
 with open(ofname, 'r') as f:
     result = f.read()
 
 if result.startswith('UNSAT\n'):
-    print('Sudoku has no solution.')
+    print('UNSOLVABLE')
     sys.exit(0)
 
 if not result.startswith('SAT\n'):
-    print('Error')
+    print('Error!')
     sys.exit(1)
 
 result = result[4:-2]
 
-for atom in result.split(' '):
-    if len(atom) == 0:
+for p in result.split(' '):
+    if len(p) == 0:
         continue
 
-    atom = int(atom)
-    if atom < 100:
+    p = int(p)
+
+    if p < 0:
         continue
 
-    x = int(atom / 100)
-    y = int((atom % 100) / 10)
-    sudoku[x-1][y-1] = atom % 10
+    p = int(p) + 110
+    x = int(p / 100) - 1
+    y = int((p % 100) / 10) - 1
+    v = p % 10
+
+    if sudoku[x][y] != 0 and sudoku[x][y] != v:
+        print('Solution conflicts with input!')
+        sys.exit(1)
+    else:
+        sudoku[x][y] = v
 
 for i, line in enumerate(sudoku):
     raw = list(map(str, line))
