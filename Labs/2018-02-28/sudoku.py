@@ -6,6 +6,10 @@ from subprocess import run
 from sys        import argv, exit, stdin
 from tempfile   import mkdtemp
 
+# This routine parses all the sudoku schemas appearing in the input file.
+# 
+# input: a text file
+# output: a collection of sudokus, in matrix encoding.
 def parse(f):
     sudokus = [[]]
 
@@ -41,31 +45,40 @@ def parse(f):
 
     return sudokus[:-1] if sudokus[-1] == [] else sudokus
 
+
+# This routine encodes a sudoku in DIMACS form.
+# 
+# input: matrix encoding of the initial assignment of the sudoku.
+# output: DIMACS CNF encoding of the sudoku schema.
 def encode(sudoku):
     cnf = []
     digits = range(1,10)
 
+    # conversion from (row, col, val) to corresponding variable
+    # in DIMACS encoding. Value 110 used as a translational offset
+    # (111 first possible variable).
     def p(x, y, v):
         return x * 100 + y * 10 + v - 110
 
     for (i, j) in product(digits, digits):
-        # 1 (all cells filled)
+        # 1: "All cells contain at least one value".
         cnf.append([p(i, j, k) for k in digits])
 
-        # (input)
+        # Encoding of the initial assignment.
         if sudoku[i - 1][j - 1] != 0:
             cnf.append([p(i, j, sudoku[i - 1][j - 1])])
 
         for d in digits:
-            # 2 (unique)
+            # 2: "All cells contain a unique value".
             cnf += [[-p(i, j, d), -p(i, j, e)] for e in range(d + 1, 10)]
 
             for l in range(i + 1, 10):
-                # 3 (row)
+                # 3: "All the values in a row are distinct".
                 cnf.append([-p(j, i, d), -p(j, l, d)])
-                # 4 (column)
+                # 4: "All the values in a column are distinct".
                 cnf.append([-p(i, j, d), -p(l, j, d)])
 
+    # 5: "All the values in a box are distinct".
     for (br, bc, d) in product(range(3), range(3), digits):
         for (ora, oca) in product(range(1, 4), range(1, 4)):
             for (orb, ocb) in product(range(ora + 1, 4), range(oca + 1, 4)):
@@ -73,6 +86,11 @@ def encode(sudoku):
 
     return cnf
 
+
+# This routine translates a DIMACS CNF encoding of the solution (if any) to matrix encoding.
+#
+# input: DIMACS CNF encoding of the solution
+# output: if the schema is satisfiable, an updated version of the matrix encoding is returned.
 def decode(sudoku, result):
     if result.startswith('UNSAT\n'):
         return None
@@ -81,6 +99,7 @@ def decode(sudoku, result):
         print('Error!')
         exit(1)
 
+    # Keeps the part of the output of the solver containing the truth assignment.
     result = result[4:-2]
 
     for p in result.split(' '):
@@ -89,14 +108,18 @@ def decode(sudoku, result):
 
         p = int(p)
 
+        # If the variable is set to FALSE, the schema is not updated.
         if p < 0:
             continue
 
+        # If the variable is set to TRUE, we update the schema.
+        # if p = xyv, the cell (x,y) is set to value v.
         p = int(p) + 110
         x = int(p / 100) - 1
         y = int((p % 100) / 10) - 1
         v = p % 10
 
+        # If a value in the schema is overwritten, an error is returned.
         if sudoku[x][y] != 0 and sudoku[x][y] != v:
             print('Solution conflicts with input!')
             exit(1)
@@ -105,6 +128,11 @@ def decode(sudoku, result):
 
     return sudoku
 
+# This routine takes as input the sudoku schema as a matrix, encodes it in DIMACS form,
+# then calls the 'minisat' solver and decodes its output.
+#
+# input: a sudoku in matrix encoding
+# output: the solved sudoku.
 def solve(sudoku):
     cnf = encode(sudoku)
 
@@ -125,6 +153,12 @@ def solve(sudoku):
 
     return decode(sudoku, result)
 
+# This routine renders the sudoku solution in graphical form, if it is solvable;
+# otherwise, it returns "UNSOLVABLE".
+#
+# input: matrix encoding of the sudoku.
+# output: graphical representation of the sudoku if it is solvable,
+#         "UNSOLVABLE" otherwise.
 def stringify(sudoku):
     if sudoku == None:
         return 'UNSOLVABLE'
@@ -139,6 +173,7 @@ def stringify(sudoku):
 
     return result
 
+# Entry point of the program.
 def main():
     if len(argv) != 2:
         print('Need exactly one argument.')
