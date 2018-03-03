@@ -6,11 +6,12 @@ from subprocess import run
 from sys        import argv, exit, stdin
 from tempfile   import mkdtemp
 
-# This routine parses all the sudoku schemas appearing in the input file.
-# 
-# input: a text file
-# output: a collection of sudokus, in matrix encoding.
 def parse(f):
+    """This routine parses all the sudoku schemas appearing in the input file.
+     
+    :param f: a text file.
+    :returns: a collection of sudokus, in matrix encoding.
+    """
     sudokus = [[]]
 
     for lno, raw in enumerate(f):
@@ -46,11 +47,12 @@ def parse(f):
     return sudokus[:-1] if sudokus[-1] == [] else sudokus
 
 
-# This routine encodes a sudoku in DIMACS form.
-# 
-# input: matrix encoding of the initial assignment of the sudoku.
-# output: DIMACS CNF encoding of the sudoku schema.
 def encode(sudoku):
+    """This routine encodes a sudoku in DIMACS form.
+     
+    :param sudoku: matrix encoding of the initial assignment of a sudoku.
+    :returns: DIMACS CNF encoding of the sudoku schema.
+    """
     cnf = []
     digits = range(1,10)
 
@@ -87,11 +89,14 @@ def encode(sudoku):
     return cnf
 
 
-# This routine translates a DIMACS CNF encoding of the solution (if any) to matrix encoding.
-#
-# input: DIMACS CNF encoding of the solution
-# output: if the schema is satisfiable, an updated version of the matrix encoding is returned.
 def decode(sudoku, result):
+    """This routine translates a DIMACS CNF encoding of the solution
+       (if any) to matrix encoding.
+   
+    :param sudoku: matrix encoding of a sudoku.
+    :param result: the output of minisat, relative to the considered sudoku.
+    :returns: if the schema is satisfiable, an updated version of the matrix encoding is returned.
+    """
     if result.startswith('UNSAT\n'):
         return None
 
@@ -119,7 +124,7 @@ def decode(sudoku, result):
         y = int((p % 100) / 10) - 1
         v = p % 10
 
-        # If a value in the schema is overwritten, an error is returned.
+        # If a value in the schema is overwritten, the execution is halted.
         if sudoku[x][y] != 0 and sudoku[x][y] != v:
             print('Solution conflicts with input!')
             exit(1)
@@ -128,12 +133,13 @@ def decode(sudoku, result):
 
     return sudoku
 
-# This routine takes as input the sudoku schema as a matrix, encodes it in DIMACS form,
-# then calls the 'minisat' solver and decodes its output.
-#
-# input: a sudoku in matrix encoding
-# output: the solved sudoku.
 def solve(sudoku):
+    """This routine takes as input the sudoku schema as a matrix,
+       encodes it in DIMACS form, then calls the 'minisat' solver 
+       and decodes its output.
+    :param sudoku: matrix encoding of a sudoku.
+    :returns: the matrix encoding of the solved sudoku.
+    """
     cnf = encode(sudoku)
 
     tmpdir = mkdtemp()
@@ -153,13 +159,13 @@ def solve(sudoku):
 
     return decode(sudoku, result)
 
-# This routine renders the sudoku solution in graphical form, if it is solvable;
-# otherwise, it returns "UNSOLVABLE".
-#
-# input: matrix encoding of the sudoku.
-# output: graphical representation of the sudoku if it is solvable,
-#         "UNSOLVABLE" otherwise.
 def stringify(sudoku):
+    """This routine renders the sudoku solution in graphical form, if it is solvable;
+       otherwise, it returns "UNSOLVABLE".
+    
+    :param sudoku: matrix encoding of a sudoku.
+    :returns: graphical representation of the sudoku if it is solvable, "UNSOLVABLE" otherwise.
+    """
     if sudoku == None:
         return 'UNSOLVABLE'
 
