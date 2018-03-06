@@ -1,3 +1,4 @@
+from copy       import deepcopy
 from itertools  import product
 from math       import ceil
 from os         import devnull
@@ -8,18 +9,20 @@ from tempfile   import mkdtemp
 
 def parse(f):
     """This routine parses all the sudoku schemas appearing in the input file.
-     
-    :param f: a text file.
-    :returns: a collection of sudokus, in matrix encoding.
-    """
-    sudokus = [[]]
 
+    :param f: a text file.
+    :returns: a collection of schemas, in matrix encoding.
+    """
+    schemas = [[]]
+
+    # lno is current line number
+    # raw is the text as read from f without any alterations
     for lno, raw in enumerate(f):
         # Skip comment lines
-        if raw[0] == '%':
+        if raw.startswith('%'):
             continue
         # Skip middle lines
-        elif raw.startswith('---+---+---'):
+        elif raw == '---+---+---\n':
             continue
         # Skip empty lines
         elif len(raw) == 0:
@@ -27,10 +30,8 @@ def parse(f):
 
         line = []
         try:
-            # Strip visual splitting characters away
-            line = list(raw.strip().replace('|', '').replace('.', '0'))
-            # Convert to integers
-            line = list(map(int, line))
+            # Strip visual splitting characters away and convert to integers.
+            line = list(map(int, raw.strip().replace('|', '').replace('.', '0')))
         except:
             print('Invalid input on line {}!'.format(lno))
             exit(1)
@@ -39,39 +40,40 @@ def parse(f):
             print('Expected 9 cells on line {} but got {}'.format(lno, len(line)))
             exit(1)
 
-        sudokus[-1].append(line)
+        schemas[-1].append(line)
 
-        if len(sudokus[-1]) == 9:
-            sudokus.append([])
+        if len(schemas[-1]) == 9:
+            schemas.append([])
 
-    return sudokus[:-1] if sudokus[-1] == [] else sudokus
+    return schemas[:-1] if schemas[-1] == [] else schemas
 
+def p(row, col, val):
+    """Conversion from (row, col, val) to corresponding variable
 
-def encode(sudoku):
-    """This routine encodes a sudoku in DIMACS form.
-     
-    :param sudoku: matrix encoding of the initial assignment of a sudoku.
-    :returns: DIMACS CNF encoding of the sudoku schema.
+    :returns: Corresponding proposition encoded as integer.
+    """
+    return (row - 1) * 81 + (col - 1) * 9 + (val - 1) + 1
+
+def encode(schema):
+    """This routine encodes a schema in DIMACS form.
+
+    :param schema: matrix encoding of the initial assignment of a sudoku schema.
+    :returns: DIMACS CNF encoding of the schema.
     """
     cnf = []
     digits = range(1,10)
-
-    # conversion from (row, col, val) to corresponding variable
-    # in DIMACS encoding. Value 110 used as a translational offset
-    # (111 first possible variable).
-    def p(x, y, v):
-        return x * 100 + y * 10 + v - 110
 
     for (i, j) in product(digits, digits):
         # 1: "All cells contain at least one value".
         cnf.append([p(i, j, k) for k in digits])
 
         # Encoding of the initial assignment.
-        if sudoku[i - 1][j - 1] != 0:
-            cnf.append([p(i, j, sudoku[i - 1][j - 1])])
+        if schema[i - 1][j - 1] != 0:
+            cnf.append([p(i, j, schema[i - 1][j - 1])])
 
         for d in digits:
             # 2: "All cells contain a unique value".
+            #    p(i, j, d) -> -p(i, j, e) ... where e != d
             cnf += [[-p(i, j, d), -p(i, j, e)] for e in range(d + 1, 10)]
 
             for l in range(i + 1, 10):
@@ -88,13 +90,12 @@ def encode(sudoku):
 
     return cnf
 
-
-def decode(sudoku, result):
+def decode(schema, result):
     """This routine translates a DIMACS CNF encoding of the solution
        (if any) to matrix encoding.
-   
-    :param sudoku: matrix encoding of a sudoku.
-    :param result: the output of minisat, relative to the considered sudoku.
+
+    :param schema: matrix encoding of a schema.
+    :param result: the output of minisat, relative to the considered schema.
     :returns: if the schema is satisfiable, an updated version of the matrix encoding is returned.
     """
     if result.startswith('UNSAT\n'):
@@ -103,6 +104,8 @@ def decode(sudoku, result):
     if not result.startswith('SAT\n'):
         print('Error!')
         exit(1)
+
+    sudoku = deepcopy(schema)
 
     # Keeps the part of the output of the solver containing the truth assignment.
     result = result[4:-2]
@@ -118,14 +121,12 @@ def decode(sudoku, result):
             continue
 
         # If the variable is set to TRUE, we update the schema.
-        # if p = xyv, the cell (x,y) is set to value v.
-        p = int(p) + 110
-        x = int(p / 100) - 1
-        y = int((p % 100) / 10) - 1
-        v = p % 10
+        (x, p) = divmod(p - 1, 81)
+        (y, v) = divmod(p, 9)
+        v += 1
 
         # If a value in the schema is overwritten, the execution is halted.
-        if sudoku[x][y] != 0 and sudoku[x][y] != v:
+        if schema[x][y] != 0 and schema[x][y] != v:
             print('Solution conflicts with input!')
             exit(1)
         else:
@@ -133,21 +134,21 @@ def decode(sudoku, result):
 
     return sudoku
 
-def solve(sudoku):
-    """This routine takes as input the sudoku schema as a matrix,
-       encodes it in DIMACS form, then calls the 'minisat' solver 
+def solve(schema):
+    """This routine takes as input the schema schema as a matrix,
+       encodes it in DIMACS form, then calls the 'minisat' solver
        and decodes its output.
-    :param sudoku: matrix encoding of a sudoku.
-    :returns: the matrix encoding of the solved sudoku.
+    :param schema: matrix encoding of a schema.
+    :returns: the matrix encoding of the solved schema.
     """
-    cnf = encode(sudoku)
+    cnf = encode(schema)
 
     tmpdir = mkdtemp()
     ifname = join(tmpdir, 'in')
     ofname = join(tmpdir, 'out')
 
     with open(ifname, 'w+') as f:
-        f.write('p cnf 889 {}\n'.format(len(cnf)))
+        f.write('p cnf 729 {}\n'.format(len(cnf)))
         for clause in cnf:
             f.write(' '.join(map(str, clause + [0])) + '\n')
 
@@ -157,12 +158,12 @@ def solve(sudoku):
     with open(ofname, 'r') as f:
         result = f.read()
 
-    return decode(sudoku, result)
+    return decode(schema, result)
 
 def stringify(sudoku):
     """This routine renders the sudoku solution in graphical form, if it is solvable;
        otherwise, it returns "UNSOLVABLE".
-    
+
     :param sudoku: matrix encoding of a sudoku.
     :returns: graphical representation of the sudoku if it is solvable, "UNSOLVABLE" otherwise.
     """
@@ -172,7 +173,7 @@ def stringify(sudoku):
     result = ''
     for i, line in enumerate(sudoku):
         raw = list(map(str, line))
-        result += ''.join(raw[0:3]) + '|' + ''.join(raw[3:6]) + '|' + ''.join(raw[6:9]) + '\n'
+        result += '|'.join([''.join(raw[i:i+3]) for i in range(0, 9, 3)]) + '\n'
 
         if i == 2 or i == 5:
             result += '---+---+---\n'
@@ -186,7 +187,7 @@ def main():
         exit(2)
 
     with open(argv[1], 'r') as f:
-        print('\n'.join([stringify(solve(sudoku)) for sudoku in parse(f)]))
+        print('\n'.join([stringify(solve(schema)) for schema in parse(f)]))
 
 if __name__ == '__main__':
     main()
