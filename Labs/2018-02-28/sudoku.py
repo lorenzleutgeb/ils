@@ -14,6 +14,9 @@ MAX_DIGIT = 9
 # Usually the square root of the size of the full grid.
 SUBGRID_SIZE = 3
 
+SUBGRID_OFFSETS = range(0, MAX_DIGIT, SUBGRID_SIZE)
+SUBGRID_INDICES = range(SUBGRID_SIZE)
+
 def parse(f):
     """This routine parses all the sudoku schemas appearing in the input file.
 
@@ -40,7 +43,7 @@ def parse(f):
 
         # Note that MAX_DIGIT is the width of the schema.
         if len(line) != MAX_DIGIT:
-            print('Expected 9 cells on line {} but got {}'.format(lno, len(line)))
+            print('Expected {} cells on line {} but got {}'.format(MAX_DIGIT, lno, len(line)))
             exit(1)
 
         schema.append(line)
@@ -94,12 +97,10 @@ def encode(schema):
                 # 4: "All the values in a column are distinct".
                 cnf.append([-p(i, j, d), -p(l, j, d)])
 
-    subgridOffsets, subgridIndices = range(0, MAX_DIGIT, SUBGRID_SIZE), range(SUBGRID_SIZE)
-
     # 5: "All the values in a box are distinct".
-    for r0, c0, d in product(subgridOffsets, subgridOffsets, digits):
-        for r1, c1 in product(subgridIndices, subgridIndices):
-            for r2, c2 in product(subgridIndices[r1+1:], subgridIndices[c1+1:]):
+    for r0, c0, d in product(SUBGRID_OFFSETS, SUBGRID_OFFSETS, digits):
+        for r1, c1 in product(SUBGRID_INDICES, SUBGRID_INDICES):
+            for r2, c2 in product(SUBGRID_INDICES[r1+1:], SUBGRID_INDICES[c1+1:]):
                 # p(r0 + r1, c0 + c1, d) -> -p(r0 + r2, c0 + r2, d)
                 cnf.append([-p(r0 + r1, c0 + r1, d), -p(r0 + r2, c0 + c2, d)])
 
@@ -160,19 +161,22 @@ def solve(schema):
     """
     cnf = encode(schema)
 
+    dimacs = '\n'.join(
+        ['c Team White'] +
+        ['p cnf {} {}'.format(MAX_DIGIT ** 3, len(cnf))] +
+        [' '.join(map(str, clause + [0])) for clause in cnf]
+    )
+
     ifd, ifname = mkstemp()
     ofd, ofname = mkstemp()
 
     # Write CNF to the input file in DIMACS format.
-    with open(ifd, 'w') as f:
-        f.write('p cnf {} {}\n'.format(MAX_DIGIT ** 3, len(cnf)))
-        [f.write(' '.join(map(str, clause + [0])) + '\n') for clause in cnf]
+    with open(ifd, 'w') as f: f.write(dimacs)
 
     proc = run(['minisat', ifname, ofname], stdout=DEVNULL)
 
-    # Read from the output file.
-    with open(ofd, 'r') as f:
-        return decode(schema, f.read())
+    # Read from the output file and decode.
+    with open(ofd, 'r') as f: return decode(schema, f.read())
 
 def stringify(sudoku):
     """This routine renders the sudoku solution in graphical form, if it is solvable;
@@ -187,9 +191,9 @@ def stringify(sudoku):
     result = ''
     for i, line in enumerate(sudoku):
         raw = list(map(str, line))
-        result += '|'.join([''.join(raw[i:i+SUBGRID_SIZE]) for i in range(0, MAX_DIGIT, SUBGRID_SIZE)]) + '\n'
+        result += '|'.join([''.join(raw[i:i+SUBGRID_SIZE]) for i in SUBGRID_INDICES]) + '\n'
 
-        if i == 2 or i == 5:
+        if i + 1 in SUBGRID_OFFSETS[1:]:
             result += '---+---+---\n'
 
     return result
