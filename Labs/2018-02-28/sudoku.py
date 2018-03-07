@@ -187,14 +187,14 @@ def stringify(sudoku):
     :returns: graphical representation of the sudoku if it is solvable, "UNSOLVABLE" otherwise.
     """
     if sudoku == None:
-        return 'UNSOLVABLE'
+        return 'UNSOLVABLE\n'
 
     result = ''
     for i, line in enumerate(sudoku):
-        raw = list(map(str, line))
-        result += '|'.join([''.join(raw[i:i+SUBGRID_SIZE]) for i in SUBGRID_OFFSETS]) + '\n'
+        line = list(map(str, line))
+        result += '|'.join([''.join(line[i:i+SUBGRID_SIZE]) for i in SUBGRID_OFFSETS]) + '\n'
 
-        if i + 1 in SUBGRID_OFFSETS[1:]:
+        if i + 1 in SUBGRID_OFFSETS:
             result += '---+---+---\n'
 
     return result
@@ -205,8 +205,7 @@ def main():
         print('Need exactly one argument.')
         exit(2)
 
-    with open(argv[1], 'r') as f:
-        print('\n'.join([stringify(solve(schema)) for schema in parse(f)]))
+    with open(argv[1], 'r') as f: [print(stringify(solve(schema))) for schema in parse(f)]
 
 if __name__ == '__main__':
     main()
