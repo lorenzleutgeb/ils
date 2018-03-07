@@ -14,6 +14,6 @@ set ylabel "p"
 set terminal png
 set output "satisfiability.png"
 
-plot "satisfiability.dat" using 1:2 title  '50' with linespoints , \
-     "satisfiability.dat" using 1:3 title '100' with points , \
-     "satisfiability.dat" using 1:4 title '200' with points
+plot "data.dat" using 1:2 title  '50' with points , \
+     "data.dat" using 1:4 title '100' with points , \
+     "data.dat" using 1:6 title '200' with points
