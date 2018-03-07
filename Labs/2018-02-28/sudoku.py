@@ -30,7 +30,7 @@ def parse(f):
     # raw is the text as read from f without any alterations
     for lno, raw in enumerate(f):
         # Skip comment lines, middle lines, and empty lines.
-        if raw.startswith('%') or raw == '---+---+---\n' or len(raw) == 0:
+        if raw.startswith('%') or raw == '---+---+---\n' or raw == '\n':
             continue
 
         line = []
@@ -191,7 +191,7 @@ def stringify(sudoku):
     result = ''
     for i, line in enumerate(sudoku):
         raw = list(map(str, line))
-        result += '|'.join([''.join(raw[i:i+SUBGRID_SIZE]) for i in SUBGRID_INDICES]) + '\n'
+        result += '|'.join([''.join(raw[i:i+SUBGRID_SIZE]) for i in SUBGRID_OFFSETS]) + '\n'
 
         if i + 1 in SUBGRID_OFFSETS[1:]:
             result += '---+---+---\n'
