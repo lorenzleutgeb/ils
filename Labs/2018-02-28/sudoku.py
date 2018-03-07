@@ -1,31 +1,33 @@
+# Team White
+
 from copy       import deepcopy
 from itertools  import product
-from math       import ceil
-from os         import devnull
-from os.path    import join
-from subprocess import run
-from sys        import argv, exit, stdin
-from tempfile   import mkdtemp
+from subprocess import DEVNULL, run
+from sys        import argv, exit
+from tempfile   import mkstemp
+
+# The largest digit to used to fill out the sudoku. The smallest
+# is fixed as 1. Also, the size (height and width) of the sudoku.
+MAX_DIGIT = 9
+
+# The size (height and width) of one subgrid in the sudoku.
+# Usually the square root of the size of the full grid.
+SUBGRID_SIZE = 3
 
 def parse(f):
     """This routine parses all the sudoku schemas appearing in the input file.
 
     :param f: a text file.
-    :returns: a collection of schemas, in matrix encoding.
+    :returns: a list of schemas, which in turn are lists of lists.
     """
-    schemas = [[]]
+    result = []
+    schema = []
 
     # lno is current line number
     # raw is the text as read from f without any alterations
     for lno, raw in enumerate(f):
-        # Skip comment lines
-        if raw.startswith('%'):
-            continue
-        # Skip middle lines
-        elif raw == '---+---+---\n':
-            continue
-        # Skip empty lines
-        elif len(raw) == 0:
+        # Skip comment lines, middle lines, and empty lines.
+        if raw.startswith('%') or raw == '---+---+---\n' or len(raw) == 0:
             continue
 
         line = []
@@ -36,67 +38,81 @@ def parse(f):
             print('Invalid input on line {}!'.format(lno))
             exit(1)
 
-        if len(line) != 9:
+        # Note that MAX_DIGIT is the width of the schema.
+        if len(line) != MAX_DIGIT:
             print('Expected 9 cells on line {} but got {}'.format(lno, len(line)))
             exit(1)
 
-        schemas[-1].append(line)
+        schema.append(line)
 
-        if len(schemas[-1]) == 9:
-            schemas.append([])
+        # Note that MAX_DIGIT is the height of the schema.
+        if len(schema) == MAX_DIGIT:
+            result.append(schema)
+            schema = []
 
-    return schemas[:-1] if schemas[-1] == [] else schemas
+    return result
 
 def p(row, col, val):
-    """Conversion from (row, col, val) to corresponding variable
+    """Conversion from (row, col, val) to corresponding propositional variable.
 
-    :returns: Corresponding proposition encoded as integer.
+    :returns: Corresponding proposition encoded as integer variable.
     """
-    return (row - 1) * 81 + (col - 1) * 9 + (val - 1) + 1
+    return row * MAX_DIGIT ** 2 + col * MAX_DIGIT + val + 1
 
 def encode(schema):
-    """This routine encodes a schema in DIMACS form.
+    """This routine encodes a schema as CNF. Clauses are encoded as lists, so
+       the CNF is encoded as a list of lists. Propositional variables
+       are encoded as non-negative, non-zero integers.
 
-    :param schema: matrix encoding of the initial assignment of a sudoku schema.
-    :returns: DIMACS CNF encoding of the schema.
+    :param schema: the initial assignment of a sudoku.
+    :returns: CNF encoding of the schema.
     """
     cnf = []
-    digits = range(1,10)
 
-    for (i, j) in product(digits, digits):
+    # Range of numbers that are to be filled in,
+    # using a zero-based encoding.
+    digits = range(MAX_DIGIT)
+
+    for i, j in product(digits, digits):
         # 1: "All cells contain at least one value".
         cnf.append([p(i, j, k) for k in digits])
 
         # Encoding of the initial assignment.
-        if schema[i - 1][j - 1] != 0:
-            cnf.append([p(i, j, schema[i - 1][j - 1])])
+        if schema[i][j] != 0:
+            # Shift schema[i][j] from one-based (human-readable)
+            # to zero-based (CNF encoding).
+            cnf.append([p(i, j, schema[i][j] - 1)])
 
         for d in digits:
             # 2: "All cells contain a unique value".
             #    p(i, j, d) -> -p(i, j, e) ... where e != d
-            cnf += [[-p(i, j, d), -p(i, j, e)] for e in range(d + 1, 10)]
+            cnf += [[-p(i, j, d), -p(i, j, e)] for e in digits[d+1:]]
 
-            for l in range(i + 1, 10):
+            for l in digits[i+1:]:
                 # 3: "All the values in a row are distinct".
                 cnf.append([-p(j, i, d), -p(j, l, d)])
                 # 4: "All the values in a column are distinct".
                 cnf.append([-p(i, j, d), -p(l, j, d)])
 
+    subgridOffsets, subgridIndices = range(0, MAX_DIGIT, SUBGRID_SIZE), range(SUBGRID_SIZE)
+
     # 5: "All the values in a box are distinct".
-    for (br, bc, d) in product(range(3), range(3), digits):
-        for (ora, oca) in product(range(1, 4), range(1, 4)):
-            for (orb, ocb) in product(range(ora + 1, 4), range(oca + 1, 4)):
-                cnf.append([-p(br * 3 + ora, bc * 3 + oca, d), -p(br * 3 + orb, bc * 3 + ocb, d)])
+    for r0, c0, d in product(subgridOffsets, subgridOffsets, digits):
+        for r1, c1 in product(subgridIndices, subgridIndices):
+            for r2, c2 in product(subgridIndices[r1+1:], subgridIndices[c1+1:]):
+                # p(r0 + r1, c0 + c1, d) -> -p(r0 + r2, c0 + r2, d)
+                cnf.append([-p(r0 + r1, c0 + r1, d), -p(r0 + r2, c0 + c2, d)])
 
     return cnf
 
 def decode(schema, result):
-    """This routine translates a DIMACS CNF encoding of the solution
-       (if any) to matrix encoding.
+    """This routine translates a MiniSat encoding of a model
+       (if any) to a sudoku.
 
-    :param schema: matrix encoding of a schema.
-    :param result: the output of minisat, relative to the considered schema.
-    :returns: if the schema is satisfiable, an updated version of the matrix encoding is returned.
+    :param schema: schema of a sudoku as a list of lists.
+    :param result: the output of MiniSat, corresponding to the considered schema.
+    :returns: if a solution for the schema can be extracted,
+              the full sudoku as a list of lists, otherwise None.
     """
     if result.startswith('UNSAT\n'):
         return None
@@ -116,13 +132,14 @@ def decode(schema, result):
 
         p = int(p)
 
-        # If the variable is set to FALSE, the schema is not updated.
+        # Propositional variables interpreted as false are ignored.
         if p < 0:
             continue
 
-        # If the variable is set to TRUE, we update the schema.
-        (x, p) = divmod(p - 1, 81)
-        (y, v) = divmod(p, 9)
+        (x, p) = divmod(p - 1, MAX_DIGIT ** 2)
+        (y, v) = divmod(p, MAX_DIGIT)
+
+        # Shift v from zero-based (SAT encoding) to one-based (human-readable).
         v += 1
 
         # If a value in the schema is overwritten, the execution is halted.
@@ -143,22 +160,19 @@ def solve(schema):
     """
     cnf = encode(schema)
 
-    tmpdir = mkdtemp()
-    ifname = join(tmpdir, 'in')
-    ofname = join(tmpdir, 'out')
+    ifd, ifname = mkstemp()
+    ofd, ofname = mkstemp()
 
-    with open(ifname, 'w+') as f:
-        f.write('p cnf 729 {}\n'.format(len(cnf)))
-        for clause in cnf:
-            f.write(' '.join(map(str, clause + [0])) + '\n')
+    # Write CNF to the input file in DIMACS format.
+    with open(ifd, 'w') as f:
+        f.write('p cnf {} {}\n'.format(MAX_DIGIT ** 3, len(cnf)))
+        [f.write(' '.join(map(str, clause + [0])) + '\n') for clause in cnf]
 
-    null = open(devnull, 'w')
-    proc = run(['minisat', ifname, ofname], stdout=null)
+    proc = run(['minisat', ifname, ofname], stdout=DEVNULL)
 
-    with open(ofname, 'r') as f:
-        result = f.read()
-
-    return decode(schema, result)
+    # Read from the output file.
+    with open(ofd, 'r') as f:
+        return decode(schema, f.read())
 
 def stringify(sudoku):
     """This routine renders the sudoku solution in graphical form, if it is solvable;
@@ -173,7 +187,7 @@ def stringify(sudoku):
     result = ''
     for i, line in enumerate(sudoku):
         raw = list(map(str, line))
-        result += '|'.join([''.join(raw[i:i+3]) for i in range(0, 9, 3)]) + '\n'
+        result += '|'.join([''.join(raw[i:i+SUBGRID_SIZE]) for i in range(0, MAX_DIGIT, SUBGRID_SIZE)]) + '\n'
 
         if i == 2 or i == 5:
             result += '---+---+---\n'
