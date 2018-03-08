@@ -4,6 +4,10 @@ from subprocess import PIPE, STDOUT, run
 from tempfile   import mkstemp
 from random     import random
 
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+
 # n ... Number of Variables
 # k ... Number of Literals per Clause
 # l ... Number of Clauses
