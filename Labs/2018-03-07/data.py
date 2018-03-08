@@ -2,30 +2,25 @@
 
 from os         import remove
 from subprocess import PIPE, STDOUT, run
+from sys        import stdout
 from tempfile   import mkstemp
-from random     import choice, sample
+from random     import choice, sample, getrandbits
 
-import pandas as pd
-import numpy as np
-import matplotlib.pyplot as plt
+# List to choose k from.
+setups = [
+    #k   r_min r_max   n
+    (3, (    3,  5.5), [50, 100, 200]),
+    (5, (   19, 25  ), [50, 100     ])
+]
 
+# Number of experiments to run in order to smoothen result.
+m = 150.0
+
+# K-SAT:
 # n ... Number of Variables
 # k ... Number of Literals per Clause
 # l ... Number of Clauses
-
-# List to choose k from.
-K = [2, 3, 5]
-
-# List to choose n from.
-N = [20, 50, 100, 200, 500]
-
-# Number of experiments to run in order to determine p.
-m = 200.0
-
-# Range parameters for r: (min, max, delta)
-R = (2.0, 6.0, 0.01)
-
-def randomize(n, k, l):
+def randomize_fixed(n, k, l):
     """A k-CNF formulae generator.
 
     :param n: number of variables in the formula
@@ -33,8 +28,30 @@ def randomize(n, k, l):
     :param l: number of clauses in the formula
     :returns: a list of length l, where each element is a list of k different non-zero elements in the range [-n..n]
     """
-    return [[p * -1 if choice([True, False]) else p for p in sample(range(1, n+1), k)] for j in range(l)]
+    return [[-p if choice([True, False]) else p for p in sample(range(1, n+1), k)] for j in range(l)]
 
+# P-SAT:
+# n ... Number of Variables
+# p ... Probability of Inclusion
+# l ... Number of Clauses
+def randomize_density(n, p, l):
+    cnf = []
+    for j in range(l):
+        clause = []
+        for i in range(n):
+            # Choose i with probability p.
+            if random() >= p:
+                continue
+
+            # Negate with probability 0.5.
+            clause.append(-i if choice([True, False]) else i)
+
+        # Skip empty clause and unit clauses.
+        if len(clause) > 1:
+            cnf.append(clause)
+    return cnf
+
+# Runs m experiments and averages the results.
 def average(n, k, l):
     """Routine that returns the mean value of the results obtained after running m experiments.
 
@@ -46,9 +63,9 @@ def average(n, k, l):
     """
     # r = l / n
     # l = r * n
-    return tuple([sum(x) / m for x in zip(*[solve(n, k, l) for i in range(int(m))])])
+    return tuple([sum(x) / m for x in zip(*[experiment(n, k, l) for i in range(int(m))])])
 
-def dots(r):
+def dots(r, k, N):
     """Routine that provides, for each chosen value in [R[0]..R[1]], the mean values of the samples obtained
     by changing the value of literals per clause and variables considered and running a fixed number of experiments.
 
@@ -57,11 +74,7 @@ def dots(r):
               (J,K,L) = average(n, k, int(r * n)) for some n (number of variables) and k (literals per clause)
     """
     return '{:4.3f}'.format(r) + '\t' + '\t'.join([
-        '\t'.join(
-            [
-                '{:4.3f} {:7.3f} {:7.3f}'.format(*average(n, k, int(r * n))) for n in N
-            ]
-        ) for k in K
+        '{:4.3f} {:7.3f} {:10.3f}'.format(*average(n, k, int(r * n))) for n in N
     ]) + '\n'
 
 def decode(result):
@@ -84,11 +97,11 @@ def decode(result):
     time = float(result[-3][off:-2])
 
     # Extract whether the formula is satisfiable or not.
-    satisfiability = ['UNSATISFIABLE', 'SATISFIABLE'].index(result[-1])
+    satisfiability = 'SATISFIABLE' == result[-1]
 
     return (satisfiability, time, decisions)
 
-def solve(n, k, l):
+def experiment(n, k, l):
     """Routine that solves a k-SAT instance with n variables and l clauses.
 
     :param n: number of variables in the formula
@@ -105,8 +118,8 @@ def solve(n, k, l):
         ['p cnf {} {}'.format(n, l)] +
         [' '.join(map(str, clause + [0])) for clause in randomize(n, k, l)]
     ))
-    
-    proc = run(['minisat', '-verb=2', ifname], stderr=STDOUT, stdout=PIPE)
+
+    proc = run(['minisat', '-verb=2', '-cpu-lim=30', ifname], stderr=STDOUT, stdout=PIPE)
 
     # Clean up once we are done. Otherwise we *will* run out of space.
     remove(ifname)
@@ -115,14 +128,20 @@ def solve(n, k, l):
 
 # Entry point of the program.
 def main():
-    with open('data-huge.dat', 'w+') as f:
-        r = R[0]
-        while r <= R[1]:
-            f.write(dots(r))
-            # For static delta:
-            r += R[2]
-            # For dynamic delta with "focal point" in the middle of the range:
-            #r += R[2] + 0.07 * (r - R[0] - ((R[1] - R[0]) / 2.0)) ** 2.0
+    for setup in setups:
+        k, (rmin, rmax), N = setup
+        dump = 'data-{}-{:x}.dat'.format(k, getrandbits(16))
+        with open(dump, 'w+') as f:
+            print('Running for k = {} from {} to {} using {}.'.format(k, rmin, rmax, dump))
+            r = rmin
+            while r <= rmax:
+                line = dots(r, k, N)
+                stdout.write(line)
+                f.write(line)
+                # For static delta:
+                r += 0.1
+                # For dynamic delta with "focal point" in the middle of the range:
+                #r += 0.1 + 0.2 * (r - R[0] - ((R[1] - R[0]) / 2.0)) ** 2.0
 
 if __name__ == '__main__':
     main()
