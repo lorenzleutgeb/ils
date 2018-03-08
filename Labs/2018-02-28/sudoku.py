@@ -101,7 +101,7 @@ def encode(schema):
     for r0, c0, d in product(SUBGRID_OFFSETS, SUBGRID_OFFSETS, digits):
         for r1, c1 in product(SUBGRID_INDICES, SUBGRID_INDICES):
             for r2, c2 in product(SUBGRID_INDICES, SUBGRID_INDICES):
-                if r1 != r2 and c1 != c2:
+                if (r1, c1) < (r2, c2):
                     # p(r0 + r1, c0 + c1, d) -> -p(r0 + r2, c0 + r2, d)
                     cnf.append([-p(r0 + r1, c0 + c1, d), -p(r0 + r2, c0 + c2, d)])
 
