@@ -116,7 +116,7 @@ def experiment(n, k, l):
     with open(ifd, 'w') as f: f.write('\n'.join(
         ['c Team White'] +
         ['p cnf {} {}'.format(n, l)] +
-        [' '.join(map(str, clause + [0])) for clause in randomize(n, k, l)]
+        [' '.join(map(str, clause + [0])) for clause in randomize_fixed(n, k, l)]
     ))
 
     proc = run(['minisat', '-verb=2', '-cpu-lim=30', ifname], stderr=STDOUT, stdout=PIPE)
