@@ -1,0 +1,60 @@
+/* Encoding of Sudoku problem
+
+	variable v(i,j,d) true iff the cell in row i, column j contains the digit d
+
+*/
+
+// every cell contains a digit
+
+(forall _i in {0..9}
+	(forall _j in {0..9}
+		(exists _d in {0..9} v(_i,_j,_d))
+	)
+)
+
+// every cell contains only a digit
+(forall _i in {0..9}
+	(forall _j in {0..9}
+		(forall _d in {0..8}
+			(forall _d1 in {_d+1..9} (~v(_i,_j,_d) | ~v(_i,_j,_d1))
+			)
+		)
+	)
+)
+
+// every row contains each digit once
+(forall _i in {0..9}
+	(forall _d in {0..9}
+		(forall _j in {0..8}
+			(forall _j1 in {_j+1..9} (~v(_i,_j,_d) | ~v(_i,_j1,_d1))
+			)
+		)
+	)
+)
+
+// every column contains each digit once
+(forall _j in {0..9}
+	(forall _d in {0..9}
+		(forall _i in {0..8}
+			(forall _i1 in {_i+1..9} (~v(_i,_j,_d) | ~v(_i1,_j,_d1))
+			)
+		)
+	)
+)
+
+// each 3x3 square contains each digit once
+(forall _d in {0..9}
+	(forall _ro in {0..3}
+		(forall _co in {0..3}
+			(forall _i in {0..8}
+				(forall _i1 in {_i+1..9}
+					(~v((3*_ro + _i/3), (3*_co+_i%3), d) | ~v((3*_ro + _i1/3), (3*_co+_i1%3), d))
+				)
+			)
+		)
+	)
+)
+
+// partial assignment
+
+( v(1,9,9) & v(3,2,6) & v(3,7,2) & v(6,9,3) & v(8,4,1) & v(8,5,9) & v(8,6,5) & v(9,5,7) )
