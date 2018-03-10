@@ -14,7 +14,7 @@ import pandas.tseries as ts
 # List to choose k from.
 setups = [
     #k   r_min r_max   n
-    (3, (    3,  5.5), [20, 30]),
+    (3, (    3,  5.5), [50, 100, 200]),
     (5, (   19, 25  ), [50, 100     ])
 ]
 
@@ -153,8 +153,20 @@ def main():
                 # For dynamic delta with "focal point" in the middle of the range:
                 #r += 0.1 + 0.2 * (r - R[0] - ((R[1] - R[0]) / 2.0)) ** 2.0
 
-            data=np.loadtxt('data-5.dat')
-            df = pd.DataFrame(data[:,1],data[:,0])
+            data2 = np.loadtxt('data-2.dat')
+            df2 = pd.DataFrame(data2[:,1],data2[:,0])
+            plt.figure()
+            df2.plot().get_figure().savefig('plot2.pdf')
+
+            data3 = np.loadtxt('data-3.dat')
+            df3 = pd.DataFrame(data3[:,1],data3[:,0])
+            plt.figure()
+            df3.plot().get_figure().savefig('plot3.pdf')
+
+            data5 = np.loadtxt('data-5.dat')
+            df5 = pd.DataFrame(data5[:,1],data5[:,0])
+            plt.figure()
+            df5.plot().get_figure().savefig('plot5.pdf')
 
             #x=data[:,1]
             #y=data[:,2]
@@ -164,8 +176,7 @@ def main():
 
         #df = pd.DataFrame(rvalues, pvalues)
 
-        plt.figure()
-        df.plot().get_figure().savefig('test12.pdf')
+
 
         return
 
