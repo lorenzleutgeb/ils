@@ -145,7 +145,7 @@ def main():
     for setup in setups:
         k, (a, b, s, d), N, m = setup
         dump = 'data-{}-{:x}.dat'.format(k, getrandbits(16))
-        with open(dump, 'w+') as f:
+        with open(dump, 'w+', 1) as f:
             print('Running for k = {} from {} to {} using {}.'.format(k, rmin, rmax, dump))
             for r in scan(a, b, s, d):
                 line = dots(r, k, N, m)
