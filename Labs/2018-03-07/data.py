@@ -13,13 +13,11 @@ import pandas.tseries as ts
 
 # List to choose k from.
 setups = [
-    #k   r_min r_max   n
-    (3, (    3,  5.5), [20, 30]),
-    (5, (   19, 25  ), [50, 100     ])
+    #k   r_min r_max   r_delta n
+    (2, ( 2.75,  3.25, 0.05), [20,  50, 100, 200, 500], 200.0)
+    (3, ( 3.00,  5.5,  0.10), [50, 100, 200          ], 100.0),
+    (5, (19.00, 25.0,  0.10), [50, 100               ],  50.0)
 ]
-
-# Number of experiments to run in order to smoothen result.
-m = 50.0
 
 # K-SAT:
 # n ... Number of Variables
@@ -57,7 +55,7 @@ def randomize_density(n, p, l):
     return cnf
 
 # Runs m experiments and averages the results.
-def average(n, k, l):
+def average(n, k, l, m):
     """Routine that returns the mean value of the results obtained after running m experiments.
 
     :param n: number of variables in the formula
@@ -133,7 +131,7 @@ def experiment(n, k, l):
 def main():
 
     for setup in setups:
-        k, (rmin, rmax), N = setup
+        k, (rmin, rmax, rdelta), N, m = setup
         dump = 'data-{}-{:x}.dat'.format(k, getrandbits(16))
         with open(dump, 'w+') as f:
             rvalues = []
@@ -141,15 +139,11 @@ def main():
             print('Running for k = {} from {} to {} using {}.'.format(k, rmin, rmax, dump))
             r = rmin
             while r <= rmax:
-                line = dots(r, k, N)
-            #    rvalues.append(r)
-                p = line[1][0][0]
-            #    pvalues.append(p)
-            #    stdout.write(line)
-            #    f.write(line)
+                line = dots(r, k, N, m)
+                stdout.write(line)
+                f.write(line)
                 # For static delta:
-                r += 0.1
-
+                r += rdelta
                 # For dynamic delta with "focal point" in the middle of the range:
                 #r += 0.1 + 0.2 * (r - R[0] - ((R[1] - R[0]) / 2.0)) ** 2.0
 
