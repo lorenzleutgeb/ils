@@ -1,17 +1,16 @@
 # Team White
 
+from numpy      import arange
 from os         import remove
 from subprocess import PIPE, STDOUT, run
 from sys        import stdout
 from tempfile   import mkstemp
 from random     import choice, sample, getrandbits
 
-# List to choose k from.
 setups = [
-    #k   r_min r_max   r_delta n
-    (2, ( 2.75,  3.25, 0.05), [20,  50, 100, 200, 500], 200.0)
-    (3, ( 3.00,  5.5,  0.10), [50, 100, 200          ], 100.0),
-    (5, (19.00, 25.0,  0.10), [50, 100               ],  50.0)
+    (2, ( 0.25,  3.25,  5.0, 0.50), [20,  50, 100, 200, 500], 200.0),
+    (3, ( 3.00,  5.50,  5.0, 0.25), [50, 100, 200          ], 100.0),
+    (5, (19.00, 25.00, 15.0, 1.50), [50, 100               ],  50.0),
 ]
 
 # K-SAT:
@@ -124,22 +123,34 @@ def experiment(n, k, l):
 
     return decode(proc.stdout.decode('utf-8'))
 
+def scan(a, b, s, d):
+    e = 0.009
+
+    m = (b - a) / 2.0
+    r = -((1.0 / m) - 1.0)
+
+    print(m, r)
+
+    def f(k):
+        return (r ** k) / (1 - r)
+
+    return list(filter(
+        lambda x: x == a + m or abs(a + m - x) > e,
+        [a + m - f(k) for k in np.arange(0, s, d)] + [a + m] +
+        [a + m + f(k) for k in np.arange(s, 0, -d)] + [b]
+    ))
+
 # Entry point of the program.
 def main():
     for setup in setups:
-        k, (rmin, rmax, rdelta), N, m = setup
+        k, (a, b, s, d), N, m = setup
         dump = 'data-{}-{:x}.dat'.format(k, getrandbits(16))
         with open(dump, 'w+') as f:
             print('Running for k = {} from {} to {} using {}.'.format(k, rmin, rmax, dump))
-            r = rmin
-            while r <= rmax:
+            for r in scan(a, b, s, d):
                 line = dots(r, k, N, m)
                 stdout.write(line)
                 f.write(line)
-                # For static delta:
-                r += rdelta
-                # For dynamic delta with "focal point" in the middle of the range:
-                #r += 0.1 + 0.2 * (r - R[0] - ((R[1] - R[0]) / 2.0)) ** 2.0
 
 if __name__ == '__main__':
     main()
