@@ -62,7 +62,7 @@ def average(n, k, l, m):
     # l = r * n
     return tuple([sum(x) / m for x in zip(*[experiment(n, k, l) for i in range(int(m))])])
 
-def dots(r, k, N):
+def dots(r, k, N, m):
     """Routine that provides, for each chosen value in [R[0]..R[1]], the mean values of the samples obtained
     by changing the value of literals per clause and variables considered and running a fixed number of experiments.
 
@@ -71,7 +71,7 @@ def dots(r, k, N):
               (J,K,L) = average(n, k, int(r * n)) for some n (number of variables) and k (literals per clause)
     """
     return '{:4.3f}'.format(r) + '\t' + '\t'.join([
-        '{:4.3f} {:7.3f} {:10.3f}'.format(*average(n, k, int(r * n))) for n in N
+        '{:4.3f} {:7.3f} {:10.3f}'.format(*average(n, k, int(r * n), m)) for n in N
     ]) + '\n'
 
 def decode(result):
@@ -128,8 +128,6 @@ def scan(a, b, s, d):
 
     m = (b - a) / 2.0
     r = -((1.0 / m) - 1.0)
-
-    print(m, r)
 
     def f(k):
         return (r ** k) / (1 - r)
