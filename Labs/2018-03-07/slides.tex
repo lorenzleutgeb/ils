@@ -1,0 +1,83 @@
+\documentclass[xcolor={table,usenames,dvipsnames}]{beamer}
+
+% Suggested improvements:
+%  - Actually apply AllMinAs to the example in a step-by-step manner.
+%  - Remove references, they are too noisy.
+%  - Expand on Complexity.
+%  - How is this useful to the person working with the ontology? (maybe mention MaxAs)
+%  - Use overlays consistently throughout the presentation.
+%  - Maybe explain the algorithms using text and bullet lists with overlays.
+
+\usetheme[sectionpage=progressbar,subsectionpage=progressbar,block=fill]{metropolis}
+
+\usepackage{amsthm}
+\usepackage{xspace}
+%\usepackage[scale=1.5]{ccicons}
+
+\usepackage{hyperref}
+
+\usepackage{amsmath,amssymb} % For \flalign, \top, ...
+\usepackage[algoruled,linesnumbered]{algorithm2e}
+
+\usepackage{nicefrac,xspace,csquotes}
+
+% If we want article-style math even in the presentation.
+%\usefonttheme[onlymath]{serif}
+
+\title{Empirical Evaluation of SAT Provers}
+\author{Filippo De Bortoli \texorpdfstring{\newline \texttt{\tiny filippo.de\_bortoli@stud-inf.unibz.it} \newline }{<lorenz.leutgeb@stud-inf.unibz.it>}%
+\and Aneta Koleva \texorpdfstring{\newline \texttt{\tiny aneta.koleva@stud-inf.unibz.it} \newline}{<aneta.koleva@stud-inf.unibz.it>}%
+\and Lorenz Leutgeb \texorpdfstring{\newline \texttt{\tiny lorenz.leutgeb@stud-inf.unibz.it} \newline}{<lorenz.leutgeb@stud-inf.unibz.it>}}
+
+\institute{Free University of Bozen-Bolzano}
+
+% \\[10mm] \begin{center}\ccbysa \\[1mm] \tiny{This work is licensed under \href{http://creativecommons.org/licenses/by-sa/4.0/}{Creative Commons BY-SA 4.0}.}\end{center}
+
+\date{2018-03-14}
+
+\begin{document}
+
+\begin{frame}[plain]
+\maketitle
+\end{frame}
+
+\begin{frame}[plain]
+This work is reproduction of and based on:\\[3mm]
+
+{\large\bfseries Generating hard satisfiability problems}\\[1mm]
+B.\ Selman, D.\ G.\ Mitchell, H.\ J.\ Levesque\\[2mm]
+Artificial Intelligence, Volume 81, Issue 1, 1996, Pages 17-29\\[1mm]
+DOI \href{http://dx.doi.org/10.1016/0004-3702(95)00045-3}{\texttt{10.1016/0004-3702(95)00045-3}}\\[3mm]
+{\small \color{gray}{(detailed reference in the end)}}
+\end{frame}
+
+\begin{frame}{Agenda}
+\tableofcontents
+\end{frame}
+
+\begin{frame}{Hypotheses}
+\begin{description}
+	\item[2SAT]{Phase transition does not manifest as harder instances.}
+    \item[3SAT]{Results can be reproduced.}
+    \item[5SAT]{Phase transitions behaves similar to 3SAT.}
+\end{description}
+
+\alert{Note:} We restrict ourselves to the fixed clause length formulae and omit the fixed density generation scheme.
+\end{frame}
+
+\begin{frame}{Measuring \enquote{Hardness}}
+\begin{description}
+    \item[Number of Decisions]{Good discrete measure of hardness, relates to \alert{Splitting Rule}  in Davis-Putnam Procedure.}
+	\item[Execution Time]{Overall indicator, more fragile.}
+\end{description}
+\end{frame}
+
+\begin{frame}{Recap}
+\tableofcontents
+\end{frame}
+
+\begin{frame}[standout]
+Questions, please!
+\end{frame}
+
+\end{document}
