@@ -6,11 +6,6 @@ from sys        import stdout
 from tempfile   import mkstemp
 from random     import choice, sample, getrandbits
 
-import numpy as np
-import pandas as pd
-import matplotlib.pyplot as plt
-import pandas.tseries as ts
-
 # List to choose k from.
 setups = [
     #k   r_min r_max   r_delta n
@@ -73,10 +68,12 @@ def dots(r, k, N):
     by changing the value of literals per clause and variables considered and running a fixed number of experiments.
 
     :param r: a floating-point number in the range [R[0]..R[1]]
-    :returns: a string, representing a table of records; each record is of the form 'P T L', where
-              (P,T,L) = average(n, k, int(r * n)) for some n (number of variables) and k (literals per clause)
+    :returns: a string, representing a table of records; each record is of the form 'J K L', where
+              (J,K,L) = average(n, k, int(r * n)) for some n (number of variables) and k (literals per clause)
     """
-    return (r, [average(n, k, int(r * n)) for n in N])
+    return '{:4.3f}'.format(r) + '\t' + '\t'.join([
+        '{:4.3f} {:7.3f} {:10.3f}'.format(*average(n, k, int(r * n))) for n in N
+    ]) + '\n'
 
 def decode(result):
     """Routine that returns relevant information about a run of MiniSat.
@@ -129,13 +126,10 @@ def experiment(n, k, l):
 
 # Entry point of the program.
 def main():
-
     for setup in setups:
         k, (rmin, rmax, rdelta), N, m = setup
         dump = 'data-{}-{:x}.dat'.format(k, getrandbits(16))
         with open(dump, 'w+') as f:
-            rvalues = []
-            pvalues = []
             print('Running for k = {} from {} to {} using {}.'.format(k, rmin, rmax, dump))
             r = rmin
             while r <= rmax:
@@ -146,23 +140,6 @@ def main():
                 r += rdelta
                 # For dynamic delta with "focal point" in the middle of the range:
                 #r += 0.1 + 0.2 * (r - R[0] - ((R[1] - R[0]) / 2.0)) ** 2.0
-
-            data=np.loadtxt('data-5.dat')
-            df = pd.DataFrame(data[:,1],data[:,0])
-
-            #x=data[:,1]
-            #y=data[:,2]
-
-            #plt.plot(x,y,':ro')
-            #plt.show()
-
-        #df = pd.DataFrame(rvalues, pvalues)
-
-        plt.figure()
-        df.plot().get_figure().savefig('test12.pdf')
-
-        return
-
 
 if __name__ == '__main__':
     main()
