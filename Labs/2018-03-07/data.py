@@ -136,8 +136,8 @@ def scan(a, b, s, d):
 
     return list(filter(
         lambda x: x == a + m or abs(a + m - x) > e,
-        [a + m - f(k) for k in np.arange(0, s, d)] + [a + m] +
-        [a + m + f(k) for k in np.arange(s, 0, -d)] + [b]
+        [a + m - f(k) for k in arange(0, s, d)] + [a + m] +
+        [a + m + f(k) for k in arange(s, 0, -d)] + [b]
     ))
 
 # Entry point of the program.
