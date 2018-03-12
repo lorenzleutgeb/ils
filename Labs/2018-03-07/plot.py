@@ -31,7 +31,7 @@ for setup in setups:
         plt.plot(xs, data[:,1 + i * 3], '-o', markerfacecolor=colors[i][1], markersize=3, color=colors[i][0], linewidth=2)
 
     plt.legend(N, title='$n$')
-    f.savefig('satisfiablity-{}.pdf'.format(k))
+    f.savefig('satisfiability-{}.pdf'.format(k))
 
     # Combined plots (decisions/time):
     f = plt.figure()
