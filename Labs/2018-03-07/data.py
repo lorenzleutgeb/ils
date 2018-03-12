@@ -90,7 +90,7 @@ def dots(r, k, N, m):
               where (J,K,L) = average(n, k, int(r * n)) for some n (number of variables) and k (literals per clause)
     """
     return '{:4.3f}'.format(r) + '\t' + '\t'.join([
-        '{:4.3f} {:7.3f} {:10.3f}'.format(*average(n, k, int(r * n), m)) for n in N
+        '{:4.3f} {:9.5f} {:10.3f}'.format(*average(n, k, int(r * n), m)) for n in N
     ]) + '\n'
 
 def decode(result):
