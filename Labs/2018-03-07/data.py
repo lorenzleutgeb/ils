@@ -7,6 +7,12 @@ from sys        import stdout
 from tempfile   import mkstemp
 from random     import choice, sample, getrandbits
 
+# SETUPS:
+# each setup is a tuple (K, P, N, M).
+# K: number of literals per clause (used if K-SAT is chosen)
+# P: list of probability values (used if P-SAT is chosen)
+# N: list of instance variables clause
+# M: number of experiments that are run
 setups = [
     (2, ( 0.25,  3.25,  5.0, 0.50), [20,  50, 100, 200, 500], 200.0),
     (3, ( 3.00,  5.50,  5.0, 0.25), [50, 100, 200          ], 100.0),
@@ -18,7 +24,7 @@ setups = [
 # k ... Number of Literals per Clause
 # l ... Number of Clauses
 def randomize_fixed(n, k, l):
-    """A k-CNF formulae generator.
+    """A k-SAT CNF formulae generator.
 
     :param n: number of variables in the formula
     :param k: number of literals per clause
@@ -32,6 +38,14 @@ def randomize_fixed(n, k, l):
 # p ... Probability of Inclusion
 # l ... Number of Clauses
 def randomize_density(n, p, l):
+    """A p-SAT CNF formulae generator.
+
+    :param n: number of variables in the formula
+    :param p: probability of including a literal containing a certain variable in a clause
+    :param l: number of clauses in the formula
+    :returns: a list of length l, where each element is a list of length at most n, made of different non-zero
+              elements in the range [-n..n]
+    """
     cnf = []
     for j in range(l):
         clause = []
@@ -55,8 +69,9 @@ def average(n, k, l, m):
     :param n: number of variables in the formula
     :param k: number of literals per clause
     :param l: number of clauses in the formula
-    :returns: a tuple, containing the average satisfiability ('1' for SATISFIABLE/'0' for UNSATISFIABLE),
-              the average CPU time for an experiment and the average number of decisions taken by the MiniSat solver
+    :param m: number of run experiments
+    :returns: a list of tuples, containing the average satisfiability (ratio #(solved instances)/#(total instances)),
+              the average CPU time per experiment and the average number of taken decisions per experiment.
     """
     # r = l / n
     # l = r * n
@@ -67,8 +82,12 @@ def dots(r, k, N, m):
     by changing the value of literals per clause and variables considered and running a fixed number of experiments.
 
     :param r: a floating-point number in the range [R[0]..R[1]]
-    :returns: a string, representing a table of records; each record is of the form 'J K L', where
-              (J,K,L) = average(n, k, int(r * n)) for some n (number of variables) and k (literals per clause)
+    :param k: number of literals per clause
+    :param N: list of instance variables values
+    :param m: number of run experiments
+    :returns: a string, representing a table of records; each record is of the form
+              R   J1 K1 L1   ...   JN KN LN
+              where (J,K,L) = average(n, k, int(r * n)) for some n (number of variables) and k (literals per clause)
     """
     return '{:4.3f}'.format(r) + '\t' + '\t'.join([
         '{:4.3f} {:7.3f} {:10.3f}'.format(*average(n, k, int(r * n), m)) for n in N
