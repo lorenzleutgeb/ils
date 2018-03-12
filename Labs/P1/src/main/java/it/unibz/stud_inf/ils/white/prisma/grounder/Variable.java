@@ -1,6 +1,6 @@
 package it.unibz.stud_inf.ils.white.prisma.grounder;
 
-public class Variable {
+public class Variable extends Expression {
 	private final String raw;
 
 	public Variable(String raw) {
@@ -9,6 +9,6 @@ public class Variable {
 
 	@Override
 	public String toString() {
-		return raw;
+		return "_" + raw;
 	}
 }

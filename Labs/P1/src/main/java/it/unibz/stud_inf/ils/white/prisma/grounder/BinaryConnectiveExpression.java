@@ -26,6 +26,15 @@ public class BinaryConnectiveExpression extends Expression {
 			this.asString = asString;
 		}
 
+		public static Connective fromOperator(String op) {
+			for (Connective c : Connective.values()) {
+				if (c.toString().equals(op)) {
+					return c;
+				}
+			}
+			return null;
+		}
+
 		@Override
 		public String toString() {
 			return asString;

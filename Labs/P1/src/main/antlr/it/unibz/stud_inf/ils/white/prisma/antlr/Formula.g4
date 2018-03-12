@@ -1,63 +1,114 @@
 grammar Formula;
 
-formula : expression+ EOF;
+formula: expression+ EOF;
 
 expression
-    : ID '(' term (',' term)* ')'                               # atom
-    | '(' subexpression = expression ')'                                        # parenthesis
-    | '~' subexpression = expression                                            # not
-    | left = expression '=>' right = expression                 # then
-    | left = expression '<=>' right = expression                # iff
-    | left = expression '<=' right = expression                 # if
-    | condition = expression '?' truthy = expression ':' falsy = expression # ternary
-    | left = expression '&' right = expression                  # and
-    | left = expression '|' right = expression                  # or
-    | left = expression '^' right = expression                  # xor
-    | 'forall' VAR 'in' (range_expr | set_expr)  scope = expression     # forall
-    | 'exists' VAR 'in' (range_expr | set_expr)  scope = expression     # exists
-    | TRUE                                                      # true
-    | FALSE                                                     # false
-    | VAR                                                       # variable
-    | ID                                                        # identifier
+    : (TRUE | FALSE)                                                                            # booleanConstant
+    | predicate (PAREN_OPEN terms PAREN_CLOSE)?                                                 # atom
+    | PAREN_OPEN expression PAREN_CLOSE                                                         # parenthesizedExpression
+    | NOT expression                                                                            # unary
+    | condition = expression QUESTION truthy = expression COLON falsy = expression              # ternary
+    | left = expression op = (AND | BAR | IF | IFF | THEN | XOR) right = expression             # binary
+    | quantifier = (EXISTS | FORALL) variable = TVAR IN range = termSet scope = expression      # termQuantification
+    | quantifier = (EXISTS | FORALL) variable = PVAR IN range = predicateSet scope = expression # predicateQuantification
+    ;
+
+predicate
+    : CON  # predicateConstant
+    | PVAR # predicateVariable
+    ;
+
+predicates
+    : predicate (COMMA predicates)?
+    ;
+
+predicateSet
+    : CURLY_OPEN predicates CURLY_CLOSE
     ;
 
 term
-    : ID                                              # newTermID
-    | VAR                                             # newTermVar
-    | int_expr                                        # doIntExpr
+    : CON           # termConstant
+    | TVAR          # termVariable
+    | intExpression # termIntExpression
     ;
 
-int_expr
-    : '(' int_expr ')'                                # parenthesizedIntExpression
-    | '|' int_expr '|'                                # absValueExpression
-    | '-' int_expr                                    # unaryMinusExpression
-    | int_expr op=( '*' | '/' | '%' ) int_expr        # multiplicativeExpression
-    | int_expr op=( '+' | '-' ) int_expr              # additiveExpression
-    | VAR                                             # newIntVariable
-    | NUMBER                                          # newInteger
+terms
+    : term (COMMA terms)?
     ;
 
-range_expr 
-    : '{' (int_expr '..' int_expr) '}' ;
+termSet
+    : CURLY_OPEN minimum = intExpression DOTS maxmimum = intExpression CURLY_CLOSE # range
+    | CURLY_OPEN terms CURLY_CLOSE                                                 # enumeration
+    ;
 
-set_expr 
-    : '{' term (',' term)*  '}' ;
+intExpression
+    : PAREN_OPEN intExpression PAREN_CLOSE                                          # parenthesizedIntExpression
+    | BAR intExpression BAR                                                         # absIntExpression
+    | SUB intExpression                                                             # negIntExpression
+    | left = intExpression op = (MUL | DIV | MOD | ADD | SUB) right = intExpression # binaryIntExpression
+    | variable = TVAR                                                               # varIntExpression
+    | number = NUMBER                                                               # numIntExpression
+    ;
 
-// Tokens
-TRUE            : 'True';
-FALSE           : 'False';
-ID              : LETTER ALPHANUM*;
-VAR             : '_' LETTER ALPHANUM*;
-NUMBER          : DIGIT+;
+// Boolean constants:
+TRUE        : 'true';
+FALSE       : 'false';
 
-// Drops whitespaces and comments
-WS              : [ \t\n\r]+ -> skip ;
-COMMENTS        : ('/*' .*? '*/' | '//' ~'\n'* '\n' ) -> skip;
+// Quantifiers:
+FORALL      : 'forall';
+EXISTS      : 'exists';
 
-// Fragments
-fragment DIGIT    : '0' .. '9';
-fragment UPPER    : 'A' .. 'Z';
-fragment LOWER    : 'a' .. 'z';
-fragment LETTER   : LOWER | UPPER;
-fragment WORD     : LETTER | '_' | '$' | '#' | '.';
-fragment ALPHANUM : WORD | DIGIT;
+// Parentheses and braces:
+PAREN_OPEN  : '(';
+PAREN_CLOSE : ')';
+CURLY_OPEN  : '{';
+CURLY_CLOSE : '}';
+
+// Boolean connectives:
+AND         : '&';
+THEN        : '=>';
+IF          : '<=';
+IFF         : '<=>';
+XOR         : '^';
+NOT         : '~';
+QUESTION    : '?';
+COLON       : ':';
+
+// Arithmetic constants:
+NUMBER      : DIGIT+;
+
+// Arithmetic connectives:
+MUL         : '*';
+DIV         : '/';
+MOD         : '%';
+ADD         : '+';
+SUB         : '-';
+
+// Miscellaneous:
+IN          : 'in';
+COMMA       : ',';
+DOTS        : '..';
+
+// NOTE: This character is used both in intExpressions
+//       and as a binary boolean connective.
+BAR         : '|';
+
+// Variable prefixes:
+AT          : '@';
+DOLLAR      : '$';
+
+// Drop whitespaces and comments:
+WS       : [ \t\n\r]+ -> skip ;
+COMMENTS : ('/*' .*? '*/' | '//' ~'\n'* '\n') -> skip;
+
+// Constant terms and predicates:
+CON : LOWER ALNUM*;
+
+// Variable terms and predicates:
+TVAR : DOLLAR UPPER ALNUM*;
+PVAR : AT UPPER ALNUM*;
+
+fragment DIGIT : '0' .. '9';
+fragment UPPER : 'A' .. 'Z';
+fragment LOWER : 'a' .. 'z';
+fragment ALNUM : LOWER | UPPER | DIGIT;

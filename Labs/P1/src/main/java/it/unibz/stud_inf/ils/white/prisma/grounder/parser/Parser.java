@@ -6,7 +6,11 @@ import it.unibz.stud_inf.ils.white.prisma.antlr.FormulaParser;
 import it.unibz.stud_inf.ils.white.prisma.grounder.*;
 import org.antlr.v4.runtime.*;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.stream.Collectors;
+
+import static java.util.Collections.emptyList;
 
 public class Parser {
 	public static Formula parse(String formula) {
@@ -16,8 +20,7 @@ public class Parser {
 		FormulaParser parser = new FormulaParser(tokens);
 
 		FormulaVisitor formulaVisitor = new FormulaVisitor();
-		Formula traverseResult = formulaVisitor.visit(parser.formula());
-		return traverseResult;
+		return formulaVisitor.visit(parser.formula());
 	}
 
 	private static class FormulaVisitor extends FormulaBaseVisitor<Formula> {
@@ -29,35 +32,25 @@ public class Parser {
 	}
 
 	private static class ExpressionVisitor extends FormulaBaseVisitor<Expression> {
-		private BinaryConnectiveExpression wrap(BinaryConnectiveExpression.Connective connective, FormulaParser.ExpressionContext left, FormulaParser.ExpressionContext right) {
-			return new BinaryConnectiveExpression(
-				BinaryConnectiveExpression.Connective.OR,
-				visit(left),
-				visit(right)
-			);
-		}
+		@Override
+		public Expression visitQuantification(FormulaParser.QuantificationContext ctx) {
+			DomainVisitor visitor = new DomainVisitor();
 
-		private QuantifiedExpression wrap(Quantifier quantifier, FormulaParser.ExpressionContext scope) {
 			return new QuantifiedExpression(
-				quantifier,
-				new Variable(raw),
-				visit(scope)
+				Quantifier.valueOf(ctx.quantifier.getText().toUpperCase()),
+				new Variable(ctx.variable.getText().substring(1)),
+				visitor.visit(ctx.range),
+				visit(ctx.scope)
 			);
 		}
 
 		@Override
-		public Expression visitIdentifier(FormulaParser.IdentifierContext ctx) {
-			return super.visitIdentifier(ctx);
-		}
-
-		@Override
-		public Expression visitOr(FormulaParser.OrContext ctx) {
-			return wrap(BinaryConnectiveExpression.Connective.OR, ctx.left, ctx.right);
-		}
-
-		@Override
-		public Expression visitForall(FormulaParser.ForallContext ctx) {
-			return wrap(Quantifier.FORALL, ctx.scope);
+		public Expression visitBinary(FormulaParser.BinaryContext ctx) {
+			return new BinaryConnectiveExpression(
+				BinaryConnectiveExpression.Connective.fromOperator(ctx.op.getText()),
+				visit(ctx.left),
+				visit(ctx.right)
+			);
 		}
 
 		@Override
@@ -66,28 +59,13 @@ public class Parser {
 		}
 
 		@Override
-		public Expression visitIff(FormulaParser.IffContext ctx) {
-			return wrap(BinaryConnectiveExpression.Connective.IFF, ctx.left, ctx.right);
-		}
-
-		@Override
-		public Expression visitThen(FormulaParser.ThenContext ctx) {
-			return wrap(BinaryConnectiveExpression.Connective.THEN, ctx.left, ctx.right);
-		}
-
-		@Override
-		public Expression visitParenthesis(FormulaParser.ParenthesisContext ctx) {
+		public Expression visitParenthesizedExpression(FormulaParser.ParenthesizedExpressionContext ctx) {
 			return visit(ctx.subexpression);
 		}
 
 		@Override
-		public Expression visitNot(FormulaParser.NotContext ctx) {
+		public Expression visitUnary(FormulaParser.UnaryContext ctx) {
 			return new NegatedExpression(visit(ctx.subexpression));
-		}
-
-		@Override
-		public Expression visitAnd(FormulaParser.AndContext ctx) {
-			return wrap(BinaryConnectiveExpression.Connective.AND, ctx.left, ctx.right);
 		}
 
 		@Override
@@ -96,28 +74,29 @@ public class Parser {
 		}
 
 		@Override
-		public Expression visitVariable(FormulaParser.VariableContext ctx) {
-			return super.visitVariable(ctx);
+		public Expression visitVariableExpression(FormulaParser.VariableExpressionContext ctx) {
+			return new Variable(ctx.variable.getText().substring(1));
 		}
 
-		@Override
-		public Expression visitExists(FormulaParser.ExistsContext ctx) {
-			return wrap(Quantifier.EXISTS, ctx.scope);
-		}
+		public List<Term> wrap(FormulaParser.TermsContext ctx) {
+			if (ctx == null) {
+				return emptyList();
+			}
 
-		@Override
-		public Expression visitXor(FormulaParser.XorContext ctx) {
-			return wrap(BinaryConnectiveExpression.Connective.XOR, ctx.left, ctx.right);
+			TermVisitor visitor = new TermVisitor();
+
+			final List<Term> terms = new ArrayList<>();
+			do  {
+				FormulaParser.TermContext term = ctx.term();
+				terms.add(visitor.visit(term));
+			} while ((ctx = ctx.terms()) != null);
+
+			return terms;
 		}
 
 		@Override
 		public Expression visitAtom(FormulaParser.AtomContext ctx) {
-			return new Atom(predicate, terms);
-		}
-
-		@Override
-		public Expression visitIf(FormulaParser.IfContext ctx) {
-			return wrap(BinaryConnectiveExpression.Connective.IF, ctx.left, ctx.right);
+			return new Atom(ctx.predicate.getText(), wrap(ctx.terms()));
 		}
 
 		@Override
@@ -127,6 +106,88 @@ public class Parser {
 				visit(ctx.truthy),
 				visit(ctx.falsy)
 			);
+		}
+	}
+
+	private static class DomainVisitor extends FormulaBaseVisitor<Domain> {
+		public List<Term> wrap(FormulaParser.TermsContext ctx) {
+			if (ctx == null) {
+				return emptyList();
+			}
+
+			TermVisitor visitor = new TermVisitor();
+
+			final List<Term> terms = new ArrayList<>();
+			do  {
+				FormulaParser.TermContext term = ctx.term();
+				terms.add(visitor.visit(term));
+			} while ((ctx = ctx.terms()) != null);
+
+			return terms;
+		}
+
+		@Override
+		public Domain visitRange(FormulaParser.RangeContext ctx) {
+			IntExpressionVisitor visitor = new IntExpressionVisitor();
+
+			// TODO: Do not collapse integer expressions at this point.
+			return new IntegerDomain(
+				visitor.visit(ctx.lower).toInteger(),
+				visitor.visit(ctx.upper).toInteger()
+			);
+		}
+
+		@Override
+		public Domain visitSet(FormulaParser.SetContext ctx) {
+			return new TermDomain(wrap(ctx.terms()));
+		}
+	}
+
+	private static class TermVisitor extends FormulaBaseVisitor<Term> {
+		@Override
+		public Term visitConstant(FormulaParser.ConstantContext ctx) {
+			return new ConstantTerm(ctx.getText());
+		}
+
+		@Override
+		public Term visitVariableTerm(FormulaParser.VariableTermContext ctx) {
+			return new VariableTerm(ctx.getText());
+		}
+
+		@Override
+		public Term visitArithmetic(FormulaParser.ArithmeticContext ctx) {
+			return super.visitArithmetic(ctx);
+		}
+	}
+
+	private static class IntExpressionVisitor extends FormulaBaseVisitor<IntExpression> {
+		@Override
+		public IntExpression visitAbs(FormulaParser.AbsContext ctx) {
+			return new IntUnaryConnectiveExpression(IntUnaryConnectiveExpression.Connective.ABS, visit(ctx.subexpression));
+		}
+
+		@Override
+		public IntExpression visitMinus(FormulaParser.MinusContext ctx) {
+			return new IntUnaryConnectiveExpression(IntUnaryConnectiveExpression.Connective.NEG, visit(ctx.subexpression));
+		}
+
+		@Override
+		public IntExpression visitIntBinary(FormulaParser.IntBinaryContext ctx) {
+			return new IntBinaryConnectiveExpression(
+				visit(ctx.left),
+				IntBinaryConnectiveExpression.Connective.fromOperator(ctx.op.getText()),
+				visit(ctx.right)
+			);
+		}
+
+		@Override
+		public IntExpression visitNumber(FormulaParser.NumberContext ctx) {
+			return new IntNumberExpression(Integer.parseInt(ctx.number.getText()));
+		}
+
+		@Override
+		public IntExpression visitVariableIntExpression(FormulaParser.VariableIntExpressionContext ctx) {
+			return new IntVariable(ctx.variable.getText().substring(1));
 		}
 	}
 }
