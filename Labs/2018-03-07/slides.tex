@@ -1,4 +1,4 @@
-\documentclass[xcolor={table,usenames,dvipsnames}]{beamer}
+\documentclass[xcolor={table,usenames,dvipsnames},aspectratio=169]{beamer}
 
 \usetheme[sectionpage=progressbar,subsectionpage=progressbar,block=fill]{metropolis}
 
@@ -14,6 +14,8 @@
 \usepackage[algoruled,linesnumbered]{algorithm2e}
 
 \usepackage{nicefrac,xspace,csquotes}
+
+\setbeamercolor{background canvas}{bg=white}
 
 % If we want article-style math even in the presentation.
 %\usefonttheme[onlymath]{serif}
@@ -36,17 +38,13 @@
 \end{frame}
 
 \begin{frame}[plain]
-This work is reproduction of and based on:\\[3mm]
+This work is reproduction of and based on:\\[6mm]
 
 {\large\bfseries Generating hard satisfiability problems}\\[1mm]
 B.\ Selman, D.\ G.\ Mitchell, H.\ J.\ Levesque\\[2mm]
 Artificial Intelligence, Volume 81, Issue 1, 1996, Pages 17-29\\[1mm]
-DOI \href{http://dx.doi.org/10.1016/0004-3702(95)00045-3}{\texttt{10.1016/0004-3702(95)00045-3}}\\[3mm]
+DOI \href{http://dx.doi.org/10.1016/0004-3702(95)00045-3}{\texttt{10.1016/0004-3702(95)00045-3}}\\[6mm]
 {\small \color{gray}{(detailed reference in the end)}}
-\end{frame}
-
-\begin{frame}{Agenda}
-\tableofcontents
 \end{frame}
 
 \begin{frame}{Hypotheses}
@@ -68,24 +66,20 @@ DOI \href{http://dx.doi.org/10.1016/0004-3702(95)00045-3}{\texttt{10.1016/0004-3
 
 \section{$k = 2$}
 
-\frame[plain]{\includegraphics[width=\textwidth]{satisfiability-2.pdf}}
-\frame[plain]{\includegraphics[width=\textwidth]{combined-2.pdf}}
+\frame[plain]{\centering\includegraphics[height=1.15\textheight]{satisfiability-2.pdf}}
+\frame[plain]{\centering\includegraphics[height=1.15\textheight]{combined-2.pdf}}
 
 \section{$k = 3$}
 
-\frame[plain]{\includegraphics[page=6,trim=5.5cm 10.25cm 3.5cm 8.5cm,clip,width=\textwidth]{orig.pdf}}
-\frame[plain]{\includegraphics[width=\textwidth]{satisfiability-3.pdf}}
-\frame[plain]{\includegraphics[page=5,trim=3.25cm 13.5cm 3cm 2.5cm,clip,width=\textwidth]{orig.pdf}}
-\frame[plain]{\includegraphics[width=\textwidth]{combined-3.pdf}}
+\frame[plain]{\centering\includegraphics[page=6,trim=5.5cm 10.25cm 3.5cm 8.5cm,clip,height=1.15\textheight]{orig.pdf}}
+\frame[plain]{\centering\includegraphics[height=1.15\textheight]{satisfiability-3.pdf}}
+\frame[plain]{\centering\includegraphics[page=5,trim=3.25cm 13.5cm 3cm 2.5cm,clip,height=1.15\textheight]{orig.pdf}}
+\frame[plain]{\centering\includegraphics[height=1.15\textheight]{combined-3.pdf}}
 
 \section{$k = 5$}
 
-\frame[plain]{\includegraphics[width=\textwidth]{satisfiability-5.pdf}}
-\frame[plain]{\includegraphics[width=\textwidth]{combined-5.pdf}}
-
-\begin{frame}{Recap}
-\tableofcontents
-\end{frame}
+\frame[plain]{\centering\includegraphics[height=1.15\textheight]{satisfiability-5.pdf}}
+\frame[plain]{\centering\includegraphics[height=1.15\textheight]{combined-5.pdf}}
 
 \begin{frame}[standout]
 Questions, please!
