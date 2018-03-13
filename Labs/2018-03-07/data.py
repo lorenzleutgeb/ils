@@ -14,9 +14,9 @@ from random     import choice, sample, getrandbits
 # N: list of instance variables clause
 # M: number of experiments that are run
 setups = [
-    (2, ( 0.25,  3.25,  5.0, 0.50), [20,  50, 100, 200, 500], 200.0),
-    (3, ( 3.00,  5.50,  5.0, 0.25), [50, 100, 200          ], 100.0),
-    (5, (19.00, 25.00, 15.0, 1.50), [50, 100               ],  50.0),
+    (2, ( 0.25,  3.25,  5.0, 0.50), [    20, 50, 100, 200, 500], 400.0),
+    (3, ( 3.00,  5.50,  5.0, 0.25), [        50, 100, 200     ], 200.0),
+    (5, (12.00, 35.00, 15.0, 1.50), [10, 20, 30               ], 200.0),
 ]
 
 # K-SAT:
@@ -142,21 +142,6 @@ def experiment(n, k, l):
 
     return decode(proc.stdout.decode('utf-8'))
 
-def scan(a, b, s, d):
-    e = 0.009
-
-    m = (b - a) / 2.0
-    r = -((1.0 / m) - 1.0)
-
-    def f(k):
-        return (r ** k) / (1 - r)
-
-    return list(filter(
-        lambda x: x == a + m or abs(a + m - x) > e,
-        [a + m - f(k) for k in arange(0, s, d)] + [a + m] +
-        [a + m + f(k) for k in arange(s, 0, -d)] + [b]
-    ))
-
 # Entry point of the program.
 def main():
     for setup in setups:
@@ -164,7 +149,7 @@ def main():
         dump = 'data-{}-{:x}.dat'.format(k, getrandbits(16))
         with open(dump, 'w+', 1) as f:
             print('Running for k = {} from {} to {} using {}.'.format(k, a, b, dump))
-            for r in scan(a, b, s, d):
+            for r in arange(a, b, 0.05 / 2.0):
                 line = dots(r, k, N, m)
                 stdout.write(line)
                 f.write(line)
