@@ -1,19 +1,12 @@
 \documentclass[xcolor={table,usenames,dvipsnames}]{beamer}
 
-% Suggested improvements:
-%  - Actually apply AllMinAs to the example in a step-by-step manner.
-%  - Remove references, they are too noisy.
-%  - Expand on Complexity.
-%  - How is this useful to the person working with the ontology? (maybe mention MaxAs)
-%  - Use overlays consistently throughout the presentation.
-%  - Maybe explain the algorithms using text and bullet lists with overlays.
-
 \usetheme[sectionpage=progressbar,subsectionpage=progressbar,block=fill]{metropolis}
 
 \usepackage{amsthm}
 \usepackage{xspace}
 %\usepackage[scale=1.5]{ccicons}
 \usepackage{pdfpages}
+%\usepackage{graphicx}
 
 \usepackage{hyperref}
 
@@ -58,9 +51,9 @@ DOI \href{http://dx.doi.org/10.1016/0004-3702(95)00045-3}{\texttt{10.1016/0004-3
 
 \begin{frame}{Hypotheses}
 \begin{description}
-	\item[2SAT]{Phase transition does not manifest as harder instances.}
-    \item[3SAT]{Results can be reproduced.}
-    \item[5SAT]{Phase transitions behaves similar to 3SAT.}
+	\item[2SAT]{No change of hardness at phase transition.}
+	\item[3SAT]{Results can be reproduced.}
+	\item[5SAT]{Phase transition behaviour similar to 3SAT.}
 \end{description}
 
 \alert{Note:} We restrict ourselves to the fixed clause length formulae and omit the fixed density generation scheme.
@@ -68,34 +61,27 @@ DOI \href{http://dx.doi.org/10.1016/0004-3702(95)00045-3}{\texttt{10.1016/0004-3
 
 \begin{frame}{Measuring \enquote{Hardness}}
 \begin{description}
-    \item[Number of Decisions]{Good discrete measure of hardness, relates to \alert{Splitting Rule}  in Davis-Putnam Procedure.}
+	\item[Number of Decisions]{Good discrete measure of hardness, relates to \alert{Splitting Rule}  in Davis-Putnam Procedure.}
 	\item[Execution Time]{Overall indicator, more fragile.}
 \end{description}
 \end{frame}
 
 \section{$k = 2$}
 
-{
-\setbeamercolor{background canvas}{bg=}
-\includepdf{satisfiability-2.pdf}
-\includepdf{combined-2.pdf}
-}
+\frame[plain]{\includegraphics[width=\textwidth]{satisfiability-2.pdf}}
+\frame[plain]{\includegraphics[width=\textwidth]{combined-2.pdf}}
 
 \section{$k = 3$}
 
-{
-\setbeamercolor{background canvas}{bg=}
-\includepdf{satisfiability-3.pdf}
-\includepdf{combined-3.pdf}
-}
+\frame[plain]{\includegraphics[page=6,trim=5.5cm 10.25cm 3.5cm 8.5cm,clip,width=\textwidth]{orig.pdf}}
+\frame[plain]{\includegraphics[width=\textwidth]{satisfiability-3.pdf}}
+\frame[plain]{\includegraphics[page=5,trim=3.25cm 13.5cm 3cm 2.5cm,clip,width=\textwidth]{orig.pdf}}
+\frame[plain]{\includegraphics[width=\textwidth]{combined-3.pdf}}
 
 \section{$k = 5$}
 
-{
-\setbeamercolor{background canvas}{bg=}
-\includepdf{satisfiability-5.pdf}
-\includepdf{combined-5.pdf}
-}
+\frame[plain]{\includegraphics[width=\textwidth]{satisfiability-5.pdf}}
+\frame[plain]{\includegraphics[width=\textwidth]{combined-5.pdf}}
 
 \begin{frame}{Recap}
 \tableofcontents
