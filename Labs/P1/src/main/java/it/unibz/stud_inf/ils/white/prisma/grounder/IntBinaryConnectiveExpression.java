@@ -40,6 +40,24 @@ public class IntBinaryConnectiveExpression extends IntExpression {
 	}
 
 	@Override
+	public boolean isGround() {
+		return left.isGround() && right.isGround();
+	}
+
+	@Override
+	public IntExpression substitute(Substitution substitution) {
+		if (isGround()) {
+			return this;
+		}
+
+		return new IntBinaryConnectiveExpression(
+			left.substitute(substitution),
+			connective,
+			right.substitute(substitution)
+		);
+	}
+
+	@Override
 	public int toInteger() {
 		int left = this.left.toInteger();
 		int right = this.right.toInteger();

@@ -3,14 +3,14 @@ grammar Formula;
 formula: expression+ EOF;
 
 expression
-    : (TRUE | FALSE)                                                                            # booleanConstant
-    | predicate (PAREN_OPEN terms PAREN_CLOSE)?                                                 # atom
-    | PAREN_OPEN expression PAREN_CLOSE                                                         # parenthesizedExpression
-    | NOT expression                                                                            # unary
-    | condition = expression QUESTION truthy = expression COLON falsy = expression              # ternary
-    | left = expression op = (AND | BAR | IF | IFF | THEN | XOR) right = expression             # binary
-    | quantifier = (EXISTS | FORALL) variable = TVAR IN range = termSet scope = expression      # termQuantification
-    | quantifier = (EXISTS | FORALL) variable = PVAR IN range = predicateSet scope = expression # predicateQuantification
+    : (TRUE | FALSE)                                                                           # booleanConstant
+    | predicate (PAREN_OPEN terms PAREN_CLOSE)?                                                # atom
+    | PAREN_OPEN expression PAREN_CLOSE                                                        # parenthesizedExpression
+    | NOT expression                                                                           # unary
+    | condition = expression QUESTION truthy = expression COLON falsy = expression             # ternary
+    | left = expression op = (AND | BAR | IF | IFF | THEN | XOR) right = expression            # binary
+    | quantifier = (EXISTS |FORALL) variable = TVAR IN range = termSet scope = expression      # termQuantification
+    | quantifier = (EXISTS |FORALL) variable = PVAR IN range = predicateSet scope = expression # predicateQuantification
     ;
 
 predicate
@@ -23,7 +23,7 @@ predicates
     ;
 
 predicateSet
-    : CURLY_OPEN predicates CURLY_CLOSE
+    : CURLY_OPEN predicates CURLY_CLOSE # predicateEnumeration
     ;
 
 term
@@ -37,8 +37,8 @@ terms
     ;
 
 termSet
-    : CURLY_OPEN minimum = intExpression DOTS maxmimum = intExpression CURLY_CLOSE # range
-    | CURLY_OPEN terms CURLY_CLOSE                                                 # enumeration
+    : SQUARE_OPEN minimum = intExpression DOTS maximum = intExpression SQUARE_CLOSE # intExpressionRange
+    | CURLY_OPEN terms CURLY_CLOSE                                                  # termEnumeration
     ;
 
 intExpression
@@ -51,26 +51,28 @@ intExpression
     ;
 
 // Boolean constants:
-TRUE        : 'true';
-FALSE       : 'false';
+TRUE        : 'true' | '⊤';
+FALSE       : 'false' | '⊥';
 
 // Quantifiers:
-FORALL      : 'forall';
-EXISTS      : 'exists';
+FORALL      : 'forall' | '∀';
+EXISTS      : 'exists' | '∃';
 
 // Parentheses and braces:
-PAREN_OPEN  : '(';
-PAREN_CLOSE : ')';
-CURLY_OPEN  : '{';
-CURLY_CLOSE : '}';
+PAREN_OPEN   : '(';
+PAREN_CLOSE  : ')';
+CURLY_OPEN   : '{';
+CURLY_CLOSE  : '}';
+SQUARE_OPEN  : '[';
+SQUARE_CLOSE : ']';
 
 // Boolean connectives:
-AND         : '&';
-THEN        : '=>';
-IF          : '<=';
-IFF         : '<=>';
-XOR         : '^';
-NOT         : '~';
+AND         : '&' | '∧';
+THEN        : '=>' | '→' | '⊃';
+IF          : '<=' | '←' | '⊂';
+IFF         : '<=>' | '↔';
+XOR         : '^' | '⊕';
+NOT         : '~' | '¬';
 QUESTION    : '?';
 COLON       : ':';
 
@@ -85,13 +87,14 @@ ADD         : '+';
 SUB         : '-';
 
 // Miscellaneous:
-IN          : 'in';
+IN          : 'in' | '∈';
 COMMA       : ',';
-DOTS        : '..';
+DOTS        : '...' | '…';
 
 // NOTE: This character is used both in intExpressions
 //       and as a binary boolean connective.
 BAR         : '|';
+fragment OR : BAR | '∨';
 
 // Variable prefixes:
 AT          : '@';
@@ -105,8 +108,8 @@ COMMENTS : ('/*' .*? '*/' | '//' ~'\n'* '\n') -> skip;
 CON : LOWER ALNUM*;
 
 // Variable terms and predicates:
-TVAR : DOLLAR UPPER ALNUM*;
-PVAR : AT UPPER ALNUM*;
+TVAR : DOLLAR ALNUM+;
+PVAR : AT ALNUM*;
 
 fragment DIGIT : '0' .. '9';
 fragment UPPER : 'A' .. 'Z';
