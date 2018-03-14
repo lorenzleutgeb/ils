@@ -1,4 +1,4 @@
-package it.unibz.stud_inf.ils.white.prisma.grounder.parser;
+package it.unibz.stud_inf.ils.white.prisma.grounder;
 
 import it.unibz.stud_inf.ils.white.prisma.grounder.IntExpression;
 import it.unibz.stud_inf.ils.white.prisma.grounder.Substitution;
@@ -11,17 +11,20 @@ public class IntNumberExpression extends IntExpression {
 	}
 
 	@Override
-	public IntExpression substitute(Substitution substitution) {
+	public IntNumberExpression ground(Substitution substitution) {
 		return this;
 	}
 
-	@Override
 	public boolean isGround() {
 		return true;
 	}
 
-	@Override
 	public int toInteger() {
 		return number;
+	}
+
+	@Override
+	public String toString() {
+		return String.valueOf(number);
 	}
 }

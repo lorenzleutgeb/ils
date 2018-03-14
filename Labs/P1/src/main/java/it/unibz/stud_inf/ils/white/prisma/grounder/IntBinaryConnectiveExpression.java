@@ -34,45 +34,37 @@ public class IntBinaryConnectiveExpression extends IntExpression {
 	}
 
 	public IntBinaryConnectiveExpression(IntExpression left, Connective connective, IntExpression right) {
+		if (left == null || connective == null || right == null) {
+			throw new NullPointerException();
+		}
+
 		this.left = left;
 		this.connective = connective;
 		this.right = right;
 	}
 
 	@Override
-	public boolean isGround() {
-		return left.isGround() && right.isGround();
-	}
+	public IntNumberExpression ground(Substitution substitution) {
+		int left = this.left.ground(substitution).toInteger();
+		int right = this.right.ground(substitution).toInteger();
 
-	@Override
-	public IntExpression substitute(Substitution substitution) {
-		if (isGround()) {
-			return this;
-		}
-
-		return new IntBinaryConnectiveExpression(
-			left.substitute(substitution),
-			connective,
-			right.substitute(substitution)
-		);
-	}
-
-	@Override
-	public int toInteger() {
-		int left = this.left.toInteger();
-		int right = this.right.toInteger();
 		switch (connective) {
 			case MUL:
-				return left * right;
+				return new IntNumberExpression(left * right);
 			case DIV:
-				return left / right;
+				return new IntNumberExpression(left / right);
 			case MOD:
-				return left % right;
+				return new IntNumberExpression(left % right);
 			case ADD:
-				return left + right;
+				return new IntNumberExpression(left + right);
 			case SUB:
-				return left - right;
+				return new IntNumberExpression(left - right);
 		}
 		throw new UnsupportedOperationException();
+	}
+
+	@Override
+	public String toString() {
+		return left + " " + connective + " " + right;
 	}
 }

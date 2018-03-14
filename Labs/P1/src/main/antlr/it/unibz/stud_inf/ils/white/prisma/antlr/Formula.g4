@@ -4,13 +4,14 @@ formula: expression+ EOF;
 
 expression
     : (TRUE | FALSE)                                                                           # booleanConstant
-    | predicate (PAREN_OPEN terms PAREN_CLOSE)?                                                # atom
+    | predicate (PAREN_OPEN args PAREN_CLOSE)?                                                # atom
     | PAREN_OPEN expression PAREN_CLOSE                                                        # parenthesizedExpression
     | NOT expression                                                                           # unary
     | condition = expression QUESTION truthy = expression COLON falsy = expression             # ternary
     | left = expression op = (AND | BAR | IF | IFF | THEN | XOR) right = expression            # binary
-    | quantifier = (EXISTS |FORALL) variable = TVAR IN range = termSet scope = expression      # termQuantification
-    | quantifier = (EXISTS |FORALL) variable = PVAR IN range = predicateSet scope = expression # predicateQuantification
+    | quantifier = (EXISTS |FORALL) variable = TVAR IN termSet scope = expression          # termQuantification
+    | quantifier = (EXISTS |FORALL) variable = IVAR IN intExpressionSet scope = expression # intExpressionQuantification
+    | quantifier = (EXISTS |FORALL) variable = PVAR IN predicateSet scope = expression     # predicateQuantification
     ;
 
 predicate
@@ -26,19 +27,31 @@ predicateSet
     : CURLY_OPEN predicates CURLY_CLOSE # predicateEnumeration
     ;
 
+arg
+    : term          # argTerm
+    | intExpression # argIntExpression
+    ;
+
+args
+    : arg (COMMA args)?
+    ;
+
 term
     : CON           # termConstant
     | TVAR          # termVariable
-    | intExpression # termIntExpression
     ;
 
-terms
-    : term (COMMA terms)?
+args
+    : term (COMMA args)?
     ;
 
 termSet
+    : CURLY_OPEN args CURLY_CLOSE                                                  # termEnumeration
+    ;
+
+intExpressionSet
     : SQUARE_OPEN minimum = intExpression DOTS maximum = intExpression SQUARE_CLOSE # intExpressionRange
-    | CURLY_OPEN terms CURLY_CLOSE                                                  # termEnumeration
+    | CURLY_OPEN intExpressions CURLY_CLOSE                                         # intExpressionEnumeration
     ;
 
 intExpression
@@ -46,8 +59,12 @@ intExpression
     | BAR intExpression BAR                                                         # absIntExpression
     | SUB intExpression                                                             # negIntExpression
     | left = intExpression op = (MUL | DIV | MOD | ADD | SUB) right = intExpression # binaryIntExpression
-    | variable = TVAR                                                               # varIntExpression
+    | variable = IVAR                                                               # varIntExpression
     | number = NUMBER                                                               # numIntExpression
+    ;
+
+intExpressions
+    : intExpression (COMMA intExpressions)?
     ;
 
 // Boolean constants:
@@ -99,17 +116,19 @@ fragment OR : BAR | '∨';
 // Variable prefixes:
 AT          : '@';
 DOLLAR      : '$';
+HASH        : '#';
 
 // Drop whitespaces and comments:
 WS       : [ \t\n\r]+ -> skip ;
 COMMENTS : ('/*' .*? '*/' | '//' ~'\n'* '\n') -> skip;
 
-// Constant terms and predicates:
+// Constant args and elements:
 CON : LOWER ALNUM*;
 
-// Variable terms and predicates:
+// Variable args and elements:
 TVAR : DOLLAR ALNUM+;
-PVAR : AT ALNUM*;
+PVAR : AT ALNUM+;
+IVAR : HASH ALNUM+;
 
 fragment DIGIT : '0' .. '9';
 fragment UPPER : 'A' .. 'Z';

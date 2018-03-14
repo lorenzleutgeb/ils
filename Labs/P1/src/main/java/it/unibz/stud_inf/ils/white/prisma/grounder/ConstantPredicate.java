@@ -16,7 +16,22 @@ public class ConstantPredicate extends Predicate {
 	}
 
 	@Override
-	public Predicate substitute(Substitution substitution) {
+	public Predicate ground(Substitution substitution) {
 		return this;
+	}
+
+	@Override
+	public boolean equals(Object o) {
+		if (this == o) return true;
+		if (o == null || getClass() != o.getClass()) return false;
+
+		ConstantPredicate that = (ConstantPredicate) o;
+
+		return raw.equals(that.raw);
+	}
+
+	@Override
+	public int hashCode() {
+		return raw.hashCode();
 	}
 }

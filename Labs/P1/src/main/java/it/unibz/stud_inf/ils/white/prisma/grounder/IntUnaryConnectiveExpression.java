@@ -28,30 +28,16 @@ public class IntUnaryConnectiveExpression extends IntExpression {
 	}
 
 	@Override
-	public IntExpression substitute(Substitution substitution) {
-		if (isGround()) {
-			return this;
-		}
-		return new IntUnaryConnectiveExpression(
-			connective,
-			subExpression.substitute(substitution)
-		);
-	}
+	public IntNumberExpression ground(Substitution substitution) {
+		int x = subExpression.ground(substitution).toInteger();
 
-	@Override
-	public boolean isGround() {
-		return subExpression.isGround();
-	}
-
-	@Override
-	public int toInteger() {
-		int x = subExpression.toInteger();
 		switch (connective) {
 			case ABS:
-				return abs(x);
+				x = abs(x);
 			case NEG:
-				return -x;
+				x = -x;
 		}
-		throw new UnsupportedOperationException();
+
+		return new IntNumberExpression(x);
 	}
 }

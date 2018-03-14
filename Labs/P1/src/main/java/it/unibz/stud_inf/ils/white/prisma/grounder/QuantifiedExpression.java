@@ -1,6 +1,11 @@
 package it.unibz.stud_inf.ils.white.prisma.grounder;
 
-import java.util.Collections;
+import java.util.stream.Collectors;
+
+import static it.unibz.stud_inf.ils.white.prisma.grounder.BinaryConnectiveExpression.Connective.AND;
+import static it.unibz.stud_inf.ils.white.prisma.grounder.BinaryConnectiveExpression.Connective.OR;
+import static it.unibz.stud_inf.ils.white.prisma.grounder.Quantifier.FORALL;
+import static java.util.Collections.emptyList;
 
 public class QuantifiedExpression<T> extends Expression {
 	private final Quantifier quantifier;
@@ -8,7 +13,7 @@ public class QuantifiedExpression<T> extends Expression {
 	private final Domain<T> domain;
 	private final Expression subExpression;
 
-	public QuantifiedExpression(Quantifier quantifier, VariablePredicate variable, Domain<T> domain, Expression subExpression) {
+	public QuantifiedExpression(Quantifier quantifier, Variable<T> variable, Domain<T> domain, Expression subExpression) {
 		this.quantifier = quantifier;
 		this.variable = variable;
 		this.domain = domain;
@@ -21,26 +26,15 @@ public class QuantifiedExpression<T> extends Expression {
 	}
 
 	@Override
-	public Expression substitute(Substitution substitution) {
-		return new QuantifiedExpression<>(
-			quantifier,
-			variable,
-			domain.substitute(substitution),
-			subExpression.substitute(substitution)
-		);
-	}
+	public Expression ground(Substitution substitution) {
+		Expression acc = new Atom(quantifier.equals(FORALL) ? ConstantPredicate.TRUE : ConstantPredicate.FALSE, emptyList());
 
-	@Override
-	public Expression expand(Substitution substitution) {
-		Expression acc = new Atom(quantifier.equals(Quantifier.FORALL) ? ConstantPredicate.TRUE : ConstantPredicate.FALSE, Collections.emptyList());
-
-		for (T instance : domain.substitute(substitution)) {
-			Substitution clone = new Substitution(substitution);
-			clone.put(variable, instance);
+		for (T instance : domain.stream(substitution).collect(Collectors.toList())) {
+			substitution.put(variable, instance);
 			acc = new BinaryConnectiveExpression(
-				quantifier.equals(Quantifier.FORALL) ? BinaryConnectiveExpression.Connective.AND : BinaryConnectiveExpression.Connective.OR,
+				quantifier.equals(FORALL) ? AND : OR,
 				acc,
-				subExpression.expand(clone)
+				subExpression.ground(substitution)
 			);
 		}
 

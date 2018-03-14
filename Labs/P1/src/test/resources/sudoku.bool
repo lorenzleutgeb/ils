@@ -26,7 +26,7 @@
 (forall _i in {0..9}
 	(forall _d in {0..9}
 		(forall _j in {0..8}
-			(forall _j1 in {_j+1..9} (~v(_i,_j,_d) | ~v(_i,_j1,_d1))
+			(forall _j1 in {_j+1..9} (~v(_i,_j,_d) | ~v(_i,_j1,_d))
 			)
 		)
 	)
@@ -36,7 +36,7 @@
 (forall _j in {0..9}
 	(forall _d in {0..9}
 		(forall _i in {0..8}
-			(forall _i1 in {_i+1..9} (~v(_i,_j,_d) | ~v(_i1,_j,_d1))
+			(forall _i1 in {_i+1..9} (~v(_i,_j,_d) | ~v(_i1,_j,_d))
 			)
 		)
 	)

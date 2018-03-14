@@ -13,6 +13,27 @@ public class TernaryExpression extends Expression {
 
 	@Override
 	public String toString() {
-		return condition + " ? " + truthy + " : " + falsy;
+		return "(" + condition + " ? " + truthy + " : " + falsy + ")";
+	}
+
+	@Override
+	public Expression ground(Substitution substitution) {
+		Expression condition = this.condition.ground(substitution);
+		Expression truthy = this.truthy.ground(substitution);
+		Expression falsy = this.falsy.ground(substitution);
+
+		return new BinaryConnectiveExpression(
+			BinaryConnectiveExpression.Connective.AND,
+			new BinaryConnectiveExpression(
+				BinaryConnectiveExpression.Connective.OR,
+				new NegatedExpression(condition),
+				truthy
+			),
+			new BinaryConnectiveExpression(
+				BinaryConnectiveExpression.Connective.OR,
+				condition,
+				falsy
+			)
+		);
 	}
 }

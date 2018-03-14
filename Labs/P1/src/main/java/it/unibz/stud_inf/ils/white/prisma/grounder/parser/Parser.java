@@ -103,10 +103,10 @@ public class Parser {
 		public Expression visitPredicateQuantification(FormulaParser.PredicateQuantificationContext ctx) {
 			DomainVisitor visitor = new DomainVisitor();
 
-			return new QuantifiedExpression(
+			return new QuantifiedExpression<>(
 				Quantifier.valueOf(ctx.quantifier.getText().toUpperCase()),
-				new VariablePredicate(ctx.variable.getText().substring(1)),
-				visitor.visit(ctx.range),
+				new PredicateVariable(ctx.variable.getText().substring(1)),
+				(Domain<Predicate>) visitor.visit(ctx.predicateSet()),
 				visit(ctx.scope)
 			);
 		}
@@ -115,10 +115,22 @@ public class Parser {
 		public Expression visitTermQuantification(FormulaParser.TermQuantificationContext ctx) {
 			DomainVisitor visitor = new DomainVisitor();
 
-			return new QuantifiedExpression(
+			return new QuantifiedExpression<>(
 				Quantifier.valueOf(ctx.quantifier.getText().toUpperCase()),
-				new VariablePredicate(ctx.variable.getText().substring(1)),
-				visitor.visit(ctx.range),
+				new VariableTerm(ctx.variable.getText().substring(1)),
+				(Domain<ConstantTerm>) visitor.visit(ctx.termSet()),
+				visit(ctx.scope)
+			);
+		}
+
+		@Override
+		public Expression visitIntExpressionQuantification(FormulaParser.IntExpressionQuantificationContext ctx) {
+			DomainVisitor visitor = new DomainVisitor();
+
+			return new QuantifiedExpression<>(
+				Quantifier.valueOf(ctx.quantifier.getText().toUpperCase()),
+				new IntVariable(ctx.variable.getText().substring(1)),
+				(Domain<IntNumberExpression>) visitor.visit(ctx.intExpressionSet()),
 				visit(ctx.scope)
 			);
 		}
@@ -132,7 +144,7 @@ public class Parser {
 		public Expression visitAtom(FormulaParser.AtomContext ctx) {
 			return new Atom(
 				new ConstantPredicate(ctx.predicate().getText()),
-				wrap(ctx.terms())
+				wrap(ctx.args())
 			);
 		}
 
@@ -165,7 +177,7 @@ public class Parser {
 		public Domain visitIntExpressionRange(FormulaParser.IntExpressionRangeContext ctx) {
 			IntExpressionVisitor visitor = new IntExpressionVisitor();
 
-			return new IntegerDomain(
+			return new IntExpressionRange(
 				visitor.visit(ctx.minimum),
 				visitor.visit(ctx.maximum)
 			);
@@ -173,12 +185,31 @@ public class Parser {
 
 		@Override
 		public Domain visitTermEnumeration(FormulaParser.TermEnumerationContext ctx) {
-			return new TermDomain(wrap(ctx.terms()));
+			return new Enumeration<>(wrap(ctx.terms()));
 		}
 
 		@Override
 		public Domain visitPredicateEnumeration(FormulaParser.PredicateEnumerationContext ctx) {
-			return new PredicateDomain(wrap(ctx.predicates()));
+			return new Enumeration<>(wrap(ctx.predicates()));
+		}
+
+
+
+		@Override
+		public Domain visitIntExpressions(FormulaParser.IntExpressionsContext ctx) {
+			return new Enumeration<>(wrap(ctx.intExpressions()));
+		}
+	}
+
+	private static class PredicateVisitor extends FormulaBaseVisitor<Predicate> {
+		@Override
+		public Predicate visitPredicateConstant(FormulaParser.PredicateConstantContext ctx) {
+			return new ConstantPredicate(ctx.getText());
+		}
+
+		@Override
+		public Predicate visitPredicateVariable(FormulaParser.PredicateVariableContext ctx) {
+			return new PredicateVariable(ctx.getText());
 		}
 	}
 
@@ -190,13 +221,7 @@ public class Parser {
 
 		@Override
 		public Term visitTermVariable(FormulaParser.TermVariableContext ctx) {
-			return new VariableTerm(ctx.getText());
-		}
-
-		@Override
-		public Term visitTermIntExpression(FormulaParser.TermIntExpressionContext ctx) {
-			IntExpressionVisitor visitor = new IntExpressionVisitor();
-			return visitor.visit(ctx.intExpression());
+			return new VariableTerm(ctx.getText().substring(1));
 		}
 	}
 
@@ -229,6 +254,41 @@ public class Parser {
 		public IntExpression visitVarIntExpression(FormulaParser.VarIntExpressionContext ctx) {
 			return new IntVariable(ctx.variable.getText().substring(1));
 		}
+
+		@Override
+		public IntExpression visitParenthesizedIntExpression(FormulaParser.ParenthesizedIntExpressionContext ctx) {
+			return visit(ctx.intExpression());
+		}
+	}
+
+	private static class ArgVisitor extends FormulaBaseVisitor<Arg> {
+		@Override
+		public Arg visitArgTerm(FormulaParser.ArgTermContext ctx) {
+			TermVisitor visitor = new TermVisitor();
+			return visitor.visit(ctx.term());
+		}
+
+		@Override
+		public Arg visitArgIntExpression(FormulaParser.ArgIntExpressionContext ctx) {
+			IntExpressionVisitor visitor = new IntExpressionVisitor();
+			return visitor.visit(ctx.intExpression());
+		}
+	}
+
+	private static List<Arg> wrap(FormulaParser.ArgsContext ctx) {
+		if (ctx == null) {
+			return emptyList();
+		}
+
+		ArgVisitor visitor = new ArgVisitor();
+
+		final List<Arg> terms = new ArrayList<>();
+		do  {
+			FormulaParser.ArgContext arg = ctx.arg();
+			terms.add(visitor.visit(arg));
+		} while ((ctx = ctx.args()) != null);
+
+		return terms;
 	}
 
 	private static List<Term> wrap(FormulaParser.TermsContext ctx) {
@@ -247,17 +307,35 @@ public class Parser {
 		return terms;
 	}
 
-	private static List<ConstantPredicate> wrap(FormulaParser.PredicatesContext ctx) {
+	private static List<Predicate> wrap(FormulaParser.PredicatesContext ctx) {
 		if (ctx == null) {
 			return emptyList();
 		}
 
-		final List<ConstantPredicate> predicates = new ArrayList<>();
+		PredicateVisitor visitor = new PredicateVisitor();
+
+		final List<Predicate> preds = new ArrayList<>();
 		do  {
 			FormulaParser.PredicateContext predicate = ctx.predicate();
-			predicates.add(new ConstantPredicate(predicate.getText()));
+			preds.add(visitor.visit(predicate));
 		} while ((ctx = ctx.predicates()) != null);
 
-		return predicates;
+		return preds;
+	}
+
+	private static List<IntExpression> wrap(FormulaParser.IntExpressionsContext ctx) {
+		if (ctx == null) {
+			return emptyList();
+		}
+
+		IntExpressionVisitor visitor = new IntExpressionVisitor();
+
+		final List<IntExpression> ints = new ArrayList<>();
+		do  {
+			FormulaParser.IntExpressionContext predicate = ctx.intExpression();
+			ints.add(visitor.visit(predicate));
+		} while ((ctx = ctx.intExpressions()) != null);
+
+		return ints;
 	}
 }

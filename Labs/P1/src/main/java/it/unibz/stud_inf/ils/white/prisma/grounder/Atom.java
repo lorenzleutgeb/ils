@@ -1,32 +1,49 @@
 package it.unibz.stud_inf.ils.white.prisma.grounder;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 
 public class Atom extends Expression {
-	private final Predicate predicate;
-	private final List<Term> terms;
-	private final boolean ground;
+	public static final Atom TRUE = new Atom(ConstantPredicate.TRUE, Collections.emptyList());
+	public static final Atom FALSE = new Atom(ConstantPredicate.FALSE, Collections.emptyList());
 
-	public Atom(Predicate predicate, List<Term> terms) {
+	private final Predicate predicate;
+	private final List<Arg> args;
+
+	public Atom(Predicate predicate, List<Arg> args) {
 		this.predicate = predicate;
-		this.terms = terms;
-		this.ground = (predicate instanceof ConstantPredicate) && terms.stream().allMatch(Term::isGround);
+		this.args = args;
 	}
 
 	@Override
-	public Expression substitute(Substitution substitution) {
-		if (this.ground) {
-			return this;
-		}
-
+	public Expression ground(Substitution substitution) {
 		return new Atom(
-			predicate.substitute(substitution),
-			terms.stream().map(t -> t.substitute(substitution)).collect(Collectors.toList())
+			predicate.ground(substitution),
+			args.stream().map(t -> t.ground(substitution)).collect(Collectors.toList())
 		);
 	}
 
-	public boolean isGround() {
-		return ground;
+	@Override
+	public String toString() {
+		return predicate + "(" + args.stream().map(Object::toString).collect(Collectors.joining(",")) + ")";
+	}
+
+	@Override
+	public boolean equals(Object o) {
+		if (this == o) return true;
+		if (o == null || getClass() != o.getClass()) return false;
+
+		Atom atom = (Atom) o;
+
+		if (!predicate.equals(atom.predicate)) return false;
+		return args.equals(atom.args);
+	}
+
+	@Override
+	public int hashCode() {
+		int result = predicate.hashCode();
+		result = 31 * result + args.hashCode();
+		return result;
 	}
 }
