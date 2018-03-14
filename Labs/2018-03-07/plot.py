@@ -43,7 +43,7 @@ for setup in setups:
 
     # Combined plots (decisions/time):
     f = plt.figure()
-    plt.title('Hardness\n($k = {}$, 100 experiments per dot)'.format(k))
+    plt.title('Hardness\n($k = {}$, {} experiments per dot)'.format(k, m))
     ax1 = plt.axes()
     ax1.set_xlabel('$r = \\frac{l}{n}$')
     ax1.set_autoscaley_on(True)
