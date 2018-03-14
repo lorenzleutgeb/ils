@@ -41,12 +41,12 @@ term
     | TVAR          # termVariable
     ;
 
-args
-    : term (COMMA args)?
+terms
+    : term (COMMA terms)?
     ;
 
 termSet
-    : CURLY_OPEN args CURLY_CLOSE                                                  # termEnumeration
+    : CURLY_OPEN terms CURLY_CLOSE                                                  # termEnumeration
     ;
 
 intExpressionSet
