@@ -49,6 +49,16 @@ public class CNF {
 		return variable;
 	}
 
+	public Integer shallowComputeIfAbsent(Expression expression) {
+		Integer variable = get(expression);
+		if (variable == null) {
+			variable = maxVariable++;
+			put(expression, variable);
+			return variable;
+		}
+		return variable;
+	}
+
 	public IVec<IVecInt> getClauses() {
 		return clauses;
 	}

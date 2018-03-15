@@ -141,6 +141,39 @@ public class MultaryConnectiveExpression extends Expression {
 		);
 	}
 
+	public CNF normalizeFast() {
+		if (!Connective.AND.equals(connective)) {
+			return null;
+		}
+		CNF cnf = new CNF();
+		for (Expression e : expressions) {
+			if ((e instanceof MultaryConnectiveExpression)) {
+				MultaryConnectiveExpression clause = (MultaryConnectiveExpression) e;
+				int[] cnfClause = new int[clause.expressions.size()];
+				for (int i = 0; i < clause.expressions.size(); i++) {
+					Expression it = clause.expressions.get(i);
+					if (it instanceof Atom) {
+						int variable = cnf.shallowComputeIfAbsent(it);
+						cnfClause[i] = variable;
+					} else if (it instanceof NegatedExpression) {
+						int variable = cnf.shallowComputeIfAbsent(((NegatedExpression) it).getAtom());
+						cnfClause[i] = -variable;
+					} else {
+						return null;
+					}
+				}
+				cnf.add(cnfClause);
+			} else if (e instanceof Atom) {
+				cnf.add(cnf.shallowComputeIfAbsent(e));
+			} else if (e instanceof NegatedExpression) {
+				cnf.add(-cnf.shallowComputeIfAbsent(((NegatedExpression) e).getAtom()));
+			} else {
+				return null;
+			}
+		}
+		return cnf;
+	}
+
 	public enum Connective {
 		THEN("=>"),
 		IFF("<=>"),

@@ -54,4 +54,11 @@ public class NegatedExpression extends Expression {
 	public Expression deMorgan() {
 		return subExpression;
 	}
+
+	public Atom getAtom() {
+		if (!(subExpression instanceof Atom)) {
+			return null;
+		}
+		return (Atom)subExpression;
+	}
 }
