@@ -19,8 +19,14 @@ public class MultaryConnectiveExpression extends Expression {
 		if (expressions.stream().anyMatch(Objects::isNull)) {
 			throw new NullPointerException();
 		}
+		if (expressions.stream().allMatch(e -> {
+			return (e instanceof MultaryConnectiveExpression) && ((MultaryConnectiveExpression)e).connective.equals(connective);
+		})) {
+			this.expressions = expressions.stream().flatMap(e -> ((MultaryConnectiveExpression)e).expressions.stream()).collect(Collectors.toList());
+		} else {
+			this.expressions = expressions;
+		}
 		this.connective = connective;
-		this.expressions = expressions;
 	}
 
 	public MultaryConnectiveExpression(Connective connective, Expression... expressions) {

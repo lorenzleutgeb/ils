@@ -47,7 +47,7 @@ public class NegatedExpression extends Expression {
 			throw new IllegalStateException("Formula must be in negation normal form.");
 		}
 
-		return -cnf.computeIfAbsent(subExpression);;
+		return -cnf.computeIfAbsent(subExpression);
 	}
 
 	@Override
