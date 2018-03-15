@@ -1,9 +1,7 @@
 package it.unibz.stud_inf.ils.white.prisma;
 
-import it.unibz.stud_inf.ils.white.prisma.ast.Atom;
 import it.unibz.stud_inf.ils.white.prisma.ast.Expression;
 import it.unibz.stud_inf.ils.white.prisma.ast.Formula;
-import it.unibz.stud_inf.ils.white.prisma.ast.IntNumberExpression;
 import it.unibz.stud_inf.ils.white.prisma.parser.Parser;
 import org.antlr.v4.runtime.CharStreams;
 import org.junit.jupiter.api.Test;
@@ -11,11 +9,7 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
 import java.io.IOException;
-import java.util.Arrays;
 import java.util.Collections;
-import java.util.Set;
-
-import static it.unibz.stud_inf.ils.white.prisma.Util.SET_COLLECTOR;
 
 class Tests {
 	@ParameterizedTest
@@ -45,10 +39,10 @@ class Tests {
 		Formula f = Parser.parse(formula);
 		System.out.println("f:" + f);
 		Expression ground = f.ground();
-		CNF cnf = ground.initialize();
+		CNF cnf = ground.normalize();
 		System.out.println("c:" + cnf.getStats());
 		cnf.printTo(System.out);
-		System.out.println("m:" + models(f));
+		cnf.printModelsTo(System.out);
 	}
 
 	@ParameterizedTest
@@ -67,23 +61,10 @@ class Tests {
 		System.out.println("f:" + f);
 		Expression ground = f.ground();
 		System.out.println("g:" + ground);
-		CNF cnf = ground.initialize();
+		CNF cnf = ground.normalize();
 		System.out.println("c:" + cnf.getStats());
 		cnf.printTo(System.out);
-		System.out.println("m:" + models(f));
-	}
-
-	private static String models(Formula f) {
-		return f.models(Long.MAX_VALUE)
-			.stream()
-			.map(
-				m -> m.stream().map(Object::toString).collect(SET_COLLECTOR)
-			)
-			.collect(SET_COLLECTOR);
-	}
-
-	private static String model(Formula f) {
-		return f.model().stream().map(Object::toString).collect(SET_COLLECTOR);
+		cnf.printModelTo(System.out);
 	}
 
 	@Test
@@ -102,25 +83,7 @@ class Tests {
 	@Test
 	void sudoku() throws IOException {
 		Formula f = Parser.parse(CharStreams.fromStream(this.getClass().getResourceAsStream("/sudoku.bool")));
-
-		int[][] solution = new int[9][9];
-
-		CNF cnf = f.ground().initialize();
-
+		CNF cnf = f.ground().normalize();
 		System.out.println(cnf.getStats());
-
-		Set<Atom> model = cnf.model();
-
-		for (Atom a : model) {
-			int row = ((IntNumberExpression)a.getArgs().get(0)).toInteger();
-			int col = ((IntNumberExpression)a.getArgs().get(1)).toInteger();
-			int val = ((IntNumberExpression)a.getArgs().get(2)).toInteger();
-
-			solution[row][col] = val + 1;
-		}
-
-		for (int[] row : solution) {
-			System.out.println(Arrays.toString(row));
-		}
 	}
 }

@@ -19,7 +19,7 @@ public abstract class Expression implements Groundable<Expression, Expression> {
 
 	public abstract Integer normalize(CNF cnf);
 
-	public CNF initialize() {
+	public CNF normalize() {
 		// Are we already in CNF by chance?
 		CNF cnf = normalizeFast(this);
 

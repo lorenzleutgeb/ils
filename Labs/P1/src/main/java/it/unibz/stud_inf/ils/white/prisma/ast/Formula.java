@@ -1,5 +1,6 @@
 package it.unibz.stud_inf.ils.white.prisma.ast;
 
+import it.unibz.stud_inf.ils.white.prisma.CNF;
 import it.unibz.stud_inf.ils.white.prisma.Groundable;
 import it.unibz.stud_inf.ils.white.prisma.IntIdGenerator;
 import it.unibz.stud_inf.ils.white.prisma.Substitution;
@@ -41,12 +42,8 @@ public class Formula implements Iterable<Expression>, Groundable<Expression,Form
 		);
 	}
 
-	public Set<Atom> model() {
-		return ground().initialize().model();
-	}
-
-	public List<Set<Atom>> models(long n) {
-		return ground().initialize().models(n);
+	public CNF normalize() {
+		return ground().normalize();
 	}
 
 	@Override
