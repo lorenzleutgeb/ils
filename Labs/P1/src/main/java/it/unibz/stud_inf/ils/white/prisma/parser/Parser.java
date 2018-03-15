@@ -145,8 +145,9 @@ public class Parser {
 
 		@Override
 		public Expression visitAtom(FormulaParser.AtomContext ctx) {
+			PredicateVisitor visitor = new PredicateVisitor();
 			return new Atom(
-				new ConstantPredicate(ctx.predicate().getText()),
+				visitor.visit(ctx.predicate()),
 				wrap(ctx.args())
 			);
 		}
@@ -223,7 +224,7 @@ public class Parser {
 
 		@Override
 		public Predicate visitPredicateVariable(FormulaParser.PredicateVariableContext ctx) {
-			return new PredicateVariable(ctx.getText());
+			return new PredicateVariable(ctx.getText().substring(1));
 		}
 	}
 
