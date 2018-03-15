@@ -33,9 +33,9 @@ public class CNF {
 	}
 
 	public Integer put(Expression expression, Integer variable) {
-		if (variable <= 0) {
-			throw new IllegalArgumentException("variable must be positive non-zero integer");
-		}
+		//if (variable <= 0) {
+		//	throw new IllegalArgumentException("variable must be positive non-zero integer");
+		//}
 		return map.put(expression, variable);
 	}
 
@@ -85,7 +85,7 @@ public class CNF {
 				out.println("c " + entry.getKey() + " " + entry.getValue());
 			}
 		}
-		out.println("p cnf " + maxVariable + " " + clauses.size());
+		out.println("p cnf " + getStats());
 		for (int i = 0; i < clauses.size(); i++) {
 			IVecInt clause = clauses.get(i);
 			for (int j = 0; j < clause.size(); j++) {
@@ -184,7 +184,7 @@ public class CNF {
 	}
 
 	public String getStats() {
-		return maxVariable + " " + clauses.size();
+		return (maxVariable - 1) + " " + clauses.size();
 	}
 
 	private static boolean filter(Expression e) {

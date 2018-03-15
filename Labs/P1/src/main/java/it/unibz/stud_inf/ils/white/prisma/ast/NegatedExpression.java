@@ -17,11 +17,13 @@ public class NegatedExpression extends Expression {
 
 	@Override
 	public Expression ground(Substitution substitution) {
-		return new NegatedExpression(subExpression.ground(substitution));
-	}
-
-	public Expression getSubExpression() {
-		return subExpression;
+		if (subExpression instanceof NegatedExpression) {
+			return ((NegatedExpression)subExpression).subExpression.ground(substitution);
+		}
+		if (subExpression instanceof Atom) {
+			return new NegatedExpression(subExpression.ground(substitution));
+		}
+		return subExpression.ground(substitution).deMorgan();
 	}
 
 	@Override
@@ -41,12 +43,15 @@ public class NegatedExpression extends Expression {
 
 	@Override
 	public Integer normalize(CNF cnf) {
-		Integer child = cnf.computeIfAbsent(getSubExpression());
-		Integer self = cnf.put(this);
+		if (!(subExpression instanceof Atom)) {
+			throw new IllegalStateException("Formula must be in negation normal form.");
+		}
 
-		cnf.add(self, child);
-		cnf.add(-self, -child);
+		return -cnf.computeIfAbsent(subExpression);;
+	}
 
-		return self;
+	@Override
+	public Expression deMorgan() {
+		return subExpression;
 	}
 }

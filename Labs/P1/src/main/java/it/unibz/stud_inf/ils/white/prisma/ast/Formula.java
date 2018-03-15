@@ -26,6 +26,14 @@ public class Formula implements Iterable<Expression>, Groundable<Expression> {
 	}
 
 	public Expression ground(Substitution substitution) {
+		if (expressions.isEmpty()) {
+			return Atom.TRUE;
+		}
+
+		if (expressions.size() == 1) {
+			return expressions.get(0).ground(substitution);
+		}
+
 		return new MultaryConnectiveExpression(
 			MultaryConnectiveExpression.Connective.AND,
 			expressions.stream().map(e -> e.ground(substitution)).collect(Collectors.toList())

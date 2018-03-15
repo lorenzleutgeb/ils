@@ -4,7 +4,9 @@ import it.unibz.stud_inf.ils.white.prisma.CNF;
 import it.unibz.stud_inf.ils.white.prisma.Substitution;
 
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
 import static java.util.stream.Collectors.joining;
@@ -14,6 +16,9 @@ public class MultaryConnectiveExpression extends Expression {
 	private final List<Expression> expressions;
 
 	public MultaryConnectiveExpression(Connective connective, List<Expression> expressions) {
+		if (expressions.stream().anyMatch(Objects::isNull)) {
+			throw new NullPointerException();
+		}
 		this.connective = connective;
 		this.expressions = expressions;
 	}
@@ -24,6 +29,9 @@ public class MultaryConnectiveExpression extends Expression {
 		}
 		this.connective = connective;
 		this.expressions = Arrays.asList(expressions);
+		if (this.expressions.stream().anyMatch(Objects::isNull)) {
+			throw new NullPointerException();
+		}
 	}
 
 	@Override
@@ -117,6 +125,14 @@ public class MultaryConnectiveExpression extends Expression {
 		}
 
 		return self;
+	}
+
+	@Override
+	public Expression deMorgan() {
+		return new MultaryConnectiveExpression(
+			Connective.AND.equals(connective) ? Connective.OR : Connective.AND,
+			expressions.stream().map(Expression::deMorgan).collect(Collectors.toList())
+		);
 	}
 
 	public enum Connective {

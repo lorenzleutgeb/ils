@@ -44,4 +44,9 @@ public class TernaryExpression extends Expression {
 	public Integer normalize(CNF cnf) {
 		throw new IllegalStateException();
 	}
+
+	@Override
+	public Expression deMorgan() {
+		throw new UnsupportedOperationException();
+	}
 }

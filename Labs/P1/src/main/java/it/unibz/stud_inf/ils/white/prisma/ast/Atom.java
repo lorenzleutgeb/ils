@@ -58,6 +58,11 @@ public class Atom extends Expression {
 		return cnf.put(this);
 	}
 
+	@Override
+	public Expression deMorgan() {
+		return new NegatedExpression(this);
+	}
+
 	public List<Arg> getArgs() {
 		return args;
 	}

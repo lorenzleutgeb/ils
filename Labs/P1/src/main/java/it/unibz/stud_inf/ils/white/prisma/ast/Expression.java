@@ -40,4 +40,6 @@ public abstract class Expression implements Groundable<Expression> {
 
 		return cnf;
 	}
+
+	public abstract Expression deMorgan();
 }
