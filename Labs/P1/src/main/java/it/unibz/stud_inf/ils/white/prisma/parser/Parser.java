@@ -173,6 +173,17 @@ public class Parser {
 				visit(ctx.falsy)
 			);
 		}
+
+		@Override
+		public Expression visitBooleanConstant(FormulaParser.BooleanConstantContext ctx) {
+			if (ctx.TRUE() != null) {
+				return Atom.TRUE;
+			}
+			if (ctx.FALSE() != null) {
+				return Atom.FALSE;
+			}
+			return null;
+		}
 	}
 
 	private static class DomainVisitor extends FormulaBaseVisitor<Domain> {
