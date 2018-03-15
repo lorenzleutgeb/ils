@@ -3,12 +3,13 @@ package it.unibz.stud_inf.ils.white.prisma.ast;
 import it.unibz.stud_inf.ils.white.prisma.CNF;
 import it.unibz.stud_inf.ils.white.prisma.Substitution;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.stream.Collectors;
 
-import static it.unibz.stud_inf.ils.white.prisma.ast.BinaryConnectiveExpression.Connective.AND;
-import static it.unibz.stud_inf.ils.white.prisma.ast.BinaryConnectiveExpression.Connective.OR;
+import static it.unibz.stud_inf.ils.white.prisma.ast.MultaryConnectiveExpression.Connective.AND;
+import static it.unibz.stud_inf.ils.white.prisma.ast.MultaryConnectiveExpression.Connective.OR;
 import static it.unibz.stud_inf.ils.white.prisma.ast.Quantifier.FORALL;
-import static java.util.Collections.emptyList;
 
 public class QuantifiedExpression<T> extends Expression {
 	private final Quantifier quantifier;
@@ -30,18 +31,16 @@ public class QuantifiedExpression<T> extends Expression {
 
 	@Override
 	public Expression ground(Substitution substitution) {
-		Expression acc = new Atom(quantifier.equals(FORALL) ? ConstantPredicate.TRUE : ConstantPredicate.FALSE, emptyList());
-
+		List<Expression> instances = new ArrayList<>(/*domain.size()*/);
 		for (T instance : domain.stream(substitution).collect(Collectors.toList())) {
 			substitution.put(variable, instance);
-			acc = new BinaryConnectiveExpression(
-				quantifier.equals(FORALL) ? AND : OR,
-				acc,
-				subExpression.ground(substitution)
-			);
+			instances.add(subExpression.ground(substitution));
 		}
 
-		return acc;
+		return new MultaryConnectiveExpression(
+			quantifier.equals(FORALL) ? AND : OR,
+			instances
+		);
 	}
 
 	@Override

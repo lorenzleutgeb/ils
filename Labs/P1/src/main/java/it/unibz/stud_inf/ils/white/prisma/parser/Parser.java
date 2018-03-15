@@ -158,8 +158,8 @@ public class Parser {
 
 		@Override
 		public Expression visitBinary(FormulaParser.BinaryContext ctx) {
-			return new BinaryConnectiveExpression(
-				BinaryConnectiveExpression.Connective.fromOperator(ctx.op.getText()),
+			return new MultaryConnectiveExpression(
+				MultaryConnectiveExpression.Connective.fromOperator(ctx.op.getText()),
 				visit(ctx.left),
 				visit(ctx.right)
 			);

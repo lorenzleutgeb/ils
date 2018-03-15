@@ -79,7 +79,11 @@ class Tests {
 
 		int[][] solution = new int[9][9];
 
-		Set<Atom> model = f.ground().initialize().model();
+		CNF cnf = f.ground().initialize();
+
+		System.out.println(cnf.getStats());
+
+		Set<Atom> model = cnf.model();
 
 		for (Atom a : model) {
 			int row = ((IntNumberExpression)a.getArgs().get(0)).toInteger();

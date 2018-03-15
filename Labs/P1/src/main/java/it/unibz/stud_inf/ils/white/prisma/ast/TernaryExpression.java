@@ -25,15 +25,15 @@ public class TernaryExpression extends Expression {
 		Expression truthy = this.truthy.ground(substitution);
 		Expression falsy = this.falsy.ground(substitution);
 
-		return new BinaryConnectiveExpression(
-			BinaryConnectiveExpression.Connective.AND,
-			new BinaryConnectiveExpression(
-				BinaryConnectiveExpression.Connective.OR,
+		return new MultaryConnectiveExpression(
+			MultaryConnectiveExpression.Connective.AND,
+			new MultaryConnectiveExpression(
+				MultaryConnectiveExpression.Connective.OR,
 				new NegatedExpression(condition),
 				truthy
 			),
-			new BinaryConnectiveExpression(
-				BinaryConnectiveExpression.Connective.OR,
+			new MultaryConnectiveExpression(
+				MultaryConnectiveExpression.Connective.OR,
 				condition,
 				falsy
 			)

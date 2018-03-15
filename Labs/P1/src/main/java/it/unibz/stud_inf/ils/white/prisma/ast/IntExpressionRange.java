@@ -23,6 +23,11 @@ public class IntExpressionRange extends Domain<IntNumberExpression> {
 	}
 
 	@Override
+	public int size() {
+		throw new UnsupportedOperationException();
+	}
+
+	@Override
 	public String toString() {
 		return "[" + min + "..." + max + "]";
 	}

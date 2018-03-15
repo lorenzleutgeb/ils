@@ -183,6 +183,10 @@ public class CNF {
 		throw new RuntimeException("How did I get here?");
 	}
 
+	public String getStats() {
+		return maxVariable + " " + clauses.size();
+	}
+
 	private static boolean filter(Expression e) {
 		return e instanceof Atom && !Atom.TRUE.equals(e) && !Atom.FALSE.equals(e);
 	}

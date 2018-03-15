@@ -2,10 +2,9 @@ package it.unibz.stud_inf.ils.white.prisma.ast;
 
 import it.unibz.stud_inf.ils.white.prisma.CNF;
 import it.unibz.stud_inf.ils.white.prisma.Groundable;
-import it.unibz.stud_inf.ils.white.prisma.Substitution;
 
 public abstract class Expression implements Groundable<Expression> {
-	public Expression compress(Expression left, BinaryConnectiveExpression.Connective connective, Expression right) {
+	public Expression compress(Expression left, MultaryConnectiveExpression.Connective connective, Expression right) {
 		// This should implement some basic compression of the AST. For example,
 		// a | ~a  ->  true
 		// a & ~a  ->  false
@@ -20,11 +19,9 @@ public abstract class Expression implements Groundable<Expression> {
 	public CNF initialize() {
 		CNF cnf = new CNF();
 
-		// TODO: Are we grounding twice?
-		Expression ground = ground(new Substitution());
-
-		Integer root = ground.normalize(cnf);
-		cnf.put(ground, root);
+		// Assumption: Expression is ground!
+		Integer root = normalize(cnf);
+		cnf.put(this, root);
 
 		// Ensure that the formula itself is true in every model.
 		cnf.add(root);

@@ -20,6 +20,11 @@ public class Enumeration<U extends Groundable<T>, T> extends Domain<T> {
 	}
 
 	@Override
+	public int size() {
+		return elements.size();
+	}
+
+	@Override
 	public String toString() {
 		return elements.stream().map(Object::toString).collect(Collectors.joining(", ", "{", "}"));
 	}

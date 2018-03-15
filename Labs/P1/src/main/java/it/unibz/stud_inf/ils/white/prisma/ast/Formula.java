@@ -8,9 +8,6 @@ import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import static it.unibz.stud_inf.ils.white.prisma.ast.BinaryConnectiveExpression.Connective.AND;
-import static java.util.Collections.emptyList;
-
 public class Formula implements Iterable<Expression>, Groundable<Expression> {
 	private final List<Expression> expressions;
 
@@ -29,17 +26,10 @@ public class Formula implements Iterable<Expression>, Groundable<Expression> {
 	}
 
 	public Expression ground(Substitution substitution) {
-		Expression acc = new Atom(ConstantPredicate.TRUE, emptyList());
-
-		for (Expression e : expressions) {
-			acc = new BinaryConnectiveExpression(
-				AND,
-				acc,
-				e.ground(substitution)
-			);
-		}
-
-		return acc;
+		return new MultaryConnectiveExpression(
+			MultaryConnectiveExpression.Connective.AND,
+			expressions.stream().map(e -> e.ground(substitution)).collect(Collectors.toList())
+		);
 	}
 
 	public Set<Atom> model() {
