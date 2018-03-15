@@ -39,6 +39,10 @@ public class PredicateVariable extends Predicate implements Variable<Predicate> 
 
 	@Override
 	public Predicate standardize(Map<Variable, Integer> map, IntIdGenerator generator) {
-		return new PredicateVariable("v" + map.get(this));
+		Integer id = map.get(this);
+		if (id == null) {
+			throw new RuntimeException("Free variable: "+ this);
+		}
+		return new PredicateVariable("v" + id);
 	}
 }

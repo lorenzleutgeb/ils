@@ -43,7 +43,7 @@ public class CNF {
 	public Integer computeIfAbsent(Expression expression) {
 		Integer variable = get(expression);
 		if (variable == null) {
-			variable = expression.normalize(this);
+			variable = expression.tseitin(this);
 			put(expression, variable);
 			return variable;
 		}

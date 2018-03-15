@@ -79,7 +79,7 @@ public class Main {
 
 		CharStream inputStream = CharStreams.fromFileName(commandLine.getOptionValue(OPT_INPUT));
 		Formula formula = Parser.parse(inputStream);
-		CNF cnf = formula.ground().normalize();
+		CNF cnf = formula.ground().tseitin();
 
 		try (FileOutputStream fos = new FileOutputStream(commandLine.getOptionValue(OPT_OUTPUT))) {
 			PrintStream ps = new PrintStream(fos);

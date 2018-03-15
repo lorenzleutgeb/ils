@@ -19,18 +19,32 @@ public class QuantifiedExpression<T> extends Expression {
 	private final Quantifier quantifier;
 	private final Variable<T> variable;
 	private final Domain<T> domain;
-	private final Expression subExpression;
 
-	public QuantifiedExpression(Quantifier quantifier, Variable<T> variable, Domain<T> domain, Expression subExpression) {
+	public Expression getScope() {
+		return scope;
+	}
+
+	private final Expression scope;
+
+	public QuantifiedExpression(Quantifier quantifier, Variable<T> variable, Domain<T> domain, Expression scope) {
 		this.quantifier = quantifier;
 		this.variable = variable;
 		this.domain = domain;
-		this.subExpression = subExpression;
+		this.scope = scope;
+	}
+
+	public QuantifiedExpression<T> switchScope(Expression scope) {
+		return new QuantifiedExpression<>(
+			quantifier,
+			variable,
+			domain,
+			scope
+		);
 	}
 
 	@Override
 	public String toString() {
-		return quantifier.toString().toLowerCase() + " " + variable + " in " + domain + " " + subExpression;
+		return quantifier.toString().toLowerCase() + " " + variable + " in " + domain + " " + scope;
 	}
 
 	@Override
@@ -38,7 +52,7 @@ public class QuantifiedExpression<T> extends Expression {
 		List<Expression> instances = new ArrayList<>(/*domain.size()*/);
 		for (T instance : domain.stream(substitution).collect(Collectors.toList())) {
 			substitution.put(variable, instance);
-			instances.add(subExpression.ground(substitution));
+			instances.add(scope.ground(substitution));
 		}
 
 		return new MultaryConnectiveExpression(
@@ -57,17 +71,32 @@ public class QuantifiedExpression<T> extends Expression {
 			quantifier,
 			variable,
 			domain.standardize(subMap, generator),
-			subExpression.standardize(subMap, generator)
+			scope.standardize(subMap, generator)
 		);
 	}
 
 	@Override
-	public Integer normalize(CNF cnf) {
+	public Expression prenex() {
+		return switchScope(scope.prenex());
+	}
+
+	@Override
+	public Integer tseitin(CNF cnf) {
 		throw new IllegalStateException();
 	}
 
 	@Override
 	public Expression deMorgan() {
-		throw new UnsupportedOperationException();
+		return new QuantifiedExpression<>(
+			quantifier.flip(),
+			variable,
+			domain,
+			scope.deMorgan()
+		);
+	}
+
+	@Override
+	public Expression normalize() {
+		return switchScope(scope.normalize());
 	}
 }

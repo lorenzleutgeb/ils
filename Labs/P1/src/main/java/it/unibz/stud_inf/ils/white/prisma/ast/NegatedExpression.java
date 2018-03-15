@@ -20,13 +20,7 @@ public class NegatedExpression extends Expression {
 
 	@Override
 	public Expression ground(Substitution substitution) {
-		if (subExpression instanceof NegatedExpression) {
-			return ((NegatedExpression)subExpression).subExpression.ground(substitution);
-		}
-		if (subExpression instanceof Atom) {
-			return new NegatedExpression(subExpression.ground(substitution));
-		}
-		return subExpression.ground(substitution).deMorgan();
+		return new NegatedExpression(subExpression.ground(substitution));
 	}
 
 	@Override
@@ -45,12 +39,23 @@ public class NegatedExpression extends Expression {
 	}
 
 	@Override
-	public Integer normalize(CNF cnf) {
+	public Integer tseitin(CNF cnf) {
 		if (!(subExpression instanceof Atom)) {
 			throw new IllegalStateException("Formula must be in negation normal form.");
 		}
 
 		return -cnf.computeIfAbsent(subExpression);
+	}
+
+	@Override
+	public Expression normalize() {
+		if (subExpression instanceof NegatedExpression) {
+			return ((NegatedExpression)subExpression).subExpression.normalize();
+		}
+		if (subExpression instanceof Atom) {
+			return new NegatedExpression(subExpression.normalize());
+		}
+		return subExpression.normalize().deMorgan();
 	}
 
 	@Override

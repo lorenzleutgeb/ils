@@ -38,7 +38,11 @@ public class IntVariable extends IntExpression implements Variable<IntNumberExpr
 	}
 
 	@Override
-	public IntVariable standardize(Map map, IntIdGenerator generator) {
-		return new IntVariable("v" + map.get(this));
+	public IntVariable standardize(Map<Variable, Integer> map, IntIdGenerator generator) {
+		Integer id = map.get(this);
+		if (id == null) {
+			throw new RuntimeException("Free variable: "+ this);
+		}
+		return new IntVariable("v" + id);
 	}
 }

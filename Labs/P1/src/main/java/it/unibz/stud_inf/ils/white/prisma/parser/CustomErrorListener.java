@@ -27,6 +27,9 @@ public class CustomErrorListener extends BaseErrorListener {
 	}
 
 	public IOException getIOException() {
+		if (recognitionExceptions.isEmpty()) {
+			return null;
+		}
 		return new IOException(
 			"Could not parse formula! \n" + String.join("\n", messages) + "\n",
 			recognitionExceptions.get(0)

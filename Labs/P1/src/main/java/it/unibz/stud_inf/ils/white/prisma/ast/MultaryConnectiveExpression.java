@@ -47,40 +47,86 @@ public class MultaryConnectiveExpression extends Expression {
 	}
 
 	@Override
-	public Expression ground(Substitution substitution) {
+	public Expression prenex() {
+		if (expressions.size() != 2 && (Connective.AND.equals(connective) || Connective.OR.equals(connective))) {
+			throw new UnsupportedOperationException();
+		}
+
+		Expression l = expressions.get(0).prenex();
+		Expression r = expressions.get(1).prenex();
+
+		boolean ql = l instanceof QuantifiedExpression;
+		boolean qr = r instanceof QuantifiedExpression;
+
+		if (qr == ql && !qr) {
+			return new MultaryConnectiveExpression(
+				connective,
+				l,
+				r
+			);
+		}
+
+		if (qr == ql && qr) {
+			QuantifiedExpression q1 = (QuantifiedExpression)l;
+			QuantifiedExpression q2 = (QuantifiedExpression)r;
+			return q1.switchScope(
+				q2.switchScope(
+					new MultaryConnectiveExpression(
+						connective,
+						q1.getScope(),
+						q2.getScope()
+					)
+				)
+			);
+		}
+
+		Expression e = qr ? l : r;
+		QuantifiedExpression q = (QuantifiedExpression)(ql ? l : r);
+
+		return q.switchScope(
+			new MultaryConnectiveExpression(
+				connective,
+				e,
+				q.getScope()
+			)
+		);
+	}
+
+	@Override
+	public Expression normalize() {
 		if (expressions.size() != 2) {
 			throw new UnsupportedOperationException();
 		}
 
-		Expression left = expressions.get(0).ground(substitution);
-		Expression right  = expressions.get(1).ground(substitution);
+		Expression left = expressions.get(0);
+		Expression right = expressions.get(1);
 
 		switch (this.connective) {
 			case THEN:
 				return new MultaryConnectiveExpression(
 					Connective.OR,
-					new NegatedExpression(left),
-					right
+					new NegatedExpression(left).normalize(),
+					right.normalize()
 				);
 			case IFF:
 				return new MultaryConnectiveExpression(
 					Connective.AND,
 					new MultaryConnectiveExpression(
 						Connective.OR,
-						new NegatedExpression(left),
-						right
+						new NegatedExpression(left).normalize(),
+						right.normalize()
 					),
 					new MultaryConnectiveExpression(
 						Connective.OR,
-						new NegatedExpression(right),
-						left
+						new NegatedExpression(right).normalize(),
+						left.normalize()
 					)
 				);
 			case IF:
 				return new MultaryConnectiveExpression(
 					Connective.OR,
-					left,
-					new NegatedExpression(right)
+					left.normalize(),
+					new NegatedExpression(right).normalize()
 				);
 			case XOR:
 				return new MultaryConnectiveExpression(
@@ -89,20 +135,28 @@ public class MultaryConnectiveExpression extends Expression {
 						Connective.OR,
 						left,
 						right
-					),
+					).normalize(),
 					new MultaryConnectiveExpression(
 						Connective.OR,
 						new NegatedExpression(right),
 						new NegatedExpression(left)
-					)
+					).normalize()
 				);
 		}
 
-		return new MultaryConnectiveExpression(connective, left, right);
+		return new MultaryConnectiveExpression(connective, left.normalize(), right.normalize());
 	}
 
 	@Override
-	public Integer normalize(CNF cnf) {
+	public Expression ground(Substitution substitution) {
+		return new MultaryConnectiveExpression(
+			connective,
+			expressions.stream().map(e -> e.ground(substitution)).collect(Collectors.toList())
+		);
+	}
+
+	@Override
+	public Integer tseitin(CNF cnf) {
 		if (!connective.equals(Connective.OR) && !connective.equals(Connective.AND)) {
 			throw new IllegalStateException();
 		}
@@ -139,7 +193,7 @@ public class MultaryConnectiveExpression extends Expression {
 		);
 	}
 
-	public CNF normalizeFast() {
+	public CNF tseitinFast() {
 		if (Connective.OR.equals(connective)) {
 			CNF cnf = new CNF();
 			int[] cnfClause = new int[expressions.size()];

@@ -2,9 +2,6 @@ package it.unibz.stud_inf.ils.white.prisma.ast;
 
 import it.unibz.stud_inf.ils.white.prisma.CNF;
 import it.unibz.stud_inf.ils.white.prisma.Groundable;
-import it.unibz.stud_inf.ils.white.prisma.IntIdGenerator;
-
-import java.util.Map;
 
 public abstract class Expression implements Groundable<Expression, Expression> {
 	public Expression compress(Expression left, MultaryConnectiveExpression.Connective connective, Expression right) {
@@ -17,18 +14,30 @@ public abstract class Expression implements Groundable<Expression, Expression> {
 		throw new UnsupportedOperationException("Not implemented.");
 	}
 
-	public abstract Integer normalize(CNF cnf);
+	public Expression normalize() {
+		return this;
+	}
 
-	public CNF normalize() {
+	public Expression deMorgan() {
+		return this;
+	}
+
+	public Expression prenex() {
+		return this;
+	}
+
+	public abstract Integer tseitin(CNF cnf);
+
+	public CNF tseitin() {
 		// Are we already in CNF by chance?
-		CNF cnf = normalizeFast(this);
+		CNF cnf = tseitinFast(this);
 
 		// Fast path did not yield a result, use Tseitin.
 		if (cnf == null) {
 			cnf = new CNF();
 
 			// Assumption: Expression is ground!
-			Integer root = normalize(cnf);
+			Integer root = tseitin(cnf);
 			cnf.put(this, root);
 
 			// Ensure that the formula itself is true in every model.
@@ -50,7 +59,7 @@ public abstract class Expression implements Groundable<Expression, Expression> {
 		return cnf;
 	}
 
-	private static CNF normalizeFast(Expression expression) {
+	private static CNF tseitinFast(Expression expression) {
 		// Assumption: Formula is ground and in NNF.
 		if (expression instanceof Atom) {
 			CNF cnf = new CNF();
@@ -67,8 +76,6 @@ public abstract class Expression implements Groundable<Expression, Expression> {
 		if (!(expression instanceof MultaryConnectiveExpression)) {
 			return null;
 		}
-		return ((MultaryConnectiveExpression)expression).normalizeFast();
+		return ((MultaryConnectiveExpression)expression).tseitinFast();
 	}
-
-	public abstract Expression deMorgan();
 }

@@ -24,10 +24,20 @@ public class TernaryExpression extends Expression {
 
 	@Override
 	public Expression ground(Substitution substitution) {
-		Expression condition = this.condition.ground(substitution);
-		Expression truthy = this.truthy.ground(substitution);
-		Expression falsy = this.falsy.ground(substitution);
+		return new TernaryExpression(
+			condition.ground(substitution),
+			truthy.ground(substitution),
+			falsy.ground(substitution)
+		);
+	}
 
+	@Override
+	public Integer tseitin(CNF cnf) {
+		throw new IllegalStateException();
+	}
+
+	@Override
+	public Expression normalize() {
 		return new MultaryConnectiveExpression(
 			MultaryConnectiveExpression.Connective.AND,
 			new MultaryConnectiveExpression(
@@ -41,16 +51,6 @@ public class TernaryExpression extends Expression {
 				falsy
 			)
 		);
-	}
-
-	@Override
-	public Integer normalize(CNF cnf) {
-		throw new IllegalStateException();
-	}
-
-	@Override
-	public Expression deMorgan() {
-		throw new UnsupportedOperationException();
 	}
 
 	@Override

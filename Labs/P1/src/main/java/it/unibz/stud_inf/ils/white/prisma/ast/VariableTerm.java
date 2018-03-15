@@ -19,7 +19,11 @@ public class VariableTerm extends Term implements Variable<ConstantTerm> {
 
 	@Override
 	public Term standardize(Map<Variable, Integer> map, IntIdGenerator generator) {
-		return new VariableTerm("v" + map.get(this));
+		Integer id = map.get(this);
+		if (id == null) {
+			throw new RuntimeException("Free variable: "+ this);
+		}
+		return new VariableTerm("v" + id);
 	}
 
 	@Override

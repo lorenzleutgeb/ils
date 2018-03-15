@@ -57,7 +57,7 @@ public class Atom extends Expression {
 	}
 
 	@Override
-	public Integer normalize(CNF cnf) {
+	public Integer tseitin(CNF cnf) {
 		return cnf.put(this);
 	}
 

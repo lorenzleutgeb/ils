@@ -11,13 +11,9 @@ import org.junit.jupiter.params.provider.ValueSource;
 import java.io.IOException;
 import java.util.Collections;
 
-class Tests {
-	@ParameterizedTest
-	@ValueSource(strings = { "(forall @X in { a, b } (\n  @X |\n  (exists #Y in [1 ... 3] t(#Y))))" })
-	void parse(String formula) {
-		Formula f = Parser.parse(formula);
-	}
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
+class Tests {
 	@ParameterizedTest
 	@ValueSource(strings = {
 		"p | q",
@@ -38,11 +34,22 @@ class Tests {
 	void solveGround(String formula) {
 		Formula f = Parser.parse(formula);
 		System.out.println("f:" + f);
-		Expression ground = f.ground();
-		CNF cnf = ground.normalize();
+		System.out.println("n:" + (f = f.normalize()));
+		System.out.println("s:" + (f = f.standardize()));
+		System.out.println("p:" + (f = f.prenex()));
+		System.out.println("g:" + (f = f.ground()));
+		CNF cnf = f.tseitin();
 		System.out.println("c:" + cnf.getStats());
 		cnf.printTo(System.out);
 		cnf.printModelsTo(System.out);
+	}
+
+	@ParameterizedTest
+	@ValueSource(strings = {
+		"(forall @X in a, b { }"
+	})
+	void parse(final String formula) {
+		assertThrows(RuntimeException.class, () -> Parser.parse(formula));
 	}
 
 	@ParameterizedTest
@@ -54,17 +61,33 @@ class Tests {
 		"exists #X in [1...3] p(#X)",
 		"forall $Y in {a,b,c} exists #X in [1...3] p($Y,#X)",
 		"forall $X in {a,b} exists $Y in {c,d} forall $Z in {e,f} (p($X) | p($Y) | p($Z))",
-		"forall $X in {a,b} exists $Y in {c,d} p($X,$Y)"
+		"forall $X in {a,b} exists $Y in {c,d} p($X,$Y)",
+		"forall @X in {a,b} (@X & (exists #Y in [1...3] t(#Y)))",
+		"forall @X in {a,b} ~(@X & (exists #Y in [1...3] (t(#Y) => q(#Y))))",
+		"~(exists $X in {a,b} p($X))",
+		"(forall $x in {a,b} "+
+			"(exists $y in {a,b} "+
+				"phi($y)"+
+			") | ("+
+				"(exists $z in {a,b} psi($z))"+
+			" => "+
+				"rho($x)" +
+			")" +
+		")",
+		"forall $x in {a,b} ((exists $y in {a,b} phi($y)) | ((exists $z in {a,b} psi($z)) => rho($x)))"
 	})
 	void solveQuantified(String formula) {
 		Formula f = Parser.parse(formula);
 		System.out.println("f:" + f);
-		Expression ground = f.ground();
-		System.out.println("g:" + ground);
-		CNF cnf = ground.normalize();
+		System.out.println("n:" + (f = f.normalize()));
+		System.out.println("s:" + (f = f.standardize()));
+		System.out.println("p:" + (f = f.prenex()));
+		f = f.ground();
+		System.out.println("g:" + (f));
+		CNF cnf = f.tseitin();
 		System.out.println("c:" + cnf.getStats());
 		cnf.printTo(System.out);
-		cnf.printModelTo(System.out);
+		cnf.printModelsTo(System.out);
 	}
 
 	@Test
@@ -83,7 +106,7 @@ class Tests {
 	@Test
 	void sudoku() throws IOException {
 		Formula f = Parser.parse(CharStreams.fromStream(this.getClass().getResourceAsStream("/sudoku.bool")));
-		CNF cnf = f.ground().normalize();
+		CNF cnf = f.ground().tseitin();
 		System.out.println(cnf.getStats());
 	}
 }

@@ -8,7 +8,7 @@ import it.unibz.stud_inf.ils.white.prisma.Substitution;
 import java.util.*;
 import java.util.stream.Collectors;
 
-public class Formula implements Iterable<Expression>, Groundable<Expression,Formula> {
+public class Formula implements Iterable<Expression>, Groundable<Formula,Formula> {
 	private final List<Expression> expressions;
 
 	public Formula(List<Expression> expressions) {
@@ -25,25 +25,43 @@ public class Formula implements Iterable<Expression>, Groundable<Expression,Form
 		return expressions.iterator();
 	}
 
-	public Expression ground(Substitution substitution) {
+	public Formula ground(Substitution substitution) {
 		if (this.expressions.isEmpty()) {
-			return Atom.TRUE;
+			return new Formula(Collections.singletonList(Atom.TRUE));
 		}
 
 		List<Expression> expressions = this.standardize(new HashMap<>(), new IntIdGenerator()).expressions;
 
 		if (expressions.size() == 1) {
-			return expressions.get(0).ground(substitution);
+			return new Formula(
+				Collections.singletonList(expressions.get(0).ground(substitution))
+			);
 		}
 
-		return new MultaryConnectiveExpression(
+		return new Formula(Collections.singletonList(new MultaryConnectiveExpression(
 			MultaryConnectiveExpression.Connective.AND,
 			expressions.stream().map(e -> e.ground(substitution)).collect(Collectors.toList())
+		)));
+	}
+
+	public Formula normalize() {
+		return new Formula(
+			expressions.stream().map(Expression::normalize).collect(Collectors.toList())
 		);
 	}
 
-	public CNF normalize() {
-		return ground().normalize();
+	public CNF tseitin() {
+		return expressions.get(0).tseitin();
+	}
+
+	public Formula standardize() {
+		return standardize(new HashMap<>(), new IntIdGenerator());
+	}
+
+	public Formula prenex() {
+		return new Formula(
+			expressions.stream().map(Expression::prenex).collect(Collectors.toList())
+		);
 	}
 
 	@Override
