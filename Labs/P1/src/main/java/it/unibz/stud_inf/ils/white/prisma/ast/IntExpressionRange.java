@@ -1,7 +1,9 @@
 package it.unibz.stud_inf.ils.white.prisma.ast;
 
+import it.unibz.stud_inf.ils.white.prisma.IntIdGenerator;
 import it.unibz.stud_inf.ils.white.prisma.Substitution;
 
+import java.util.Map;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
@@ -30,5 +32,13 @@ public class IntExpressionRange extends Domain<IntNumberExpression> {
 	@Override
 	public String toString() {
 		return "[" + min + "..." + max + "]";
+	}
+
+	@Override
+	public Domain<IntNumberExpression> standardize(Map<Variable, Integer> map, IntIdGenerator generator) {
+		return new IntExpressionRange(
+			min.standardize(map, generator),
+			max.standardize(map, generator)
+		);
 	}
 }

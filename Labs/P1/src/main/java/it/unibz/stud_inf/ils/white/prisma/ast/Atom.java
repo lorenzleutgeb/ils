@@ -1,10 +1,13 @@
 package it.unibz.stud_inf.ils.white.prisma.ast;
 
 import it.unibz.stud_inf.ils.white.prisma.CNF;
+import it.unibz.stud_inf.ils.white.prisma.IntIdGenerator;
 import it.unibz.stud_inf.ils.white.prisma.Substitution;
 
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 public class Atom extends Expression {
@@ -65,5 +68,19 @@ public class Atom extends Expression {
 
 	public List<Arg> getArgs() {
 		return args;
+	}
+
+	@Override
+	public Expression standardize(Map<Variable, Integer> map, IntIdGenerator generator) {
+		List<Arg> standardized = new ArrayList<>();
+
+		for (Arg arg : args) {
+			standardized.add((Arg) arg.standardize(map, generator));
+		}
+
+		return new Atom(
+			predicate.standardize(map, generator),
+			standardized
+		);
 	}
 }

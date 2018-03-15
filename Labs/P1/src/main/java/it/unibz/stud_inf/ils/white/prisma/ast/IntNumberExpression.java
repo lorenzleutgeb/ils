@@ -1,6 +1,9 @@
 package it.unibz.stud_inf.ils.white.prisma.ast;
 
+import it.unibz.stud_inf.ils.white.prisma.IntIdGenerator;
 import it.unibz.stud_inf.ils.white.prisma.Substitution;
+
+import java.util.Map;
 
 public class IntNumberExpression extends IntExpression {
 	private final int number;
@@ -36,5 +39,10 @@ public class IntNumberExpression extends IntExpression {
 	@Override
 	public int hashCode() {
 		return number;
+	}
+
+	@Override
+	public IntExpression standardize(Map<Variable, Integer> map, IntIdGenerator generator) {
+		return this;
 	}
 }

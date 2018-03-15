@@ -1,6 +1,9 @@
 package it.unibz.stud_inf.ils.white.prisma.ast;
 
+import it.unibz.stud_inf.ils.white.prisma.IntIdGenerator;
 import it.unibz.stud_inf.ils.white.prisma.Substitution;
+
+import java.util.Map;
 
 import static java.lang.Math.abs;
 
@@ -11,6 +14,11 @@ public class IntUnaryConnectiveExpression extends IntExpression {
 	public IntUnaryConnectiveExpression(Connective connective, IntExpression subExpression) {
 		this.connective = connective;
 		this.subExpression = subExpression;
+	}
+
+	@Override
+	public IntExpression standardize(Map<Variable, Integer> map, IntIdGenerator generator) {
+		return new IntUnaryConnectiveExpression(connective, subExpression.standardize(map, generator));
 	}
 
 	public enum Connective {

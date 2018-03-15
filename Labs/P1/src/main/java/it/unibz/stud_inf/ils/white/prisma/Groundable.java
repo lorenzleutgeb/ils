@@ -1,7 +1,6 @@
 package it.unibz.stud_inf.ils.white.prisma;
 
-@FunctionalInterface
-public interface Groundable<T> {
+public interface Groundable<T,S> extends Standardizable<S> {
 	T ground(Substitution substitution);
 
 	default T ground() {

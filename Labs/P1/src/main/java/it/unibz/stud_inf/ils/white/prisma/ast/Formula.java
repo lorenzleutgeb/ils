@@ -1,14 +1,13 @@
 package it.unibz.stud_inf.ils.white.prisma.ast;
 
 import it.unibz.stud_inf.ils.white.prisma.Groundable;
+import it.unibz.stud_inf.ils.white.prisma.IntIdGenerator;
 import it.unibz.stud_inf.ils.white.prisma.Substitution;
 
-import java.util.Iterator;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 
-public class Formula implements Iterable<Expression>, Groundable<Expression> {
+public class Formula implements Iterable<Expression>, Groundable<Expression,Formula> {
 	private final List<Expression> expressions;
 
 	public Formula(List<Expression> expressions) {
@@ -26,9 +25,11 @@ public class Formula implements Iterable<Expression>, Groundable<Expression> {
 	}
 
 	public Expression ground(Substitution substitution) {
-		if (expressions.isEmpty()) {
+		if (this.expressions.isEmpty()) {
 			return Atom.TRUE;
 		}
+
+		List<Expression> expressions = this.standardize(new HashMap<>(), new IntIdGenerator()).expressions;
 
 		if (expressions.size() == 1) {
 			return expressions.get(0).ground(substitution);
@@ -46,5 +47,12 @@ public class Formula implements Iterable<Expression>, Groundable<Expression> {
 
 	public List<Set<Atom>> models(long n) {
 		return ground().initialize().models(n);
+	}
+
+	@Override
+	public Formula standardize(Map<Variable, Integer> map, IntIdGenerator generator) {
+		return new Formula(
+			expressions.stream().map(e -> e.standardize(new HashMap<>(map), generator)).collect(Collectors.toList())
+		);
 	}
 }

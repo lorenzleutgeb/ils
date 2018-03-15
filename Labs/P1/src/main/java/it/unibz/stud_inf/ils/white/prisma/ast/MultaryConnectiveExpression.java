@@ -1,12 +1,10 @@
 package it.unibz.stud_inf.ils.white.prisma.ast;
 
 import it.unibz.stud_inf.ils.white.prisma.CNF;
+import it.unibz.stud_inf.ils.white.prisma.IntIdGenerator;
 import it.unibz.stud_inf.ils.white.prisma.Substitution;
 
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
-import java.util.Objects;
+import java.util.*;
 import java.util.stream.Collectors;
 
 import static java.util.stream.Collectors.joining;
@@ -86,16 +84,16 @@ public class MultaryConnectiveExpression extends Expression {
 				);
 			case XOR:
 				return new MultaryConnectiveExpression(
-					Connective.OR,
+					Connective.AND,
 					new MultaryConnectiveExpression(
-						Connective.AND,
-						new NegatedExpression(left),
+						Connective.OR,
+						left,
 						right
 					),
 					new MultaryConnectiveExpression(
-						Connective.AND,
+						Connective.OR,
 						new NegatedExpression(right),
-						left
+						new NegatedExpression(left)
 					)
 				);
 		}
@@ -142,6 +140,24 @@ public class MultaryConnectiveExpression extends Expression {
 	}
 
 	public CNF normalizeFast() {
+		if (Connective.OR.equals(connective)) {
+			CNF cnf = new CNF();
+			int[] cnfClause = new int[expressions.size()];
+			for (int i = 0; i < expressions.size(); i++) {
+				Expression it = expressions.get(i);
+				if (it instanceof Atom) {
+					int variable = cnf.shallowComputeIfAbsent(it);
+					cnfClause[i] = variable;
+				} else if (it instanceof NegatedExpression) {
+					int variable = cnf.shallowComputeIfAbsent(((NegatedExpression) it).getAtom());
+					cnfClause[i] = -variable;
+				} else {
+					return null;
+				}
+			}
+			cnf.add(cnfClause);
+			return cnf;
+		}
 		if (!Connective.AND.equals(connective)) {
 			return null;
 		}
@@ -172,6 +188,14 @@ public class MultaryConnectiveExpression extends Expression {
 			}
 		}
 		return cnf;
+	}
+
+	@Override
+	public Expression standardize(Map<Variable, Integer> map, IntIdGenerator generator) {
+		return new MultaryConnectiveExpression(
+			connective,
+			expressions.stream().map(t -> t.standardize(map, generator)).collect(Collectors.toList())
+		);
 	}
 
 	public enum Connective {

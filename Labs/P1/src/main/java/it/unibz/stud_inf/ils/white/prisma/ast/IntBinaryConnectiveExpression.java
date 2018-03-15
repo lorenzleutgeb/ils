@@ -1,11 +1,23 @@
 package it.unibz.stud_inf.ils.white.prisma.ast;
 
+import it.unibz.stud_inf.ils.white.prisma.IntIdGenerator;
 import it.unibz.stud_inf.ils.white.prisma.Substitution;
+
+import java.util.Map;
 
 public class IntBinaryConnectiveExpression extends IntExpression {
 	private final IntExpression left;
 	private final Connective connective;
 	private final IntExpression right;
+
+	@Override
+	public IntExpression standardize(Map<Variable, Integer> map, IntIdGenerator generator) {
+		return new IntBinaryConnectiveExpression(
+			left.standardize(map, generator),
+			connective,
+			right.standardize(map, generator)
+		);
+	}
 
 	public enum Connective {
 		MUL("*"),

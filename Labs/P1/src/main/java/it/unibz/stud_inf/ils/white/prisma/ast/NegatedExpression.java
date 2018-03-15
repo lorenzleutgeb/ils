@@ -1,7 +1,10 @@
 package it.unibz.stud_inf.ils.white.prisma.ast;
 
 import it.unibz.stud_inf.ils.white.prisma.CNF;
+import it.unibz.stud_inf.ils.white.prisma.IntIdGenerator;
 import it.unibz.stud_inf.ils.white.prisma.Substitution;
+
+import java.util.Map;
 
 public class NegatedExpression extends Expression {
 	private final Expression subExpression;
@@ -60,5 +63,10 @@ public class NegatedExpression extends Expression {
 			return null;
 		}
 		return (Atom)subExpression;
+	}
+
+	@Override
+	public Expression standardize(Map<Variable, Integer> map, IntIdGenerator generator) {
+		return new NegatedExpression(subExpression.standardize(map, generator));
 	}
 }

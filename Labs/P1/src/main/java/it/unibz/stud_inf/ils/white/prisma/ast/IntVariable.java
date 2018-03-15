@@ -1,6 +1,9 @@
 package it.unibz.stud_inf.ils.white.prisma.ast;
 
+import it.unibz.stud_inf.ils.white.prisma.IntIdGenerator;
 import it.unibz.stud_inf.ils.white.prisma.Substitution;
+
+import java.util.Map;
 
 public class IntVariable extends IntExpression implements Variable<IntNumberExpression> {
 	private final String name;
@@ -32,5 +35,10 @@ public class IntVariable extends IntExpression implements Variable<IntNumberExpr
 	@Override
 	public int hashCode() {
 		return name.hashCode();
+	}
+
+	@Override
+	public IntVariable standardize(Map map, IntIdGenerator generator) {
+		return new IntVariable("v" + map.get(this));
 	}
 }

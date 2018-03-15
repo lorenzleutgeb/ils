@@ -1,6 +1,9 @@
 package it.unibz.stud_inf.ils.white.prisma.ast;
 
+import it.unibz.stud_inf.ils.white.prisma.IntIdGenerator;
 import it.unibz.stud_inf.ils.white.prisma.Substitution;
+
+import java.util.Map;
 
 public class ConstantPredicate extends Predicate {
 	public static final ConstantPredicate TRUE = new ConstantPredicate("true");
@@ -35,5 +38,10 @@ public class ConstantPredicate extends Predicate {
 	@Override
 	public int hashCode() {
 		return raw.hashCode();
+	}
+
+	@Override
+	public Predicate standardize(Map<Variable, Integer> map, IntIdGenerator generator) {
+		return this;
 	}
 }

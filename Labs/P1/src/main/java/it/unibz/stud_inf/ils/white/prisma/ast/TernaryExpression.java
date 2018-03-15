@@ -1,7 +1,10 @@
 package it.unibz.stud_inf.ils.white.prisma.ast;
 
 import it.unibz.stud_inf.ils.white.prisma.CNF;
+import it.unibz.stud_inf.ils.white.prisma.IntIdGenerator;
 import it.unibz.stud_inf.ils.white.prisma.Substitution;
+
+import java.util.Map;
 
 public class TernaryExpression extends Expression {
 	private final Expression condition;
@@ -48,5 +51,14 @@ public class TernaryExpression extends Expression {
 	@Override
 	public Expression deMorgan() {
 		throw new UnsupportedOperationException();
+	}
+
+	@Override
+	public Expression standardize(Map<Variable, Integer> map, IntIdGenerator generator) {
+		return new TernaryExpression(
+			condition.standardize(map, generator),
+			truthy.standardize(map, generator),
+			falsy.standardize(map, generator)
+		);
 	}
 }

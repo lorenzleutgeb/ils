@@ -1,6 +1,9 @@
 package it.unibz.stud_inf.ils.white.prisma.ast;
 
+import it.unibz.stud_inf.ils.white.prisma.IntIdGenerator;
 import it.unibz.stud_inf.ils.white.prisma.Substitution;
+
+import java.util.Map;
 
 public class PredicateVariable extends Predicate implements Variable<Predicate> {
 	private final String raw;
@@ -32,5 +35,10 @@ public class PredicateVariable extends Predicate implements Variable<Predicate> 
 	@Override
 	public int hashCode() {
 		return raw.hashCode();
+	}
+
+	@Override
+	public Predicate standardize(Map<Variable, Integer> map, IntIdGenerator generator) {
+		return new PredicateVariable("v" + map.get(this));
 	}
 }

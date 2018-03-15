@@ -1,6 +1,7 @@
 package it.unibz.stud_inf.ils.white.prisma;
 
 import it.unibz.stud_inf.ils.white.prisma.ast.Atom;
+import it.unibz.stud_inf.ils.white.prisma.ast.Expression;
 import it.unibz.stud_inf.ils.white.prisma.ast.Formula;
 import it.unibz.stud_inf.ils.white.prisma.ast.IntNumberExpression;
 import it.unibz.stud_inf.ils.white.prisma.parser.Parser;
@@ -39,16 +40,36 @@ class Tests {
 		"~(p => q)",
 		"~(p => s => (q & r))",
 		"true & false",
-		"forall $x in {a,b} exists $y in {$x,c} p($x,$y)",
-		"forall #X in [1...3] p(#X)",
-		"forall #Y in [1...3] exists #X in [1...3] p(#Y,#X,#Y+#X)",
-		"exists #X in [1...3] p(#X)",
-		"forall $Y in {a,b,c} exists #X in [1...3] p($Y,#X)"
 	})
-	void solveSome(String formula) {
+	void solveGround(String formula) {
 		Formula f = Parser.parse(formula);
 		System.out.println("f:" + f);
-		System.out.println("g:" + f.ground());
+		Expression ground = f.ground();
+		CNF cnf = ground.initialize();
+		System.out.println("c:" + cnf.getStats());
+		cnf.printTo(System.out);
+		System.out.println("m:" + models(f));
+	}
+
+	@ParameterizedTest
+	@ValueSource(strings = {
+		"forall $x in {a,b} exists $y in {$x,c} p($x,$y)",
+		"forall #X in [1...3] p(#X)",
+		"forall #X in [1...3] forall #Y in [1...3] p(#X,#Y)",
+		"forall #Y in [1...3] exists #X in [1...3] p(#Y,#X,#Y+#X)",
+		"exists #X in [1...3] p(#X)",
+		"forall $Y in {a,b,c} exists #X in [1...3] p($Y,#X)",
+		"forall $X in {a,b} exists $Y in {c,d} forall $Z in {e,f} (p($X) | p($Y) | p($Z))",
+		"forall $X in {a,b} exists $Y in {c,d} p($X,$Y)"
+	})
+	void solveQuantified(String formula) {
+		Formula f = Parser.parse(formula);
+		System.out.println("f:" + f);
+		Expression ground = f.ground();
+		System.out.println("g:" + ground);
+		CNF cnf = ground.initialize();
+		System.out.println("c:" + cnf.getStats());
+		cnf.printTo(System.out);
 		System.out.println("m:" + models(f));
 	}
 

@@ -2,8 +2,11 @@ package it.unibz.stud_inf.ils.white.prisma.ast;
 
 import it.unibz.stud_inf.ils.white.prisma.CNF;
 import it.unibz.stud_inf.ils.white.prisma.Groundable;
+import it.unibz.stud_inf.ils.white.prisma.IntIdGenerator;
 
-public abstract class Expression implements Groundable<Expression> {
+import java.util.Map;
+
+public abstract class Expression implements Groundable<Expression, Expression> {
 	public Expression compress(Expression left, MultaryConnectiveExpression.Connective connective, Expression right) {
 		// This should implement some basic compression of the AST. For example,
 		// a | ~a  ->  true
@@ -64,7 +67,7 @@ public abstract class Expression implements Groundable<Expression> {
 		if (!(expression instanceof MultaryConnectiveExpression)) {
 			return null;
 		}
-		return ((MultaryConnectiveExpression)expression).normalizeFast();;
+		return ((MultaryConnectiveExpression)expression).normalizeFast();
 	}
 
 	public abstract Expression deMorgan();
