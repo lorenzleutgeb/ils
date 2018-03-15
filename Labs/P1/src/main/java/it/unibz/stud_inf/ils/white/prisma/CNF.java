@@ -17,7 +17,7 @@ import java.util.stream.Collectors;
 public class CNF {
 	private final BiMap<Expression, Integer> map;
 	private final IVec<IVecInt> clauses;
-	private int maxVariable = 1;
+	private final IntIdGenerator generator = new IntIdGenerator(1);
 
 	public CNF() {
 		this.map = HashBiMap.create();
@@ -52,7 +52,7 @@ public class CNF {
 	public Integer shallowComputeIfAbsent(Expression expression) {
 		Integer variable = get(expression);
 		if (variable == null) {
-			variable = maxVariable++;
+			variable = generator.getNextId();
 			put(expression, variable);
 			return variable;
 		}
@@ -68,7 +68,7 @@ public class CNF {
 	}
 
 	public Integer put(Expression expression) {
-		int variable = maxVariable++;
+		int variable = generator.getNextId();
 		map.put(expression, variable);
 		return variable;
 	}
@@ -194,7 +194,7 @@ public class CNF {
 	}
 
 	public String getStats() {
-		return (maxVariable - 1) + " " + clauses.size();
+		return (generator.getHighestId() - 1) + " " + clauses.size();
 	}
 
 	private static boolean filter(Expression e) {

@@ -24,4 +24,8 @@ public class IntIdGenerator {
 	public void resetGenerator() {
 		highestId = 0;
 	}
+
+	public int getHighestId() {
+		return highestId;
+	}
 }
