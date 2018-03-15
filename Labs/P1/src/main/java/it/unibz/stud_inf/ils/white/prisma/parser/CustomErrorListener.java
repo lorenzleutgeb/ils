@@ -4,8 +4,13 @@ import org.antlr.v4.runtime.BaseErrorListener;
 import org.antlr.v4.runtime.RecognitionException;
 import org.antlr.v4.runtime.Recognizer;
 
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
+
 public class CustomErrorListener extends BaseErrorListener {
-	private RecognitionException recognitionException;
+	private List<RecognitionException> recognitionExceptions = new ArrayList<>();
+	private List<String> messages = new ArrayList<>();
 
 	private final String fileName;
 
@@ -17,12 +22,14 @@ public class CustomErrorListener extends BaseErrorListener {
 	public void syntaxError(Recognizer<?, ?> recognizer, Object offendingSymbol, int line, int charPositionInLine, String msg, RecognitionException e) {
 		super.syntaxError(recognizer, offendingSymbol, line, charPositionInLine, msg, e);
 
-		System.err.println(fileName + ":" + line + ":" + charPositionInLine + ": " + msg);
-
-		this.recognitionException = e;
+		this.messages.add(fileName + ":" + line + ":" + charPositionInLine + ": " + msg);
+		this.recognitionExceptions.add(e);
 	}
 
-	public RecognitionException getRecognitionException() {
-		return recognitionException;
+	public IOException getIOException() {
+		return new IOException(
+			"Could not parse formula! \n" + String.join("\n", messages) + "\n",
+			recognitionExceptions.get(0)
+		);
 	}
 }

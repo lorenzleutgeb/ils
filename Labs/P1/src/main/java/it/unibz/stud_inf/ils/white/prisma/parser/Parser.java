@@ -23,12 +23,7 @@ public class Parser {
 			// In this case we assume that something went fundamentally
 			// wrong when using a String as input. The caller probably
 			// assumes that I/O on a String should always be fine.
-			throw new RuntimeException("Encountered I/O-related exception while parsing a String.", e);
-		} catch (RecognitionException | ParseCancellationException e) {
-			// If there were issues parsing the given string, we
-			// throw something that suggests that the input string
-			// is malformed.
-			throw new IllegalArgumentException("Could not parse formula.", e);
+			throw new RuntimeException(e);
 		}
 	}
 
@@ -81,8 +76,9 @@ public class Parser {
 		// org.antlr.v4.runtime.BailErrorStrategy cannot be used here, because it would
 		// abruptly stop parsing as soon as the first error is reached (i.e. no recovery
 		// is attempted) and the user will only see the first error encountered.
-		if (errorListener.getRecognitionException() != null) {
-			throw errorListener.getRecognitionException();
+		IOException ioe = errorListener.getIOException();
+		if (ioe != null) {
+			throw ioe;
 		}
 
 		// Construct internal program representation.
