@@ -11,7 +11,7 @@ public class IntBinaryConnectiveExpression extends IntExpression {
 	private final IntExpression right;
 
 	@Override
-	public IntExpression standardize(Map<Variable, Integer> map, IntIdGenerator generator) {
+	public IntExpression standardize(Map<Long, Long> map, IntIdGenerator generator) {
 		return new IntBinaryConnectiveExpression(
 			left.standardize(map, generator),
 			connective,

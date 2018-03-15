@@ -245,7 +245,7 @@ public class MultaryConnectiveExpression extends Expression {
 	}
 
 	@Override
-	public Expression standardize(Map<Variable, Integer> map, IntIdGenerator generator) {
+	public Expression standardize(Map<Long, Long> map, IntIdGenerator generator) {
 		return new MultaryConnectiveExpression(
 			connective,
 			expressions.stream().map(t -> t.standardize(map, generator)).collect(Collectors.toList())

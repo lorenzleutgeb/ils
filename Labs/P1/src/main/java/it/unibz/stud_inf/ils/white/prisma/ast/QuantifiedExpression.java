@@ -62,10 +62,10 @@ public class QuantifiedExpression<T> extends Expression {
 	}
 
 	@Override
-	public QuantifiedExpression<T> standardize(Map<Variable, Integer> map, IntIdGenerator generator) {
-		int id = generator.getNextId();
-		Map<Variable, Integer> subMap = new HashMap<>(map);
-		subMap.put(variable, id);
+	public QuantifiedExpression<T> standardize(Map<Long, Long> map, IntIdGenerator generator) {
+		long id = generator.getNextId();
+		Map<Long, Long> subMap = new HashMap<>(map);
+		subMap.put(variable.toLong(), id);
 		Variable<T> variable = ((Variable<T>)((Standardizable)this.variable).standardize(subMap, generator));
 		return new QuantifiedExpression<>(
 			quantifier,

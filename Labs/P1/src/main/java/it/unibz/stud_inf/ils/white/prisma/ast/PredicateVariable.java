@@ -2,14 +2,20 @@ package it.unibz.stud_inf.ils.white.prisma.ast;
 
 import it.unibz.stud_inf.ils.white.prisma.IntIdGenerator;
 import it.unibz.stud_inf.ils.white.prisma.Substitution;
+import it.unibz.stud_inf.ils.white.prisma.Util;
 
+import java.util.Base64;
 import java.util.Map;
 
 public class PredicateVariable extends Predicate implements Variable<Predicate> {
-	private final String raw;
+	private final long raw;
 
-	public PredicateVariable(String raw) {
-		this.raw = raw;
+	public PredicateVariable(String name) {
+		this.raw = Util.toLong(name.getBytes());
+	}
+
+	public PredicateVariable(long name) {
+		this.raw = name;
 	}
 
 	@Override
@@ -29,20 +35,25 @@ public class PredicateVariable extends Predicate implements Variable<Predicate> 
 
 		PredicateVariable that = (PredicateVariable) o;
 
-		return raw.equals(that.raw);
+		return raw == that.raw;
 	}
 
 	@Override
 	public int hashCode() {
-		return raw.hashCode();
+		return (int) (raw ^ (raw >>> 32));
 	}
 
 	@Override
-	public Predicate standardize(Map<Variable, Integer> map, IntIdGenerator generator) {
-		Integer id = map.get(this);
+	public Predicate standardize(Map<Long, Long> map, IntIdGenerator generator) {
+		Long id = map.get(this.raw);
 		if (id == null) {
-			throw new RuntimeException("Free variable: "+ this);
+			throw new RuntimeException("Free variable!");
 		}
-		return new PredicateVariable("v" + id);
+		return new PredicateVariable(id);
+	}
+
+	@Override
+	public long toLong() {
+		return raw;
 	}
 }

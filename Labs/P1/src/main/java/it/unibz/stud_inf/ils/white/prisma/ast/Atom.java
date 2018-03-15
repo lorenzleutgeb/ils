@@ -71,7 +71,7 @@ public class Atom extends Expression {
 	}
 
 	@Override
-	public Expression standardize(Map<Variable, Integer> map, IntIdGenerator generator) {
+	public Expression standardize(Map<Long, Long> map, IntIdGenerator generator) {
 		List<Arg> standardized = new ArrayList<>();
 
 		for (Arg arg : args) {

@@ -13,7 +13,7 @@ public class ConstantTerm extends Term {
 	}
 
 	@Override
-	public Term standardize(Map<Variable, Integer> map, IntIdGenerator generator) {
+	public Term standardize(Map<Long, Long> map, IntIdGenerator generator) {
 		return this;
 	}
 

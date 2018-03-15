@@ -2,14 +2,20 @@ package it.unibz.stud_inf.ils.white.prisma.ast;
 
 import it.unibz.stud_inf.ils.white.prisma.IntIdGenerator;
 import it.unibz.stud_inf.ils.white.prisma.Substitution;
+import it.unibz.stud_inf.ils.white.prisma.Util;
 
+import java.util.Base64;
 import java.util.Map;
 
 public class IntVariable extends IntExpression implements Variable<IntNumberExpression> {
-	private final String name;
+	private final long raw;
 
 	public IntVariable(String name) {
-		this.name = name;
+		this.raw = Util.toLong(name.getBytes());
+	}
+
+	public IntVariable(long name) {
+		this.raw = name;
 	}
 
 	@Override
@@ -19,7 +25,7 @@ public class IntVariable extends IntExpression implements Variable<IntNumberExpr
 
 	@Override
 	public String toString() {
-		return "#" + name;
+		return "#" + raw;
 	}
 
 	@Override
@@ -29,20 +35,25 @@ public class IntVariable extends IntExpression implements Variable<IntNumberExpr
 
 		IntVariable that = (IntVariable) o;
 
-		return name.equals(that.name);
+		return raw == that.raw;
 	}
 
 	@Override
 	public int hashCode() {
-		return name.hashCode();
+		return (int) (raw ^ (raw >>> 32));
 	}
 
 	@Override
-	public IntVariable standardize(Map<Variable, Integer> map, IntIdGenerator generator) {
-		Integer id = map.get(this);
+	public IntVariable standardize(Map<Long, Long> map, IntIdGenerator generator) {
+		Long id = map.get(this.raw);
 		if (id == null) {
-			throw new RuntimeException("Free variable: "+ this);
+			throw new RuntimeException("Free variable!");
 		}
-		return new IntVariable("v" + id);
+		return new IntVariable(id);
+	}
+
+	@Override
+	public long toLong() {
+		return raw;
 	}
 }

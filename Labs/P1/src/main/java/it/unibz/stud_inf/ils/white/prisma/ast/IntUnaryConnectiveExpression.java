@@ -17,7 +17,7 @@ public class IntUnaryConnectiveExpression extends IntExpression {
 	}
 
 	@Override
-	public IntExpression standardize(Map<Variable, Integer> map, IntIdGenerator generator) {
+	public IntExpression standardize(Map<Long, Long> map, IntIdGenerator generator) {
 		return new IntUnaryConnectiveExpression(connective, subExpression.standardize(map, generator));
 	}
 

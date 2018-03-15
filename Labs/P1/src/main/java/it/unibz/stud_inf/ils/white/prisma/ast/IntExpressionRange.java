@@ -35,7 +35,7 @@ public class IntExpressionRange extends Domain<IntNumberExpression> {
 	}
 
 	@Override
-	public Domain<IntNumberExpression> standardize(Map<Variable, Integer> map, IntIdGenerator generator) {
+	public Domain<IntNumberExpression> standardize(Map<Long, Long> map, IntIdGenerator generator) {
 		return new IntExpressionRange(
 			min.standardize(map, generator),
 			max.standardize(map, generator)

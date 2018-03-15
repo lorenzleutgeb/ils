@@ -1,7 +1,7 @@
 package it.unibz.stud_inf.ils.white.prisma;
 
 public class IntIdGenerator {
-	private int highestId;
+	private long highestId;
 
 	public IntIdGenerator() {
 		this(0);
@@ -11,7 +11,7 @@ public class IntIdGenerator {
 		this.highestId = initial;
 	}
 
-	public int getNextId() {
+	public long getNextId() {
 		if (highestId == Integer.MAX_VALUE) {
 			throw new RuntimeException("Ran out of IDs (integer overflow)");
 		}
@@ -25,7 +25,7 @@ public class IntIdGenerator {
 		highestId = 0;
 	}
 
-	public int getHighestId() {
+	public long getHighestId() {
 		return highestId;
 	}
 }

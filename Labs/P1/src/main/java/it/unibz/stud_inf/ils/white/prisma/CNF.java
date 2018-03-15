@@ -53,7 +53,7 @@ public class CNF {
 	public Integer shallowComputeIfAbsent(Expression expression) {
 		Integer variable = get(expression);
 		if (variable == null) {
-			variable = generator.getNextId();
+			variable = (int) generator.getNextId();
 			put(expression, variable);
 			return variable;
 		}
@@ -69,7 +69,7 @@ public class CNF {
 	}
 
 	public Integer put(Expression expression) {
-		int variable = generator.getNextId();
+		int variable = (int) generator.getNextId();
 		map.put(key(expression), variable);
 		return variable;
 	}

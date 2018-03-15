@@ -2,14 +2,20 @@ package it.unibz.stud_inf.ils.white.prisma.ast;
 
 import it.unibz.stud_inf.ils.white.prisma.IntIdGenerator;
 import it.unibz.stud_inf.ils.white.prisma.Substitution;
+import it.unibz.stud_inf.ils.white.prisma.Util;
 
+import java.util.Base64;
 import java.util.Map;
 
 public class VariableTerm extends Term implements Variable<ConstantTerm> {
-	private final String raw;
+	private final long raw;
 
-	public VariableTerm(String raw) {
-		this.raw = raw;
+	public VariableTerm(String name) {
+		this.raw = Util.toLong(name.getBytes());
+	}
+
+	public VariableTerm(long name) {
+		this.raw = name;
 	}
 
 	@Override
@@ -18,17 +24,8 @@ public class VariableTerm extends Term implements Variable<ConstantTerm> {
 	}
 
 	@Override
-	public Term standardize(Map<Variable, Integer> map, IntIdGenerator generator) {
-		Integer id = map.get(this);
-		if (id == null) {
-			throw new RuntimeException("Free variable: "+ this);
-		}
-		return new VariableTerm("v" + id);
-	}
-
-	@Override
 	public String toString() {
-		return "$" + raw;
+		return "@" + raw;
 	}
 
 	@Override
@@ -38,11 +35,25 @@ public class VariableTerm extends Term implements Variable<ConstantTerm> {
 
 		VariableTerm that = (VariableTerm) o;
 
-		return raw.equals(that.raw);
+		return raw == that.raw;
 	}
 
 	@Override
 	public int hashCode() {
-		return raw.hashCode();
+		return (int) (raw ^ (raw >>> 32));
+	}
+
+	@Override
+	public Term standardize(Map<Long, Long> map, IntIdGenerator generator) {
+		Long id = map.get(this.raw);
+		if (id == null) {
+			throw new RuntimeException("Free variable!");
+		}
+		return new VariableTerm(id);
+	}
+
+	@Override
+	public long toLong() {
+		return raw;
 	}
 }

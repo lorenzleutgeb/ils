@@ -54,7 +54,7 @@ public class TernaryExpression extends Expression {
 	}
 
 	@Override
-	public Expression standardize(Map<Variable, Integer> map, IntIdGenerator generator) {
+	public Expression standardize(Map<Long, Long> map, IntIdGenerator generator) {
 		return new TernaryExpression(
 			condition.standardize(map, generator),
 			truthy.standardize(map, generator),

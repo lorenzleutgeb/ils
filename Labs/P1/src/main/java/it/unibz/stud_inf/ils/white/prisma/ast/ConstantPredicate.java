@@ -41,7 +41,7 @@ public class ConstantPredicate extends Predicate {
 	}
 
 	@Override
-	public Predicate standardize(Map<Variable, Integer> map, IntIdGenerator generator) {
+	public Predicate standardize(Map<Long, Long> map, IntIdGenerator generator) {
 		return this;
 	}
 }

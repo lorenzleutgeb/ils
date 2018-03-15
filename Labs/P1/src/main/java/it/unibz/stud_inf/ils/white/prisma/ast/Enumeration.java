@@ -32,7 +32,7 @@ public class Enumeration<U extends Groundable<T,U>, T> extends Domain<T> {
 	}
 
 	@Override
-	public Domain<T> standardize(Map<Variable, Integer> map, IntIdGenerator generator) {
+	public Domain<T> standardize(Map<Long, Long> map, IntIdGenerator generator) {
 		return new Enumeration<U,T>(
 			elements.stream().map(e -> e.standardize(map, generator)).collect(Collectors.toList())
 		);
