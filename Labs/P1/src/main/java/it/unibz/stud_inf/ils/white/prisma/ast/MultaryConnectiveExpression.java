@@ -7,6 +7,8 @@ import it.unibz.stud_inf.ils.white.prisma.Substitution;
 import java.util.*;
 import java.util.stream.Collectors;
 
+import static it.unibz.stud_inf.ils.white.prisma.ast.Atom.FALSE;
+import static it.unibz.stud_inf.ils.white.prisma.ast.Atom.TRUE;
 import static java.util.stream.Collectors.joining;
 
 public class MultaryConnectiveExpression extends Expression {
@@ -151,8 +153,21 @@ public class MultaryConnectiveExpression extends Expression {
 	public Expression ground(Substitution substitution) {
 		return new MultaryConnectiveExpression(
 			connective,
-			expressions.stream().map(e -> e.ground(substitution)).collect(Collectors.toList())
+			expressions
+				.stream()
+				.map(e -> e.ground(substitution))
+				.filter(e -> {
+					return !(e.equals(getIdentity()));
+				})
+				.collect(Collectors.toList())
 		);
+	}
+
+	public Expression getIdentity() {
+		if (!Connective.AND.equals(connective) && !Connective.OR.equals(connective)) {
+			throw new UnsupportedOperationException();
+		}
+		return Connective.AND.equals(connective) ? TRUE : FALSE;
 	}
 
 	@Override
