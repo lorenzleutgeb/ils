@@ -10,9 +10,11 @@ import org.antlr.v4.runtime.misc.ParseCancellationException;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import static java.util.Arrays.asList;
 import static java.util.Collections.emptyList;
 
 public class Parser {
@@ -186,6 +188,24 @@ public class Parser {
 				return Atom.FALSE;
 			}
 			return null;
+		}
+
+		@Override
+		public Expression visitArithmeticAtom(FormulaParser.ArithmeticAtomContext ctx) {
+			IntExpressionVisitor visitor = new IntExpressionVisitor();
+			return new ArithmeticAtom(
+				ArithmeticAtom.Connective.fromOperator(ctx.op.getText()),
+				asList(visitor.visit(ctx.left), visitor.visit(ctx.right))
+			);
+		}
+
+		@Override
+		public Expression visitEqualityAtom(FormulaParser.EqualityAtomContext ctx) {
+			TermVisitor visitor = new TermVisitor();
+			return new EqualityAtom(
+				EqualityAtom.Connective.fromOperator(ctx.op.getText()),
+				asList(visitor.visit(ctx.left), visitor.visit(ctx.right))
+			);
 		}
 	}
 

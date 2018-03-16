@@ -12,6 +12,8 @@ expression
     | quantifier = (EXISTS |FORALL) variable = TVAR IN termSet scope = expression          # termQuantification
     | quantifier = (EXISTS |FORALL) variable = IVAR IN intExpressionSet scope = expression # intExpressionQuantification
     | quantifier = (EXISTS |FORALL) variable = PVAR IN predicateSet scope = expression     # predicateQuantification
+    | left = intExpression op = (GT | LT | GE | LE | NE | EQ) right = intExpression # arithmeticAtom
+    | left = term op = (NE | EQ) right = term # equalityAtom
     ;
 
 predicate
@@ -85,9 +87,9 @@ SQUARE_CLOSE : ']';
 
 // Boolean connectives:
 AND         : '&' | '∧';
-THEN        : '=>' | '→' | '⊃';
-IF          : '<=' | '←' | '⊂';
-IFF         : '<=>' | '↔';
+THEN        : '->' | '→' | '⊃';
+IF          : '<-' | '←' | '⊂';
+IFF         : '<->' | '↔';
 XOR         : '^' | '⊕';
 NOT         : '~' | '¬';
 QUESTION    : '?';
@@ -102,6 +104,13 @@ DIV         : '/';
 MOD         : '%';
 ADD         : '+';
 SUB         : '-';
+
+EQ          : '=';
+NE          : '!=';
+GT          : '>';
+LT          : '<';
+GE          : '>=';
+LE          : '<=';
 
 // Miscellaneous:
 IN          : 'in' | '∈';

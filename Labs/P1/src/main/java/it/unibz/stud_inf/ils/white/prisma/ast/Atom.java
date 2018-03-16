@@ -15,11 +15,15 @@ public class Atom extends Expression {
 	public static final Atom FALSE = new Atom(ConstantPredicate.FALSE, Collections.emptyList());
 
 	private final Predicate predicate;
-	private final List<Arg> args;
+	protected final List<Arg> args;
 
 	public Atom(Predicate predicate, List<Arg> args) {
 		this.predicate = predicate;
 		this.args = args;
+	}
+
+	public static Atom wrap(boolean constant) {
+		return constant ? TRUE : FALSE;
 	}
 
 	@Override

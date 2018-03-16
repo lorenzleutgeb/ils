@@ -253,9 +253,9 @@ public class MultaryConnectiveExpression extends Expression {
 	}
 
 	public enum Connective {
-		THEN("=>"),
-		IFF("<=>"),
-		IF("<="),
+		THEN("->"),
+		IFF("<->"),
+		IF("<-"),
 		AND("&"),
 		OR("|"),
 		XOR("^");

@@ -27,12 +27,12 @@ moveTo(x,y)    ... Quantifier x should be moved to position y.
 
 // At one position there can be at most one quantifier.
 (forall #p in [1...5] forall #q1 in [1...5] forall #q2 in [#q1+1...5]
-    (moveTo(#q1,#p) => ~moveTo(#q2,#p))
+    (moveTo(#q1,#p) -> ~moveTo(#q2,#p))
 )
 
 // Dependency is transitive.
 (forall #ql in [1...5] forall #qm in [#ql+1...5] forall #qr in [#qm+1...5]
-    (dependsOn(#ql,#qm) & dependsOn(#qm,#qr)) => dependsOn(#ql,#qr)
+    (dependsOn(#ql,#qm) & dependsOn(#qm,#qr)) -> dependsOn(#ql,#qr)
 )
 
 // For any pair of quantifiers, the left one cannot depend on the right one.
@@ -44,7 +44,7 @@ moveTo(x,y)    ... Quantifier x should be moved to position y.
 (forall #ql in [1...5] forall #qr in [#ql+1...5]
     (
         dependsOn(#ql,#qr)
-        =>
+        ->
         ~(exists #l in [1...5] exists #r in [#l+1...5]
             moveTo(#ql,#r) & moveTo(#qr,#l)
         )
@@ -55,7 +55,7 @@ moveTo(x,y)    ... Quantifier x should be moved to position y.
 (forall #ql in [1...5] forall #qr in [#ql+1...5]
     (
         related(#ql,#qr)
-        =>
+        ->
         ~(exists #l in [1...5] exists #r in [#l+1...5]
             moveTo(#ql,#r) & moveTo(#qr,#l)
         )
