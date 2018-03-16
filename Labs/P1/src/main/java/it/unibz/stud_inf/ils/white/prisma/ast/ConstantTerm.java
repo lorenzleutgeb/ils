@@ -3,7 +3,9 @@ package it.unibz.stud_inf.ils.white.prisma.ast;
 import it.unibz.stud_inf.ils.white.prisma.IntIdGenerator;
 import it.unibz.stud_inf.ils.white.prisma.Substitution;
 
+import java.util.Collections;
 import java.util.Map;
+import java.util.Set;
 
 public class ConstantTerm extends Term {
 	private final String raw;
@@ -25,5 +27,10 @@ public class ConstantTerm extends Term {
 	@Override
 	public String toString() {
 		return raw;
+	}
+
+	@Override
+	public Set<Variable> getOccuringVariables() {
+		return Collections.emptySet();
 	}
 }

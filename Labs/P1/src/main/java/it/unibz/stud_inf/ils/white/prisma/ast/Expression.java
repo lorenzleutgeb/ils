@@ -3,6 +3,8 @@ package it.unibz.stud_inf.ils.white.prisma.ast;
 import it.unibz.stud_inf.ils.white.prisma.CNF;
 import it.unibz.stud_inf.ils.white.prisma.Groundable;
 
+import java.util.Set;
+
 public abstract class Expression implements Groundable<Expression, Expression> {
 	public Expression compress(Expression left, MultaryConnectiveExpression.Connective connective, Expression right) {
 		// This should implement some basic compression of the AST. For example,
@@ -77,5 +79,10 @@ public abstract class Expression implements Groundable<Expression, Expression> {
 			return null;
 		}
 		return ((MultaryConnectiveExpression)expression).tseitinFast();
+	}
+
+	@Override
+	public Set<Variable> getOccuringVariables() {
+		throw new UnsupportedOperationException();
 	}
 }

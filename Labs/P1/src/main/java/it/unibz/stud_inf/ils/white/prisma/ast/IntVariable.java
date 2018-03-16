@@ -5,7 +5,9 @@ import it.unibz.stud_inf.ils.white.prisma.Substitution;
 import it.unibz.stud_inf.ils.white.prisma.Util;
 
 import java.util.Base64;
+import java.util.Collections;
 import java.util.Map;
+import java.util.Set;
 
 public class IntVariable extends IntExpression implements Variable<IntNumberExpression> {
 	private final long raw;
@@ -21,6 +23,11 @@ public class IntVariable extends IntExpression implements Variable<IntNumberExpr
 	@Override
 	public IntNumberExpression ground(Substitution substitution) {
 		return substitution.eval(this);
+	}
+
+	@Override
+	public Set<Variable> getOccuringVariables() {
+		return Collections.singleton(this);
 	}
 
 	@Override

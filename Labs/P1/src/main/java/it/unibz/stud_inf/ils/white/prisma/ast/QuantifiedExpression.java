@@ -11,52 +11,41 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
-import static it.unibz.stud_inf.ils.white.prisma.ast.MultaryConnectiveExpression.Connective.AND;
-import static it.unibz.stud_inf.ils.white.prisma.ast.MultaryConnectiveExpression.Connective.OR;
-import static it.unibz.stud_inf.ils.white.prisma.ast.Quantifier.FORALL;
-
 public class QuantifiedExpression<T> extends Expression {
-	private final Quantifier quantifier;
-	private final Variable<T> variable;
-	private final Domain<T> domain;
+	private final Quantifier<T> quantifier;
+	private final Expression scope;
 
 	public Expression getScope() {
 		return scope;
 	}
 
-	private final Expression scope;
-
-	public QuantifiedExpression(Quantifier quantifier, Variable<T> variable, Domain<T> domain, Expression scope) {
+	public QuantifiedExpression(Quantifier quantifier, Expression scope) {
 		this.quantifier = quantifier;
-		this.variable = variable;
-		this.domain = domain;
 		this.scope = scope;
 	}
 
 	public QuantifiedExpression<T> switchScope(Expression scope) {
 		return new QuantifiedExpression<>(
 			quantifier,
-			variable,
-			domain,
 			scope
 		);
 	}
 
 	@Override
 	public String toString() {
-		return quantifier.toString().toLowerCase() + " " + variable + " in " + domain + " " + scope;
+		return quantifier.toString().toLowerCase() + " " + quantifier.getVariable() + " in " + quantifier.getDomain() + " " + scope;
 	}
 
 	@Override
 	public Expression ground(Substitution substitution) {
 		List<Expression> instances = new ArrayList<>(/*domain.size()*/);
-		for (T instance : domain.stream(substitution).collect(Collectors.toList())) {
-			substitution.put(variable, instance);
+		for (T instance : quantifier.getDomain().stream(substitution).collect(Collectors.toList())) {
+			substitution.put(quantifier.getVariable(), instance);
 			instances.add(scope.ground(substitution));
 		}
 
 		return new MultaryConnectiveExpression(
-			quantifier.equals(FORALL) ? AND : OR,
+			quantifier.getConnective(),
 			instances
 		);
 	}
@@ -65,12 +54,13 @@ public class QuantifiedExpression<T> extends Expression {
 	public QuantifiedExpression<T> standardize(Map<Long, Long> map, IntIdGenerator generator) {
 		long id = generator.getNextId();
 		Map<Long, Long> subMap = new HashMap<>(map);
-		subMap.put(variable.toLong(), id);
-		Variable<T> variable = ((Variable<T>)((Standardizable)this.variable).standardize(subMap, generator));
-		return new QuantifiedExpression<>(
-			quantifier,
-			variable,
-			domain.standardize(subMap, generator),
+		subMap.put(quantifier.getVariable().toLong(), id);
+		Variable<T> variable = ((Variable<T>)((Standardizable)quantifier.getVariable()).standardize(subMap, generator));
+		return new QuantifiedExpression<T>(
+			quantifier.switchBoth(
+				variable,
+				quantifier.getDomain().standardize(subMap, generator)
+			),
 			scope.standardize(subMap, generator)
 		);
 	}
@@ -89,8 +79,6 @@ public class QuantifiedExpression<T> extends Expression {
 	public Expression deMorgan() {
 		return new QuantifiedExpression<>(
 			quantifier.flip(),
-			variable,
-			domain,
 			scope.deMorgan()
 		);
 	}

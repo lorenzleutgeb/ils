@@ -3,7 +3,9 @@ package it.unibz.stud_inf.ils.white.prisma.ast;
 import it.unibz.stud_inf.ils.white.prisma.IntIdGenerator;
 import it.unibz.stud_inf.ils.white.prisma.Substitution;
 
+import java.util.Collections;
 import java.util.Map;
+import java.util.Set;
 
 public class IntNumberExpression extends IntExpression {
 	private final int number;
@@ -15,6 +17,11 @@ public class IntNumberExpression extends IntExpression {
 	@Override
 	public IntNumberExpression ground(Substitution substitution) {
 		return this;
+	}
+
+	@Override
+	public Set<Variable> getOccuringVariables() {
+		return Collections.emptySet();
 	}
 
 	public int toInteger() {

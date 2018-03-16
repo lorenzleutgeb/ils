@@ -5,7 +5,9 @@ import it.unibz.stud_inf.ils.white.prisma.Substitution;
 import it.unibz.stud_inf.ils.white.prisma.Util;
 
 import java.util.Base64;
+import java.util.Collections;
 import java.util.Map;
+import java.util.Set;
 
 public class PredicateVariable extends Predicate implements Variable<Predicate> {
 	private final long raw;
@@ -21,6 +23,11 @@ public class PredicateVariable extends Predicate implements Variable<Predicate> 
 	@Override
 	public Predicate ground(Substitution substitution) {
 		return substitution.eval(this);
+	}
+
+	@Override
+	public Set<Variable> getOccuringVariables() {
+		return Collections.singleton(this);
 	}
 
 	@Override

@@ -4,6 +4,7 @@ import it.unibz.stud_inf.ils.white.prisma.IntIdGenerator;
 import it.unibz.stud_inf.ils.white.prisma.Substitution;
 
 import java.util.Map;
+import java.util.Set;
 
 import static java.lang.Math.abs;
 
@@ -49,5 +50,10 @@ public class IntUnaryConnectiveExpression extends IntExpression {
 		}
 
 		return new IntNumberExpression(x);
+	}
+
+	@Override
+	public Set<Variable> getOccuringVariables() {
+		return subExpression.getOccuringVariables();
 	}
 }

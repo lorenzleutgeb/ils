@@ -44,6 +44,11 @@ public class Formula implements Iterable<Expression>, Groundable<Formula,Formula
 		)));
 	}
 
+	@Override
+	public Set<Variable> getOccuringVariables() {
+		throw new UnsupportedOperationException();
+	}
+
 	public Formula normalize() {
 		return new Formula(
 			expressions.stream().map(Expression::normalize).collect(Collectors.toList())

@@ -101,9 +101,11 @@ public class Parser {
 			DomainVisitor visitor = new DomainVisitor();
 
 			return new QuantifiedExpression<>(
-				Quantifier.valueOf(ctx.quantifier.getText().toUpperCase()),
-				new PredicateVariable(ctx.variable.getText().substring(1)),
-				(Domain<Predicate>) visitor.visit(ctx.predicateSet()),
+				new Quantifier(
+					ctx.quantifier.getText(),
+					new PredicateVariable(ctx.variable.getText().substring(1)),
+					(Domain<Predicate>) visitor.visit(ctx.predicateSet())
+				),
 				visit(ctx.scope)
 			);
 		}
@@ -114,9 +116,11 @@ public class Parser {
 			DomainVisitor visitor = new DomainVisitor();
 
 			return new QuantifiedExpression<>(
-				Quantifier.valueOf(ctx.quantifier.getText().toUpperCase()),
-				new VariableTerm(ctx.variable.getText().substring(1)),
-				(Domain<ConstantTerm>) visitor.visit(ctx.termSet()),
+				new Quantifier(
+					ctx.quantifier.getText(),
+					new VariableTerm(ctx.variable.getText().substring(1)),
+					(Domain<ConstantTerm>) visitor.visit(ctx.termSet())
+				),
 				visit(ctx.scope)
 			);
 		}
@@ -127,9 +131,11 @@ public class Parser {
 			DomainVisitor visitor = new DomainVisitor();
 
 			return new QuantifiedExpression<>(
-				Quantifier.valueOf(ctx.quantifier.getText().toUpperCase()),
-				new IntVariable(ctx.variable.getText().substring(1)),
-				(Domain<IntNumberExpression>) visitor.visit(ctx.intExpressionSet()),
+				new Quantifier(
+					ctx.quantifier.getText(),
+					new IntVariable(ctx.variable.getText().substring(1)),
+					(Domain<IntNumberExpression>) visitor.visit(ctx.intExpressionSet())
+				),
 				visit(ctx.scope)
 			);
 		}

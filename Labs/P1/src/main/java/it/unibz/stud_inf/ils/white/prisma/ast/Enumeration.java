@@ -1,13 +1,18 @@
 package it.unibz.stud_inf.ils.white.prisma.ast;
 
+import com.google.common.collect.Sets;
 import it.unibz.stud_inf.ils.white.prisma.Groundable;
 import it.unibz.stud_inf.ils.white.prisma.IntIdGenerator;
 import it.unibz.stud_inf.ils.white.prisma.Substitution;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+
+import static java.util.Collections.emptySet;
 
 public class Enumeration<U extends Groundable<T,U>, T> extends Domain<T> {
 	private final List<U> elements;
@@ -24,6 +29,14 @@ public class Enumeration<U extends Groundable<T,U>, T> extends Domain<T> {
 	@Override
 	public int size() {
 		return elements.size();
+	}
+
+	@Override
+	public Set<Variable> getOccuringVariables() {
+		return elements
+			.stream()
+			.map(Groundable::getOccuringVariables)
+			.reduce(emptySet(), Sets::union);
 	}
 
 	@Override

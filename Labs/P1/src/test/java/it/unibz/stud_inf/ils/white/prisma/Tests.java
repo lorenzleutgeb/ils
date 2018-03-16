@@ -109,4 +109,15 @@ class Tests {
 		CNF cnf = f.ground().tseitin();
 		System.out.println(cnf.getStats());
 	}
+
+	@Test
+	void quants() throws IOException {
+		Formula f = Parser.parse(CharStreams.fromStream(this.getClass().getResourceAsStream("/quants.bool")));
+		f = f.normalize().standardize();
+		System.out.println(f);
+		CNF cnf = f.prenex().ground().tseitin();
+		System.out.println(cnf.getStats());
+		cnf.printModelTo(System.out);
+		//System.out.println(cnf.getStats());
+	}
 }

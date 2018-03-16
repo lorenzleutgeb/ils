@@ -1,11 +1,15 @@
 package it.unibz.stud_inf.ils.white.prisma.ast;
 
+import com.google.common.collect.Sets;
 import it.unibz.stud_inf.ils.white.prisma.IntIdGenerator;
 import it.unibz.stud_inf.ils.white.prisma.Substitution;
 
 import java.util.Map;
+import java.util.Set;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
+
+import static com.google.common.collect.Sets.union;
 
 public class IntExpressionRange extends Domain<IntNumberExpression> {
 	private final IntExpression min;
@@ -27,6 +31,11 @@ public class IntExpressionRange extends Domain<IntNumberExpression> {
 	@Override
 	public int size() {
 		throw new UnsupportedOperationException();
+	}
+
+	@Override
+	public Set<Variable> getOccuringVariables() {
+		return union(min.getOccuringVariables(), max.getOccuringVariables());
 	}
 
 	@Override

@@ -3,7 +3,11 @@ package it.unibz.stud_inf.ils.white.prisma.ast;
 import it.unibz.stud_inf.ils.white.prisma.IntIdGenerator;
 import it.unibz.stud_inf.ils.white.prisma.Substitution;
 
+import java.util.Collections;
 import java.util.Map;
+import java.util.Set;
+
+import static java.util.Collections.emptySet;
 
 public class ConstantPredicate extends Predicate {
 	public static final ConstantPredicate TRUE = new ConstantPredicate("true");
@@ -23,6 +27,11 @@ public class ConstantPredicate extends Predicate {
 	@Override
 	public Predicate ground(Substitution substitution) {
 		return this;
+	}
+
+	@Override
+	public Set<Variable> getOccuringVariables() {
+		return emptySet();
 	}
 
 	@Override
