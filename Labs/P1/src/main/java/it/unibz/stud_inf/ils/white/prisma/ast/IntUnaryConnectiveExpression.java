@@ -44,16 +44,16 @@ public class IntUnaryConnectiveExpression extends IntExpression {
 
 		switch (connective) {
 			case ABS:
-				x = abs(x);
+				return new IntNumberExpression(abs(x));
 			case NEG:
-				x = -x;
+				return new IntNumberExpression(-x);
+			default:
+				throw new UnsupportedOperationException();
 		}
-
-		return new IntNumberExpression(x);
 	}
 
 	@Override
-	public Set<Variable> getOccuringVariables() {
-		return subExpression.getOccuringVariables();
+	public Set<Variable> getOccurringVariables() {
+		return subExpression.getOccurringVariables();
 	}
 }

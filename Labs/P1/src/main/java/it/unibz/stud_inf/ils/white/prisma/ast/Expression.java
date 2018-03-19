@@ -1,6 +1,5 @@
 package it.unibz.stud_inf.ils.white.prisma.ast;
 
-import it.unibz.stud_inf.ils.white.prisma.CNF;
 import it.unibz.stud_inf.ils.white.prisma.Groundable;
 
 import java.util.Set;
@@ -24,53 +23,43 @@ public abstract class Expression implements Groundable<Expression, Expression> {
 		return this;
 	}
 
-	public Expression prenex() {
+	public Expression pushQuantifiersDown() {
 		return this;
 	}
 
-	public abstract Integer tseitin(CNF cnf);
+	public abstract Integer tseitin(it.unibz.stud_inf.ils.white.prisma.ConjunctiveNormalForm cnf);
 
-	public CNF tseitin() {
+	public it.unibz.stud_inf.ils.white.prisma.ConjunctiveNormalForm tseitin() {
 		// Are we already in CNF by chance?
-		CNF cnf = tseitinFast(this);
+		it.unibz.stud_inf.ils.white.prisma.ConjunctiveNormalForm cnf = tseitinFast(this);
 
 		// Fast path did not yield a result, use Tseitin.
-		if (cnf == null) {
-			cnf = new CNF();
-
-			// Assumption: Expression is ground!
-			Integer root = tseitin(cnf);
-			cnf.put(this, root);
-
-			// Ensure that the formula itself is true in every model.
-			cnf.add(root);
+		if (cnf != null) {
+			return cnf;
 		}
 
-		// Ensure that "true" is true in every model.
-		Integer t = cnf.get(Atom.TRUE);
-		if (t != null) {
-			cnf.add(t);
-		}
+		cnf = new it.unibz.stud_inf.ils.white.prisma.ConjunctiveNormalForm();
 
-		// Ensure that "false" is false in every model.
-		Integer f = cnf.get(Atom.FALSE);
-		if (f != null) {
-			cnf.add(-f);
-		}
+		// Assumption: Expression is ground!
+		Integer root = tseitin(cnf);
+		cnf.put(this, root);
+
+		// Ensure that the formula itself is true in every model.
+		cnf.add(root);
 
 		return cnf;
 	}
 
-	private static CNF tseitinFast(Expression expression) {
+	public static it.unibz.stud_inf.ils.white.prisma.ConjunctiveNormalForm tseitinFast(Expression expression) {
 		// Assumption: Formula is ground and in NNF.
 		if (expression instanceof Atom) {
-			CNF cnf = new CNF();
+			it.unibz.stud_inf.ils.white.prisma.ConjunctiveNormalForm cnf = new it.unibz.stud_inf.ils.white.prisma.ConjunctiveNormalForm();
 			Integer atom = cnf.put(expression);
 			cnf.add(atom);
 			return cnf;
 		}
 		if (expression instanceof NegatedExpression) {
-			CNF cnf = new CNF();
+			it.unibz.stud_inf.ils.white.prisma.ConjunctiveNormalForm cnf = new it.unibz.stud_inf.ils.white.prisma.ConjunctiveNormalForm();
 			Integer atom = cnf.put(((NegatedExpression)expression).getAtom());
 			cnf.add(-atom);
 			return cnf;
@@ -82,7 +71,27 @@ public abstract class Expression implements Groundable<Expression, Expression> {
 	}
 
 	@Override
-	public Set<Variable> getOccuringVariables() {
+	public Set<Variable> getOccurringVariables() {
 		throw new UnsupportedOperationException();
+	}
+
+	public static MultaryConnectiveExpression and(Expression left, Expression right) {
+		return new MultaryConnectiveExpression(
+			left,
+			MultaryConnectiveExpression.Connective.AND,
+			right
+		);
+	}
+
+	public static MultaryConnectiveExpression or(Expression left, Expression right) {
+		return new MultaryConnectiveExpression(
+			left,
+			MultaryConnectiveExpression.Connective.OR,
+			right
+		);
+	}
+
+	public static NegatedExpression not(Expression expression) {
+		return new NegatedExpression(expression);
 	}
 }

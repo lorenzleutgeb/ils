@@ -4,7 +4,11 @@ import it.unibz.stud_inf.ils.white.prisma.ast.Formula;
 import it.unibz.stud_inf.ils.white.prisma.parser.Parser;
 import org.antlr.v4.runtime.CharStream;
 import org.antlr.v4.runtime.CharStreams;
-import org.apache.commons.cli.*;
+import org.apache.commons.cli.CommandLine;
+import org.apache.commons.cli.DefaultParser;
+import org.apache.commons.cli.Option;
+import org.apache.commons.cli.Options;
+import org.apache.commons.cli.ParseException;
 
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -30,23 +34,23 @@ public class Main {
 		modeOption.setRequired(true);
 		options.addOption(modeOption);
 
-		Option nOption = new Option("n", OPT_N, true, "number of models to search for (only relevant in mode 'solve', default value 1)");
-		nOption.setArgs(1);
-		nOption.setArgName("n");
-		nOption.setRequired(false);
-		nOption.setType(Number.class);
-		options.addOption(nOption);
+		Option limitOption = new Option("n", OPT_N, true, "number of models to search for (only relevant in mode 'solve', default value 1)");
+		limitOption.setArgs(1);
+		limitOption.setArgName("n");
+		limitOption.setRequired(false);
+		limitOption.setType(Number.class);
+		options.addOption(limitOption);
 
 		Option inputOption = new Option("i", OPT_INPUT, true, "name of input file");
-		nOption.setArgs(1);
-		nOption.setArgName("<file>");
-		nOption.setRequired(true);
+		inputOption.setArgs(1);
+		inputOption.setArgName("<file>");
+		inputOption.setRequired(true);
 		options.addOption(inputOption);
 
 		Option outputOption = new Option("o", OPT_OUTPUT, true, "name of output file");
-		nOption.setArgs(1);
-		nOption.setArgName("<file>");
-		nOption.setRequired(true);
+		outputOption.setArgs(1);
+		outputOption.setArgName("<file>");
+		outputOption.setRequired(true);
 		options.addOption(outputOption);
 
 		CommandLine commandLine;
@@ -79,7 +83,7 @@ public class Main {
 
 		CharStream inputStream = CharStreams.fromFileName(commandLine.getOptionValue(OPT_INPUT));
 		Formula formula = Parser.parse(inputStream);
-		CNF cnf = formula.ground().tseitin();
+		ConjunctiveNormalForm cnf = formula.ground().tseitin();
 
 		try (FileOutputStream fos = new FileOutputStream(commandLine.getOptionValue(OPT_OUTPUT))) {
 			PrintStream ps = new PrintStream(fos);
@@ -94,6 +98,8 @@ public class Main {
 				case SOLVE:
 					cnf.printModelsTo(ps, limit);
 					break;
+				default:
+					bailOut("?", null);
 			}
 		}
 	}

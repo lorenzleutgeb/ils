@@ -4,7 +4,6 @@ import it.unibz.stud_inf.ils.white.prisma.IntIdGenerator;
 import it.unibz.stud_inf.ils.white.prisma.Substitution;
 import it.unibz.stud_inf.ils.white.prisma.Util;
 
-import java.util.Base64;
 import java.util.Collections;
 import java.util.Map;
 import java.util.Set;
@@ -26,7 +25,7 @@ public class PredicateVariable extends Predicate implements Variable<Predicate> 
 	}
 
 	@Override
-	public Set<Variable> getOccuringVariables() {
+	public Set<Variable> getOccurringVariables() {
 		return Collections.singleton(this);
 	}
 
@@ -37,8 +36,12 @@ public class PredicateVariable extends Predicate implements Variable<Predicate> 
 
 	@Override
 	public boolean equals(Object o) {
-		if (this == o) return true;
-		if (o == null || getClass() != o.getClass()) return false;
+		if (this == o) {
+			return true;
+		}
+		if (o == null || getClass() != o.getClass()) {
+			return false;
+		}
 
 		PredicateVariable that = (PredicateVariable) o;
 

@@ -22,4 +22,9 @@ public class Substitution {
 	public <T> T put(Variable<T> variable, T item) {
 		return (T) erased.put(variable, item);
 	}
+
+	@SuppressWarnings("unchecked")
+	public <T> T remove(Variable<T> variable) {
+		return (T) erased.remove(variable);
+	}
 }

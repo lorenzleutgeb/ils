@@ -30,7 +30,7 @@ public class ConstantTerm extends Term {
 	}
 
 	@Override
-	public Set<Variable> getOccuringVariables() {
+	public Set<Variable> getOccurringVariables() {
 		return Collections.emptySet();
 	}
 }

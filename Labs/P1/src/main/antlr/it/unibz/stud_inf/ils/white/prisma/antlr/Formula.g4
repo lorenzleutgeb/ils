@@ -3,17 +3,17 @@ grammar Formula;
 formula: expression+ EOF;
 
 expression
-    : (TRUE | FALSE)                                                                           # booleanConstant
-    | predicate (PAREN_OPEN args PAREN_CLOSE)?                                                # atom
-    | PAREN_OPEN expression PAREN_CLOSE                                                        # parenthesizedExpression
-    | NOT expression                                                                           # unary
-    | condition = expression QUESTION truthy = expression COLON falsy = expression             # ternary
-    | left = expression op = (AND | BAR | IF | IFF | THEN | XOR) right = expression            # binary
+    : (TRUE | FALSE)                                                                       # booleanConstant
+    | predicate (PAREN_OPEN args PAREN_CLOSE)?                                             # atom
+    | PAREN_OPEN expression PAREN_CLOSE                                                    # parenthesizedExpression
+    | NOT expression                                                                       # unary
+    | condition = expression QUESTION truthy = expression COLON falsy = expression         # ternary
+    | left = expression op = (AND | BAR | IF | IFF | THEN | XOR) right = expression        # binary
     | quantifier = (EXISTS |FORALL) variable = TVAR IN termSet scope = expression          # termQuantification
     | quantifier = (EXISTS |FORALL) variable = IVAR IN intExpressionSet scope = expression # intExpressionQuantification
     | quantifier = (EXISTS |FORALL) variable = PVAR IN predicateSet scope = expression     # predicateQuantification
-    | left = intExpression op = (GT | LT | GE | LE | NE | EQ) right = intExpression # arithmeticAtom
-    | left = term op = (NE | EQ) right = term # equalityAtom
+    | left = intExpression op = (GT | LT | GE | LE | NE | EQ) right = intExpression        # arithmeticAtom
+    | left = term op = (NE | EQ) right = term                                              # equalityAtom
     ;
 
 predicate
@@ -39,8 +39,8 @@ args
     ;
 
 term
-    : CON           # termConstant
-    | TVAR          # termVariable
+    : CON  # termConstant
+    | TVAR # termVariable
     ;
 
 terms
@@ -48,7 +48,7 @@ terms
     ;
 
 termSet
-    : CURLY_OPEN terms CURLY_CLOSE                                                  # termEnumeration
+    : CURLY_OPEN terms CURLY_CLOSE # termEnumeration
     ;
 
 intExpressionSet

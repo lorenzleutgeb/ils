@@ -3,7 +3,6 @@ package it.unibz.stud_inf.ils.white.prisma.ast;
 import it.unibz.stud_inf.ils.white.prisma.IntIdGenerator;
 import it.unibz.stud_inf.ils.white.prisma.Substitution;
 
-import java.util.Collections;
 import java.util.Map;
 import java.util.Set;
 
@@ -30,14 +29,18 @@ public class ConstantPredicate extends Predicate {
 	}
 
 	@Override
-	public Set<Variable> getOccuringVariables() {
+	public Set<Variable> getOccurringVariables() {
 		return emptySet();
 	}
 
 	@Override
 	public boolean equals(Object o) {
-		if (this == o) return true;
-		if (o == null || getClass() != o.getClass()) return false;
+		if (this == o) {
+			return true;
+		}
+		if (o == null || getClass() != o.getClass()) {
+			return false;
+		}
 
 		ConstantPredicate that = (ConstantPredicate) o;
 

@@ -1,9 +1,7 @@
 package it.unibz.stud_inf.ils.white.prisma.ast;
 
-import it.unibz.stud_inf.ils.white.prisma.Standardizable;
 import it.unibz.stud_inf.ils.white.prisma.Substitution;
 
-import java.util.Map;
 import java.util.Set;
 import java.util.stream.Stream;
 
@@ -12,5 +10,5 @@ public abstract class Domain<T> implements Standardizable<Domain<T>> {
 
 	public abstract int size();
 
-	public abstract Set<Variable> getOccuringVariables();
+	public abstract Set<Variable> getOccurringVariables();
 }

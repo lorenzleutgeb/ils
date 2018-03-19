@@ -1,6 +1,6 @@
 package it.unibz.stud_inf.ils.white.prisma.ast;
 
-import it.unibz.stud_inf.ils.white.prisma.CNF;
+import com.google.common.collect.Sets;
 import it.unibz.stud_inf.ils.white.prisma.IntIdGenerator;
 import it.unibz.stud_inf.ils.white.prisma.Substitution;
 
@@ -8,6 +8,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 public class Atom extends Expression {
@@ -44,12 +45,18 @@ public class Atom extends Expression {
 
 	@Override
 	public boolean equals(Object o) {
-		if (this == o) return true;
-		if (o == null || getClass() != o.getClass()) return false;
+		if (this == o) {
+			return true;
+		}
+		if (o == null || getClass() != o.getClass()) {
+			return false;
+		}
 
 		Atom atom = (Atom) o;
 
-		if (!predicate.equals(atom.predicate)) return false;
+		if (!predicate.equals(atom.predicate)) {
+			return false;
+		}
 		return args.equals(atom.args);
 	}
 
@@ -61,17 +68,13 @@ public class Atom extends Expression {
 	}
 
 	@Override
-	public Integer tseitin(CNF cnf) {
+	public Integer tseitin(it.unibz.stud_inf.ils.white.prisma.ConjunctiveNormalForm cnf) {
 		return cnf.put(this);
 	}
 
 	@Override
 	public Expression deMorgan() {
 		return new NegatedExpression(this);
-	}
-
-	public List<Arg> getArgs() {
-		return args;
 	}
 
 	@Override
@@ -86,5 +89,14 @@ public class Atom extends Expression {
 			predicate.standardize(map, generator),
 			standardized
 		);
+	}
+
+	@Override
+	public Set<Variable> getOccurringVariables() {
+		final Set<Variable> base = predicate.getOccurringVariables();
+		return args
+			.stream()
+			.map(Arg::getOccurringVariables)
+			.reduce(base, Sets::union);
 	}
 }

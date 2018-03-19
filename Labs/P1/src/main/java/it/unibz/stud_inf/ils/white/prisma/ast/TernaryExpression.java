@@ -1,6 +1,5 @@
 package it.unibz.stud_inf.ils.white.prisma.ast;
 
-import it.unibz.stud_inf.ils.white.prisma.CNF;
 import it.unibz.stud_inf.ils.white.prisma.IntIdGenerator;
 import it.unibz.stud_inf.ils.white.prisma.Substitution;
 
@@ -32,7 +31,7 @@ public class TernaryExpression extends Expression {
 	}
 
 	@Override
-	public Integer tseitin(CNF cnf) {
+	public Integer tseitin(it.unibz.stud_inf.ils.white.prisma.ConjunctiveNormalForm cnf) {
 		throw new IllegalStateException();
 	}
 

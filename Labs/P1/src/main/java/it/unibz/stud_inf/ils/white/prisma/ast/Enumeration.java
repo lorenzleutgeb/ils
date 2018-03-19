@@ -5,7 +5,6 @@ import it.unibz.stud_inf.ils.white.prisma.Groundable;
 import it.unibz.stud_inf.ils.white.prisma.IntIdGenerator;
 import it.unibz.stud_inf.ils.white.prisma.Substitution;
 
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -32,10 +31,10 @@ public class Enumeration<U extends Groundable<T,U>, T> extends Domain<T> {
 	}
 
 	@Override
-	public Set<Variable> getOccuringVariables() {
+	public Set<Variable> getOccurringVariables() {
 		return elements
 			.stream()
-			.map(Groundable::getOccuringVariables)
+			.map(Groundable::getOccurringVariables)
 			.reduce(emptySet(), Sets::union);
 	}
 

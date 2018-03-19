@@ -20,7 +20,7 @@ public class IntNumberExpression extends IntExpression {
 	}
 
 	@Override
-	public Set<Variable> getOccuringVariables() {
+	public Set<Variable> getOccurringVariables() {
 		return Collections.emptySet();
 	}
 
@@ -35,8 +35,12 @@ public class IntNumberExpression extends IntExpression {
 
 	@Override
 	public boolean equals(Object o) {
-		if (this == o) return true;
-		if (o == null || getClass() != o.getClass()) return false;
+		if (this == o) {
+			return true;
+		}
+		if (o == null || getClass() != o.getClass()) {
+			return false;
+		}
 
 		IntNumberExpression that = (IntNumberExpression) o;
 

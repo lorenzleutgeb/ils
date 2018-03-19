@@ -7,20 +7,29 @@ import it.unibz.stud_inf.ils.white.prisma.ast.Expression;
 import org.sat4j.core.Vec;
 import org.sat4j.core.VecInt;
 import org.sat4j.minisat.SolverFactory;
-import org.sat4j.specs.*;
+import org.sat4j.specs.ContradictionException;
+import org.sat4j.specs.ISolver;
+import org.sat4j.specs.IVec;
+import org.sat4j.specs.IVecInt;
+import org.sat4j.specs.TimeoutException;
 import org.sat4j.tools.ModelIterator;
 
 import java.io.PrintStream;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 import static it.unibz.stud_inf.ils.white.prisma.Util.SET_COLLECTOR;
 
-public class CNF {
+public class ConjunctiveNormalForm {
 	private final BiMap<String, Integer> map;
 	private final IVec<IVecInt> clauses;
 	private final IntIdGenerator generator = new IntIdGenerator(1);
 
-	public CNF() {
+	public ConjunctiveNormalForm() {
 		this.map = HashBiMap.create();
 		this.clauses = new Vec<>();
 	}
@@ -38,6 +47,12 @@ public class CNF {
 		//	throw new IllegalArgumentException("variable must be positive non-zero integer");
 		//}
 		return map.put(key(expression), variable);
+	}
+
+	public Integer put(Expression expression) {
+		int variable = (int) generator.getNextId();
+		map.put(key(expression), variable);
+		return variable;
 	}
 
 	public Integer computeIfAbsent(Expression expression) {
@@ -66,12 +81,6 @@ public class CNF {
 
 	public IVec<IVecInt> add(int... literals) {
 		return clauses.push(new VecInt(literals));
-	}
-
-	public Integer put(Expression expression) {
-		int variable = (int) generator.getNextId();
-		map.put(key(expression), variable);
-		return variable;
 	}
 
 	private static String key(Expression e) {
@@ -216,5 +225,51 @@ public class CNF {
 
 	public void printModelTo(PrintStream out) {
 		printModelsTo(out, 1);
+	}
+
+	public long getVariableCount() {
+		return generator.getHighestId() - 1;
+	}
+
+	public int getClauseCount() {
+		return clauses.size();
+	}
+
+	@Override
+	public String toString() {
+		StringBuilder sb = new StringBuilder();
+		sb.append("{");
+		for (int i = 0; i < clauses.size(); i++) {
+			IVecInt clause = clauses.get(i);
+			sb.append("{");
+			for (int j = 0; j < clause.size(); j++) {
+				Integer literal = clause.get(j);
+
+				if (literal < 0) {
+					sb.append("-");
+				}
+
+				Integer variable = Math.abs(literal);
+				String expression = get(variable);
+
+				if (expression.startsWith(":")) {
+					sb.append(expression.substring(1));
+				} else {
+					sb.append("@");
+					sb.append(variable);
+				}
+
+				if (j != clause.size() - 1) {
+					sb.append(", ");
+				}
+			}
+			if (i != clauses.size() - 1) {
+				sb.append("}, ");
+			} else {
+				sb.append("}");
+			}
+		}
+		sb.append("}");
+		return sb.toString();
 	}
 }

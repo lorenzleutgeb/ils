@@ -1,10 +1,10 @@
 package it.unibz.stud_inf.ils.white.prisma.ast;
 
-import it.unibz.stud_inf.ils.white.prisma.CNF;
 import it.unibz.stud_inf.ils.white.prisma.IntIdGenerator;
 import it.unibz.stud_inf.ils.white.prisma.Substitution;
 
 import java.util.Map;
+import java.util.Set;
 
 public class NegatedExpression extends Expression {
 	private final Expression subExpression;
@@ -25,8 +25,12 @@ public class NegatedExpression extends Expression {
 
 	@Override
 	public boolean equals(Object o) {
-		if (this == o) return true;
-		if (o == null || getClass() != o.getClass()) return false;
+		if (this == o) {
+			return true;
+		}
+		if (o == null || getClass() != o.getClass()) {
+			return false;
+		}
 
 		NegatedExpression that = (NegatedExpression) o;
 
@@ -39,7 +43,7 @@ public class NegatedExpression extends Expression {
 	}
 
 	@Override
-	public Integer tseitin(CNF cnf) {
+	public Integer tseitin(it.unibz.stud_inf.ils.white.prisma.ConjunctiveNormalForm cnf) {
 		if (!(subExpression instanceof Atom)) {
 			throw new IllegalStateException("Formula must be in negation normal form.");
 		}
@@ -50,7 +54,7 @@ public class NegatedExpression extends Expression {
 	@Override
 	public Expression normalize() {
 		if (subExpression instanceof NegatedExpression) {
-			return ((NegatedExpression)subExpression).subExpression.normalize();
+			return ((NegatedExpression) subExpression).subExpression.normalize();
 		}
 		if (subExpression instanceof Atom) {
 			return new NegatedExpression(subExpression.normalize());
@@ -67,11 +71,16 @@ public class NegatedExpression extends Expression {
 		if (!(subExpression instanceof Atom)) {
 			return null;
 		}
-		return (Atom)subExpression;
+		return (Atom) subExpression;
 	}
 
 	@Override
 	public Expression standardize(Map<Long, Long> map, IntIdGenerator generator) {
 		return new NegatedExpression(subExpression.standardize(map, generator));
+	}
+
+	@Override
+	public Set<Variable> getOccurringVariables() {
+		return subExpression.getOccurringVariables();
 	}
 }

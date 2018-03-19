@@ -26,7 +26,7 @@ public class CustomErrorListener extends BaseErrorListener {
 		this.recognitionExceptions.add(e);
 	}
 
-	public IOException getIOException() {
+	public IOException getInputOutputException() {
 		if (recognitionExceptions.isEmpty()) {
 			return null;
 		}

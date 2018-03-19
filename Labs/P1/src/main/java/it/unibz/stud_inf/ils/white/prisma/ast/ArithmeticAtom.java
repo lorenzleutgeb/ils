@@ -7,8 +7,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
-import static it.unibz.stud_inf.ils.white.prisma.ast.EqualityAtom.Connective.EQ;
-
 public class ArithmeticAtom extends Atom {
 	private final Connective connective;
 
@@ -39,9 +37,10 @@ public class ArithmeticAtom extends Atom {
 				return wrap(left == right);
 			case NE:
 				return wrap(left != right);
+			default:
+				throw new RuntimeException("How did I get here?");
 		}
 
-		throw new RuntimeException("How did I get here?");
 	}
 
 	@Override
@@ -89,8 +88,9 @@ public class ArithmeticAtom extends Atom {
 					return NE;
 				case NE:
 					return EQ;
+				default:
+					throw new RuntimeException("How did I get here?");
 			}
-			throw new RuntimeException("How did I get here?");
 		}
 
 		@Override

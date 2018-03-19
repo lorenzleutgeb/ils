@@ -1,14 +1,14 @@
 package it.unibz.stud_inf.ils.white.prisma.ast;
 
-import it.unibz.stud_inf.ils.white.prisma.CNF;
 import it.unibz.stud_inf.ils.white.prisma.IntIdGenerator;
-import it.unibz.stud_inf.ils.white.prisma.Standardizable;
 import it.unibz.stud_inf.ils.white.prisma.Substitution;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 public class QuantifiedExpression<T> extends Expression {
@@ -42,12 +42,13 @@ public class QuantifiedExpression<T> extends Expression {
 		for (T instance : quantifier.getDomain().stream(substitution).collect(Collectors.toList())) {
 			substitution.put(quantifier.getVariable(), instance);
 			instances.add(scope.ground(substitution));
+			substitution.remove(quantifier.getVariable());
 		}
 
 		return new MultaryConnectiveExpression(
 			quantifier.getConnective(),
 			instances
-		);
+		).compress();
 	}
 
 	@Override
@@ -66,12 +67,47 @@ public class QuantifiedExpression<T> extends Expression {
 	}
 
 	@Override
-	public Expression prenex() {
-		return switchScope(scope.prenex());
+	public Expression pushQuantifiersDown() {
+		if ((scope instanceof QuantifiedExpression) || (scope instanceof NegatedExpression) || (scope instanceof Atom)) {
+			return switchScope(scope.pushQuantifiersDown());
+		}
+		if (!(scope instanceof MultaryConnectiveExpression)) {
+			throw new IllegalStateException();
+		}
+
+		MultaryConnectiveExpression connectiveExpression = (MultaryConnectiveExpression) this.scope;
+
+		if (connectiveExpression.isClause()) {
+			return this;
+		}
+
+		Expression l = connectiveExpression.getLeft();
+		Expression r = connectiveExpression.getRight();
+
+		boolean cl = l.getOccurringVariables().contains(quantifier.getVariable());
+		boolean cr = r.getOccurringVariables().contains(quantifier.getVariable());
+
+		if (cl == cr) {
+			if (!cr) {
+				// Remove useless quantifier.
+				return this.scope;
+			} else {
+				return this;
+			}
+		}
+
+		Expression shouldBeScope = cr ? r : l;
+		Expression other = cr ? l : r;
+
+
+		return connectiveExpression.swap(
+			switchScope(shouldBeScope.pushQuantifiersDown()),
+			other.pushQuantifiersDown()
+		);
 	}
 
 	@Override
-	public Integer tseitin(CNF cnf) {
+	public Integer tseitin(it.unibz.stud_inf.ils.white.prisma.ConjunctiveNormalForm cnf) {
 		throw new IllegalStateException();
 	}
 
@@ -86,5 +122,12 @@ public class QuantifiedExpression<T> extends Expression {
 	@Override
 	public Expression normalize() {
 		return switchScope(scope.normalize());
+	}
+
+	@Override
+	public Set<Variable> getOccurringVariables() {
+		Set<Variable> sub = new HashSet<>(scope.getOccurringVariables());
+		sub.remove(quantifier.getVariable());
+		return sub;
 	}
 }

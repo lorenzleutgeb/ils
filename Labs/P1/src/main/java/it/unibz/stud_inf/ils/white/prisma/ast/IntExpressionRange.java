@@ -1,6 +1,5 @@
 package it.unibz.stud_inf.ils.white.prisma.ast;
 
-import com.google.common.collect.Sets;
 import it.unibz.stud_inf.ils.white.prisma.IntIdGenerator;
 import it.unibz.stud_inf.ils.white.prisma.Substitution;
 
@@ -34,8 +33,8 @@ public class IntExpressionRange extends Domain<IntNumberExpression> {
 	}
 
 	@Override
-	public Set<Variable> getOccuringVariables() {
-		return union(min.getOccuringVariables(), max.getOccuringVariables());
+	public Set<Variable> getOccurringVariables() {
+		return union(min.getOccurringVariables(), max.getOccurringVariables());
 	}
 
 	@Override

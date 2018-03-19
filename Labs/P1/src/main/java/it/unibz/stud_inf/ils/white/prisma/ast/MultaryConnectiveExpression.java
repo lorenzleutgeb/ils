@@ -1,17 +1,29 @@
 package it.unibz.stud_inf.ils.white.prisma.ast;
 
-import it.unibz.stud_inf.ils.white.prisma.CNF;
+import com.google.common.collect.Sets;
+import it.unibz.stud_inf.ils.white.prisma.Groundable;
 import it.unibz.stud_inf.ils.white.prisma.IntIdGenerator;
 import it.unibz.stud_inf.ils.white.prisma.Substitution;
 
-import java.util.*;
-import java.util.stream.Collectors;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
+import java.util.function.Function;
+import java.util.stream.Stream;
 
 import static it.unibz.stud_inf.ils.white.prisma.ast.Atom.FALSE;
 import static it.unibz.stud_inf.ils.white.prisma.ast.Atom.TRUE;
+import static java.util.Collections.emptySet;
 import static java.util.stream.Collectors.joining;
+import static java.util.stream.Collectors.toList;
 
 public class MultaryConnectiveExpression extends Expression {
+	public Connective getConnective() {
+		return connective;
+	}
+
 	private final Connective connective;
 	private final List<Expression> expressions;
 
@@ -19,13 +31,7 @@ public class MultaryConnectiveExpression extends Expression {
 		if (expressions.stream().anyMatch(Objects::isNull)) {
 			throw new NullPointerException();
 		}
-		if (expressions.stream().allMatch(e -> {
-			return (e instanceof MultaryConnectiveExpression) && ((MultaryConnectiveExpression)e).connective.equals(connective);
-		})) {
-			this.expressions = expressions.stream().flatMap(e -> ((MultaryConnectiveExpression)e).expressions.stream()).collect(Collectors.toList());
-		} else {
-			this.expressions = expressions;
-		}
+		this.expressions = expressions;
 		this.connective = connective;
 	}
 
@@ -35,27 +41,81 @@ public class MultaryConnectiveExpression extends Expression {
 		}
 		this.connective = connective;
 		this.expressions = Arrays.asList(expressions);
-		if (this.expressions.stream().anyMatch(Objects::isNull)) {
+		if (stream().anyMatch(Objects::isNull)) {
 			throw new NullPointerException();
 		}
 	}
 
+	public MultaryConnectiveExpression(Expression left, Connective connective, Expression right) {
+		this(connective, left, right);
+	}
+
+	public MultaryConnectiveExpression compress() {
+		if (expressions.stream().allMatch(e -> {
+			return (e instanceof MultaryConnectiveExpression) && ((MultaryConnectiveExpression) e).connective.equals(connective);
+		})) {
+			return new MultaryConnectiveExpression(
+				connective,
+				stream().flatMap(e -> ((MultaryConnectiveExpression) e).expressions.stream()).collect(toList())
+			);
+		}
+		return this;
+	}
+
+	private void assertSimple() {
+		if (expressions.size() != 2 && !(Connective.AND.equals(connective) || Connective.OR.equals(connective))) {
+			throw new IllegalArgumentException("Refusing multary connective");
+		}
+	}
+
+	public Expression getLeft() {
+		assertSimple();
+		return expressions.get(0);
+	}
+
+	public Expression getRight() {
+		assertSimple();
+		return expressions.get(1);
+	}
+
+	public MultaryConnectiveExpression swap(Expression... expressions) {
+		return swap(Arrays.asList(expressions));
+	}
+
+	public MultaryConnectiveExpression swap(List<Expression> expressions) {
+		return new MultaryConnectiveExpression(connective, expressions);
+	}
+
+	public boolean isClause() {
+		if (!Connective.OR.equals(connective)) {
+			return false;
+		}
+		return stream()
+			.allMatch(e -> ((e instanceof Atom) || (e instanceof NegatedExpression)));
+	}
+
 	@Override
 	public String toString() {
-		return expressions
-			.stream()
+		return stream()
 			.map(Object::toString)
 			.collect(joining(" " + connective + " ", "(", ")"));
 	}
 
 	@Override
-	public Expression prenex() {
+	public Expression pushQuantifiersDown() {
+		return new MultaryConnectiveExpression(
+			connective,
+			stream()
+				.map(Expression::pushQuantifiersDown)
+				.collect(toList())
+		).compress();
+		/*
 		if (expressions.size() != 2 && (Connective.AND.equals(connective) || Connective.OR.equals(connective))) {
 			throw new UnsupportedOperationException();
 		}
 
-		Expression l = expressions.get(0).prenex();
-		Expression r = expressions.get(1).prenex();
+		Expression l = expressions.get(0).pushQuantifiersDown();
+		Expression r = expressions.get(1).pushQuantifiersDown();
 
 		boolean ql = l instanceof QuantifiedExpression;
 		boolean qr = r instanceof QuantifiedExpression;
@@ -77,7 +137,7 @@ public class MultaryConnectiveExpression extends Expression {
 						connective,
 						q1.getScope(),
 						q2.getScope()
-					)
+					).pushQuantifiersDown()
 				)
 			);
 		}
@@ -90,8 +150,8 @@ public class MultaryConnectiveExpression extends Expression {
 				connective,
 				e,
 				q.getScope()
-			)
-		);
+			).pushQuantifiersDown()
+		);*/
 	}
 
 	@Override
@@ -105,62 +165,35 @@ public class MultaryConnectiveExpression extends Expression {
 
 		switch (this.connective) {
 			case THEN:
-				return new MultaryConnectiveExpression(
-					Connective.OR,
-					new NegatedExpression(left).normalize(),
-					right.normalize()
-				);
+				return or(not(left).normalize(), right.normalize());
 			case IFF:
-				return new MultaryConnectiveExpression(
-					Connective.AND,
-					new MultaryConnectiveExpression(
-						Connective.OR,
-						new NegatedExpression(left).normalize(),
-						right.normalize()
-					),
-					new MultaryConnectiveExpression(
-						Connective.OR,
-						new NegatedExpression(right).normalize(),
-						left.normalize()
-					)
+				return and(
+					or(not(left).normalize(), right.normalize()),
+					or(not(right).normalize(), left.normalize())
 				);
 			case IF:
-				return new MultaryConnectiveExpression(
-					Connective.OR,
-					left.normalize(),
-					new NegatedExpression(right).normalize()
-				);
+				return or(left.normalize(), not(right).normalize());
 			case XOR:
-				return new MultaryConnectiveExpression(
-					Connective.AND,
-					new MultaryConnectiveExpression(
-						Connective.OR,
-						left,
-						right
-					).normalize(),
-					new MultaryConnectiveExpression(
-						Connective.OR,
-						new NegatedExpression(right),
-						new NegatedExpression(left)
-					).normalize()
+				return and(
+					or(left, right).normalize(),
+					or(not(left), not(right)).normalize()
 				);
+			default:
+				return swap(left.normalize(), right.normalize());
 		}
-
-		return new MultaryConnectiveExpression(connective, left.normalize(), right.normalize());
 	}
 
 	@Override
 	public Expression ground(Substitution substitution) {
 		return new MultaryConnectiveExpression(
 			connective,
-			expressions
-				.stream()
+			stream()
 				.map(e -> e.ground(substitution))
 				.filter(e -> {
 					return !(e.equals(getIdentity()));
 				})
-				.collect(Collectors.toList())
-		);
+				.collect(toList())
+		).compress();
 	}
 
 	public Expression getIdentity() {
@@ -171,15 +204,12 @@ public class MultaryConnectiveExpression extends Expression {
 	}
 
 	@Override
-	public Integer tseitin(CNF cnf) {
+	public Integer tseitin(it.unibz.stud_inf.ils.white.prisma.ConjunctiveNormalForm cnf) {
 		if (!connective.equals(Connective.OR) && !connective.equals(Connective.AND)) {
 			throw new IllegalStateException();
 		}
 
-		List<Integer> variables = expressions
-			.stream()
-			.map(cnf::computeIfAbsent)
-			.collect(Collectors.toList());
+		List<Integer> variables = stream().map(cnf::computeIfAbsent).collect(toList());
 
 		Integer self = cnf.put(this);
 
@@ -204,13 +234,15 @@ public class MultaryConnectiveExpression extends Expression {
 	public Expression deMorgan() {
 		return new MultaryConnectiveExpression(
 			Connective.AND.equals(connective) ? Connective.OR : Connective.AND,
-			expressions.stream().map(Expression::deMorgan).collect(Collectors.toList())
+			stream()
+				.map(Expression::deMorgan)
+				.collect(toList())
 		);
 	}
 
-	public CNF tseitinFast() {
+	public it.unibz.stud_inf.ils.white.prisma.ConjunctiveNormalForm tseitinFast() {
 		if (Connective.OR.equals(connective)) {
-			CNF cnf = new CNF();
+			it.unibz.stud_inf.ils.white.prisma.ConjunctiveNormalForm cnf = new it.unibz.stud_inf.ils.white.prisma.ConjunctiveNormalForm();
 			int[] cnfClause = new int[expressions.size()];
 			for (int i = 0; i < expressions.size(); i++) {
 				Expression it = expressions.get(i);
@@ -230,7 +262,7 @@ public class MultaryConnectiveExpression extends Expression {
 		if (!Connective.AND.equals(connective)) {
 			return null;
 		}
-		CNF cnf = new CNF();
+		it.unibz.stud_inf.ils.white.prisma.ConjunctiveNormalForm cnf = new it.unibz.stud_inf.ils.white.prisma.ConjunctiveNormalForm();
 		for (Expression e : expressions) {
 			if ((e instanceof MultaryConnectiveExpression)) {
 				MultaryConnectiveExpression clause = (MultaryConnectiveExpression) e;
@@ -261,10 +293,11 @@ public class MultaryConnectiveExpression extends Expression {
 
 	@Override
 	public Expression standardize(Map<Long, Long> map, IntIdGenerator generator) {
-		return new MultaryConnectiveExpression(
-			connective,
-			expressions.stream().map(t -> t.standardize(map, generator)).collect(Collectors.toList())
-		);
+		return map(t -> t.standardize(map, generator));
+	}
+
+	public List<Expression> getExpressions() {
+		return expressions;
 	}
 
 	public enum Connective {
@@ -298,12 +331,18 @@ public class MultaryConnectiveExpression extends Expression {
 
 	@Override
 	public boolean equals(Object o) {
-		if (this == o) return true;
-		if (o == null || getClass() != o.getClass()) return false;
+		if (this == o) {
+			return true;
+		}
+		if (o == null || getClass() != o.getClass()) {
+			return false;
+		}
 
 		MultaryConnectiveExpression that = (MultaryConnectiveExpression) o;
 
-		if (connective != that.connective) return false;
+		if (connective != that.connective) {
+			return false;
+		}
 		return expressions.equals(that.expressions);
 	}
 
@@ -312,5 +351,21 @@ public class MultaryConnectiveExpression extends Expression {
 		int result = connective.hashCode();
 		result = 31 * result + expressions.hashCode();
 		return result;
+	}
+
+	@Override
+	public Set<Variable> getOccurringVariables() {
+		return expressions
+			.stream()
+			.map(Groundable::getOccurringVariables)
+			.reduce(emptySet(), Sets::union);
+	}
+
+	private Stream<Expression> stream() {
+		return expressions.stream();
+	}
+
+	private MultaryConnectiveExpression map(Function<? super Expression, ? extends Expression> f) {
+		return swap(stream().map(f).collect(toList()));
 	}
 }

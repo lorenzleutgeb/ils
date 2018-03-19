@@ -62,8 +62,9 @@ public class EqualityAtom extends Atom {
 					return NE;
 				case NE:
 					return EQ;
+				default:
+					throw new RuntimeException("How did I get here?");
 			}
-			throw new RuntimeException("How did I get here?");
 		}
 
 		@Override

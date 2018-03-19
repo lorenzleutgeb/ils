@@ -3,14 +3,42 @@ package it.unibz.stud_inf.ils.white.prisma.parser;
 import it.unibz.stud_inf.ils.white.prisma.antlr.FormulaBaseVisitor;
 import it.unibz.stud_inf.ils.white.prisma.antlr.FormulaLexer;
 import it.unibz.stud_inf.ils.white.prisma.antlr.FormulaParser;
-import it.unibz.stud_inf.ils.white.prisma.ast.*;
-import org.antlr.v4.runtime.*;
+import it.unibz.stud_inf.ils.white.prisma.ast.Arg;
+import it.unibz.stud_inf.ils.white.prisma.ast.ArithmeticAtom;
+import it.unibz.stud_inf.ils.white.prisma.ast.Atom;
+import it.unibz.stud_inf.ils.white.prisma.ast.ConstantPredicate;
+import it.unibz.stud_inf.ils.white.prisma.ast.ConstantTerm;
+import it.unibz.stud_inf.ils.white.prisma.ast.Domain;
+import it.unibz.stud_inf.ils.white.prisma.ast.Enumeration;
+import it.unibz.stud_inf.ils.white.prisma.ast.EqualityAtom;
+import it.unibz.stud_inf.ils.white.prisma.ast.Expression;
+import it.unibz.stud_inf.ils.white.prisma.ast.Formula;
+import it.unibz.stud_inf.ils.white.prisma.ast.IntBinaryConnectiveExpression;
+import it.unibz.stud_inf.ils.white.prisma.ast.IntExpression;
+import it.unibz.stud_inf.ils.white.prisma.ast.IntExpressionRange;
+import it.unibz.stud_inf.ils.white.prisma.ast.IntNumberExpression;
+import it.unibz.stud_inf.ils.white.prisma.ast.IntUnaryConnectiveExpression;
+import it.unibz.stud_inf.ils.white.prisma.ast.IntVariable;
+import it.unibz.stud_inf.ils.white.prisma.ast.MultaryConnectiveExpression;
+import it.unibz.stud_inf.ils.white.prisma.ast.NegatedExpression;
+import it.unibz.stud_inf.ils.white.prisma.ast.Predicate;
+import it.unibz.stud_inf.ils.white.prisma.ast.PredicateVariable;
+import it.unibz.stud_inf.ils.white.prisma.ast.QuantifiedExpression;
+import it.unibz.stud_inf.ils.white.prisma.ast.Quantifier;
+import it.unibz.stud_inf.ils.white.prisma.ast.Term;
+import it.unibz.stud_inf.ils.white.prisma.ast.TernaryExpression;
+import it.unibz.stud_inf.ils.white.prisma.ast.VariableTerm;
+import org.antlr.v4.runtime.BailErrorStrategy;
+import org.antlr.v4.runtime.CharStream;
+import org.antlr.v4.runtime.CharStreams;
+import org.antlr.v4.runtime.CommonTokenStream;
+import org.antlr.v4.runtime.DefaultErrorStrategy;
+import org.antlr.v4.runtime.RecognitionException;
 import org.antlr.v4.runtime.atn.PredictionMode;
 import org.antlr.v4.runtime.misc.ParseCancellationException;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -37,9 +65,7 @@ public class Parser {
 		final FormulaParser parser = new FormulaParser(new UnbufferedTokenStream<>(lexer));
 		parser.setBuildParseTree(false);
 		*/
-		CommonTokenStream tokens = new CommonTokenStream(
-			new FormulaLexer(stream)
-		);
+		CommonTokenStream tokens = new CommonTokenStream(new FormulaLexer(stream));
 		final FormulaParser parser = new FormulaParser(tokens);
 
 		// Try SLL parsing mode (faster but may terminate incorrectly).
@@ -78,7 +104,7 @@ public class Parser {
 		// org.antlr.v4.runtime.BailErrorStrategy cannot be used here, because it would
 		// abruptly stop parsing as soon as the first error is reached (i.e. no recovery
 		// is attempted) and the user will only see the first error encountered.
-		IOException ioe = errorListener.getIOException();
+		IOException ioe = errorListener.getInputOutputException();
 		if (ioe != null) {
 			throw ioe;
 		}
@@ -231,7 +257,6 @@ public class Parser {
 		}
 
 
-
 		@Override
 		public Domain visitIntExpressions(FormulaParser.IntExpressionsContext ctx) {
 			return new Enumeration<>(wrap(ctx.intExpressions()));
@@ -265,12 +290,18 @@ public class Parser {
 	private static class IntExpressionVisitor extends FormulaBaseVisitor<IntExpression> {
 		@Override
 		public IntExpression visitAbsIntExpression(FormulaParser.AbsIntExpressionContext ctx) {
-			return new IntUnaryConnectiveExpression(IntUnaryConnectiveExpression.Connective.ABS, visit(ctx.intExpression()));
+			return new IntUnaryConnectiveExpression(
+				IntUnaryConnectiveExpression.Connective.ABS,
+				visit(ctx.intExpression())
+			);
 		}
 
 		@Override
 		public IntExpression visitNegIntExpression(FormulaParser.NegIntExpressionContext ctx) {
-			return new IntUnaryConnectiveExpression(IntUnaryConnectiveExpression.Connective.NEG, visit(ctx.intExpression()));
+			return new IntUnaryConnectiveExpression(
+				IntUnaryConnectiveExpression.Connective.NEG,
+				visit(ctx.intExpression())
+			);
 		}
 
 		@Override
@@ -320,7 +351,7 @@ public class Parser {
 		ArgVisitor visitor = new ArgVisitor();
 
 		final List<Arg> terms = new ArrayList<>();
-		do  {
+		do {
 			FormulaParser.ArgContext arg = ctx.arg();
 			terms.add(visitor.visit(arg));
 		} while ((ctx = ctx.args()) != null);
@@ -336,7 +367,7 @@ public class Parser {
 		TermVisitor visitor = new TermVisitor();
 
 		final List<Term> terms = new ArrayList<>();
-		do  {
+		do {
 			FormulaParser.TermContext term = ctx.term();
 			terms.add(visitor.visit(term));
 		} while ((ctx = ctx.terms()) != null);
@@ -352,7 +383,7 @@ public class Parser {
 		PredicateVisitor visitor = new PredicateVisitor();
 
 		final List<Predicate> preds = new ArrayList<>();
-		do  {
+		do {
 			FormulaParser.PredicateContext predicate = ctx.predicate();
 			preds.add(visitor.visit(predicate));
 		} while ((ctx = ctx.predicates()) != null);
@@ -368,7 +399,7 @@ public class Parser {
 		IntExpressionVisitor visitor = new IntExpressionVisitor();
 
 		final List<IntExpression> ints = new ArrayList<>();
-		do  {
+		do {
 			FormulaParser.IntExpressionContext predicate = ctx.intExpression();
 			ints.add(visitor.visit(predicate));
 		} while ((ctx = ctx.intExpressions()) != null);

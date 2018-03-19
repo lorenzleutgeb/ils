@@ -1,6 +1,5 @@
 package it.unibz.stud_inf.ils.white.prisma.ast;
 
-import com.google.common.collect.Sets;
 import it.unibz.stud_inf.ils.white.prisma.IntIdGenerator;
 import it.unibz.stud_inf.ils.white.prisma.Substitution;
 
@@ -77,13 +76,14 @@ public class IntBinaryConnectiveExpression extends IntExpression {
 				return new IntNumberExpression(left + right);
 			case SUB:
 				return new IntNumberExpression(left - right);
+			default:
+				throw new UnsupportedOperationException();
 		}
-		throw new UnsupportedOperationException();
 	}
 
 	@Override
-	public Set<Variable> getOccuringVariables() {
-		return union(left.getOccuringVariables(), right.getOccuringVariables());
+	public Set<Variable> getOccurringVariables() {
+		return union(left.getOccurringVariables(), right.getOccurringVariables());
 	}
 
 	@Override
