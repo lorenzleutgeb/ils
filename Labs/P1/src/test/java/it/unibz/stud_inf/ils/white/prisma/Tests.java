@@ -68,7 +68,18 @@ class Tests {
 	@ParameterizedTest
 	@ValueSource(strings = {
 		"forall @X in {a,b} ~(@X & (exists #Y in [1...3] (t(#Y) -> q(#Y))))",
-		"forall $x in {a,b} exists $y in {$x,c} p($x,$y)",
+
+		"forall $x in {a,b} exists $y in {$x,c} p($x,$y) # noswitch, fine, related, dependent",
+		"exists $x in {a,b} forall $y in {$x,c} p($x,$y) # noswitch, related, dependent",
+		"exists $x in {a,b} forall $y in {c,d} p($x,$y) # noswitch, dependent",
+		"exists $x in {a,b} forall $y in {c,d} (p($x) & p($y)) # noswitch, fine, related, dependent",
+
+		"exists $y in {a,b,c} forall $x in {a,b,c} (q & (p($x) & p($y)))",
+		"forall $x in {a,b,c} exists $y in {a,b,c} (q & (p($x) & p($y)))",
+
+		"exists $y in {a,b,c} forall $x in {a,b,c} (q | (p($x) | p($y)))",
+		"forall $x in {a,b,c} exists $y in {a,b,c} (q | (p($x) | p($y)))",
+
 		"forall #X in [1...3] p(#X)",
 		"forall #X in [1...3] forall #Y in [1...3] p(#X,#Y)",
 		"forall #Y in [1...3] exists #X in [1...3] p(#Y,#X,#Y+#X)",
@@ -89,11 +100,9 @@ class Tests {
 		")",
 		"forall $x in {a,b} ((exists $y in {a,b} phi($y)) | ((exists $z in {a,b} psi($z)) -> rho($x)))",
 		"exists #x in [2...6] (#x < 4 & p(#x))",
+
 		"exists $y in {a,b,c} forall $x in {a,b,c} (p($x) & p($y))",
 		"forall $x in {a,b,c} exists $y in {a,b,c} (p($x) & p($y))",
-
-		"exists $y in {a,b,c} forall $x in {a,b,c} (q & (p($x) & p($y)))",
-		"forall $x in {a,b,c} exists $y in {a,b,c} (q & (p($x) & p($y)))",
 	})
 	void solveQuantified(String formula) {
 		Formula f = Parser.parse(formula);

@@ -99,4 +99,9 @@ public class Atom extends Expression {
 			.map(Arg::getOccurringVariables)
 			.reduce(base, Sets::union);
 	}
+
+	@Override
+	public Set<Set<Variable>> getRelatedVariables() {
+		return Set.of(getOccurringVariables());
+	}
 }

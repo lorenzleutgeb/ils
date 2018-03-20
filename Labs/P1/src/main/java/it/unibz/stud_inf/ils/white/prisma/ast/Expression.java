@@ -1,5 +1,6 @@
 package it.unibz.stud_inf.ils.white.prisma.ast;
 
+import it.unibz.stud_inf.ils.white.prisma.ConjunctiveNormalForm;
 import it.unibz.stud_inf.ils.white.prisma.Groundable;
 
 import java.util.Set;
@@ -27,18 +28,18 @@ public abstract class Expression implements Groundable<Expression, Expression> {
 		return this;
 	}
 
-	public abstract Integer tseitin(it.unibz.stud_inf.ils.white.prisma.ConjunctiveNormalForm cnf);
+	public abstract Integer tseitin(ConjunctiveNormalForm cnf);
 
-	public it.unibz.stud_inf.ils.white.prisma.ConjunctiveNormalForm tseitin() {
+	public ConjunctiveNormalForm tseitin() {
 		// Are we already in CNF by chance?
-		it.unibz.stud_inf.ils.white.prisma.ConjunctiveNormalForm cnf = tseitinFast(this);
+		ConjunctiveNormalForm cnf = tseitinFast(this);
 
 		// Fast path did not yield a result, use Tseitin.
 		if (cnf != null) {
 			return cnf;
 		}
 
-		cnf = new it.unibz.stud_inf.ils.white.prisma.ConjunctiveNormalForm();
+		cnf = new ConjunctiveNormalForm();
 
 		// Assumption: Expression is ground!
 		Integer root = tseitin(cnf);
@@ -50,16 +51,16 @@ public abstract class Expression implements Groundable<Expression, Expression> {
 		return cnf;
 	}
 
-	public static it.unibz.stud_inf.ils.white.prisma.ConjunctiveNormalForm tseitinFast(Expression expression) {
+	public static ConjunctiveNormalForm tseitinFast(Expression expression) {
 		// Assumption: Formula is ground and in NNF.
 		if (expression instanceof Atom) {
-			it.unibz.stud_inf.ils.white.prisma.ConjunctiveNormalForm cnf = new it.unibz.stud_inf.ils.white.prisma.ConjunctiveNormalForm();
+			ConjunctiveNormalForm cnf = new ConjunctiveNormalForm();
 			Integer atom = cnf.put(expression);
 			cnf.add(atom);
 			return cnf;
 		}
 		if (expression instanceof NegatedExpression) {
-			it.unibz.stud_inf.ils.white.prisma.ConjunctiveNormalForm cnf = new it.unibz.stud_inf.ils.white.prisma.ConjunctiveNormalForm();
+			ConjunctiveNormalForm cnf = new ConjunctiveNormalForm();
 			Integer atom = cnf.put(((NegatedExpression)expression).getAtom());
 			cnf.add(-atom);
 			return cnf;
@@ -72,6 +73,10 @@ public abstract class Expression implements Groundable<Expression, Expression> {
 
 	@Override
 	public Set<Variable> getOccurringVariables() {
+		throw new UnsupportedOperationException();
+	}
+
+	public Set<Set<Variable>> getRelatedVariables()  {
 		throw new UnsupportedOperationException();
 	}
 

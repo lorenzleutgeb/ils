@@ -31,7 +31,7 @@ public class Quantifier<T> {
 	}
 
 	public boolean isUniversal() {
-		return exists;
+		return !exists;
 	}
 
 	public Quantifier exists(Variable<T> variable, Domain<T> domain) {

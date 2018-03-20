@@ -68,7 +68,38 @@ public class QuantifiedExpression<T> extends Expression {
 
 	@Override
 	public Expression pushQuantifiersDown() {
-		if ((scope instanceof QuantifiedExpression) || (scope instanceof NegatedExpression) || (scope instanceof Atom)) {
+		if (scope instanceof QuantifiedExpression) {
+			// Check whether we should "jump".
+			// Three conditions must be satisfied:
+			//  1. Variables are not related.
+			//  2. Domains are not dependent.
+			//  3. this is quantified existentially.
+
+			if (quantifier.isUniversal()) {
+				return switchScope(scope.pushQuantifiersDown());
+			}
+
+			final var scope = (QuantifiedExpression) this.scope;
+
+			if (quantifier.isExististential() && scope.quantifier.isExististential()) {
+				return switchScope(scope.pushQuantifiersDown());
+			}
+
+			if (scope.scope.getRelatedVariables().stream().anyMatch(
+				s -> s.contains(this.quantifier.getVariable()) && s.contains(scope.quantifier.getVariable())
+			)) {
+				return switchScope(scope.pushQuantifiersDown());
+			}
+
+			if (scope.quantifier.getDomain().getOccurringVariables().contains(quantifier.getVariable())) {
+				return switchScope(scope.pushQuantifiersDown());
+			}
+
+			return scope.switchScope(
+				switchScope(scope.scope)
+			).pushQuantifiersDown();
+		}
+		if ((scope instanceof NegatedExpression) || (scope instanceof Atom)) {
 			return switchScope(scope.pushQuantifiersDown());
 		}
 		if (!(scope instanceof MultaryConnectiveExpression)) {
@@ -129,5 +160,10 @@ public class QuantifiedExpression<T> extends Expression {
 		Set<Variable> sub = new HashSet<>(scope.getOccurringVariables());
 		sub.remove(quantifier.getVariable());
 		return sub;
+	}
+
+	@Override
+	public Set<Set<Variable>> getRelatedVariables() {
+		return scope.getRelatedVariables();
 	}
 }

@@ -1,94 +1,60 @@
 package it.unibz.stud_inf.ils.white.prisma;
 
+import com.beust.jcommander.JCommander;
 import it.unibz.stud_inf.ils.white.prisma.ast.Formula;
 import it.unibz.stud_inf.ils.white.prisma.parser.Parser;
 import org.antlr.v4.runtime.CharStream;
 import org.antlr.v4.runtime.CharStreams;
-import org.apache.commons.cli.CommandLine;
-import org.apache.commons.cli.DefaultParser;
-import org.apache.commons.cli.Option;
-import org.apache.commons.cli.Options;
-import org.apache.commons.cli.ParseException;
 
+import java.io.BufferedReader;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.InputStreamReader;
 import java.io.PrintStream;
 
-public class Main {
-	private static final String OPT_MODE = "format";
-	private static final String OPT_N = "n";
-	private static final String OPT_INPUT = "input";
-	private static final String OPT_OUTPUT = "output";
-	private static final String DEFAULT_MODE = "solve";
+import static it.unibz.stud_inf.ils.white.prisma.Mode.REPL;
+import static it.unibz.stud_inf.ils.white.prisma.Util.SET_COLLECTOR;
 
-	private enum Mode {
-		CNF, DIMACS, SOLVE
-	}
+public class Main {
+	private static final String banner =
+		"             _                       \n" +
+		"  _ __  _ __(_)___ _ __ ___   __ _          /\\   \n" +
+		" | '_ \\| '__| / __| '_ ` _ \\ / _` |        /  \\\u001B[96m####\u001B[0m\n" +
+		" | |_) | |  | \\__ \\ | | | | | (_| |   \u001B[97m####\u001B[0m/    \\\u001B[95m####\u001B[0m\n" +
+		" | .__/|_|  |_|___/_| |_| |_|\\__,_|      /      \\\u001B[93m####\u001B[0m\n" +
+		" |_|                                    /________\\\n" +
+		"\n" +
+		" powered by ANTLR.org and SAT4J.org\n";
 
 	public static void main(String[] args) throws IOException {
-		final Options options = new Options();
+		System.out.println(banner);
+		Options options = new Options();
 
-		Option modeOption = new Option("m", OPT_MODE, true, "mode of operation");
-		modeOption.setArgs(1);
-		modeOption.setArgName("<cnf|dimacs|solve>");
-		modeOption.setRequired(true);
-		options.addOption(modeOption);
+		JCommander jc = JCommander.newBuilder().programName("prisma").addObject(options).build();
+		jc.parse(args);
 
-		Option limitOption = new Option("n", OPT_N, true, "number of models to search for (only relevant in mode 'solve', default value 1)");
-		limitOption.setArgs(1);
-		limitOption.setArgName("n");
-		limitOption.setRequired(false);
-		limitOption.setType(Number.class);
-		options.addOption(limitOption);
+		if (options.help) {
+			jc.usage();
+		}
 
-		Option inputOption = new Option("i", OPT_INPUT, true, "name of input file");
-		inputOption.setArgs(1);
-		inputOption.setArgName("<file>");
-		inputOption.setRequired(true);
-		options.addOption(inputOption);
-
-		Option outputOption = new Option("o", OPT_OUTPUT, true, "name of output file");
-		outputOption.setArgs(1);
-		outputOption.setArgName("<file>");
-		outputOption.setRequired(true);
-		options.addOption(outputOption);
-
-		CommandLine commandLine;
-		try {
-			commandLine = new DefaultParser().parse(options, args);
-		} catch (ParseException e) {
-			System.err.println(e.getMessage());
+		if (REPL.equals(options.mode)) {
+			repl();
 			return;
 		}
 
-		int limit = 1;
-		try {
-			Number n = (Number)commandLine.getParsedOptionValue(OPT_N);
-			if (n != null) {
-				limit = n.intValue();
-			}
-		} catch (ParseException e) {
-			bailOut("Failed to parse number of models requested.", e);
+		CharStream inputStream;
+
+		if (options.positionals.isEmpty()) {
+			inputStream = CharStreams.fromStream(System.in);
+		} else {
+			inputStream = CharStreams.fromFileName(options.positionals.remove(0));
 		}
 
-		final String requestedMode = commandLine.getOptionValue(OPT_MODE, DEFAULT_MODE);
-
-		Mode mode;
-		try {
-			mode = Mode.valueOf(requestedMode.toUpperCase());
-		} catch (IllegalArgumentException e) {
-			bailOut("Unknown mode. Choose one of {cnf,dimacs,solve}!", null);
-			return;
-		}
-
-		CharStream inputStream = CharStreams.fromFileName(commandLine.getOptionValue(OPT_INPUT));
 		Formula formula = Parser.parse(inputStream);
 		ConjunctiveNormalForm cnf = formula.ground().tseitin();
 
-		try (FileOutputStream fos = new FileOutputStream(commandLine.getOptionValue(OPT_OUTPUT))) {
-			PrintStream ps = new PrintStream(fos);
-
-			switch (mode) {
+		try (PrintStream ps = new PrintStream(options.positionals.isEmpty() ? System.out : new FileOutputStream(options.positionals.get(0)))) {
+			switch (options.mode) {
 				case CNF:
 					cnf.printTo(ps);
 					break;
@@ -96,11 +62,54 @@ public class Main {
 					cnf.printDimacsTo(ps);
 					break;
 				case SOLVE:
-					cnf.printModelsTo(ps, limit);
+					cnf.printModelsTo(ps, options.models);
 					break;
 				default:
 					bailOut("?", null);
 			}
+		}
+	}
+
+	private static void repl() {
+		Formula f = new Formula();
+		BufferedReader reader = new BufferedReader(new InputStreamReader(System.in));
+
+		// Maybe print the grammar here.
+		System.out.println(" \"<expression>\"  to  conjoin it with previous ones\n             \"\"  to  search models\n        \"clear\"  to  start over\n         \"exit\"  to  exit");
+
+		try {
+			System.out.print("> ");
+			String ln;
+			while ((ln = reader.readLine()) != null) {
+				if (ln.isEmpty()) {
+					var it = f.toConjunctiveNormalForm().getModelIterator(Long.MAX_VALUE);
+
+					while (true) {
+						if (!it.hasNext()) {
+							System.out.println("UNSAT");
+							break;
+						}
+
+						System.out.println(it.next().stream().collect(SET_COLLECTOR));
+
+						System.out.print("Search for more? [y|N] ");
+						ln = reader.readLine();
+
+						if (!ln.toLowerCase().startsWith("y")) {
+							break;
+						}
+					}
+				} else if (ln.toLowerCase().equals("clear")) {
+					f = new Formula();
+				} else {
+					f.add(Parser.parse(ln));
+					System.out.println(f.toSingleExpression());
+				}
+
+				System.out.print("> ");
+			}
+			reader.close();
+		} catch (IOException e) {
 		}
 	}
 

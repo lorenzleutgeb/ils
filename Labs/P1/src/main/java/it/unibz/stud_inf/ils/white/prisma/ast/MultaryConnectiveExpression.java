@@ -361,6 +361,14 @@ public class MultaryConnectiveExpression extends Expression {
 			.reduce(emptySet(), Sets::union);
 	}
 
+	@Override
+	public Set<Set<Variable>> getRelatedVariables() {
+		return expressions
+			.stream()
+			.map(Expression::getRelatedVariables)
+			.reduce(emptySet(), Sets::union);
+	}
+
 	private Stream<Expression> stream() {
 		return expressions.stream();
 	}

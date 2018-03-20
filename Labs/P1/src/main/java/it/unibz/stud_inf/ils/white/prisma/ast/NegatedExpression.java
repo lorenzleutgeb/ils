@@ -83,4 +83,9 @@ public class NegatedExpression extends Expression {
 	public Set<Variable> getOccurringVariables() {
 		return subExpression.getOccurringVariables();
 	}
+
+	@Override
+	public Set<Set<Variable>> getRelatedVariables() {
+		return subExpression.getRelatedVariables();
+	}
 }

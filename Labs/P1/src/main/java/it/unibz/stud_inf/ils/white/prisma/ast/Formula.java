@@ -5,6 +5,7 @@ import it.unibz.stud_inf.ils.white.prisma.Groundable;
 import it.unibz.stud_inf.ils.white.prisma.IntIdGenerator;
 import it.unibz.stud_inf.ils.white.prisma.Substitution;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
@@ -22,6 +23,18 @@ public class Formula implements Iterable<Expression>, Groundable<Formula, Formul
 
 	public Formula(List<Expression> expressions) {
 		this.expressions = expressions;
+	}
+
+	public Formula() {
+		this(new ArrayList<>());
+	}
+
+	public void add(Expression expression) {
+		expressions.add(expression);
+	}
+
+	public void add(Formula formula) {
+		expressions.addAll(formula.expressions);
 	}
 
 	@Override
@@ -149,6 +162,6 @@ public class Formula implements Iterable<Expression>, Groundable<Formula, Formul
 	}
 
 	public ConjunctiveNormalForm toConjunctiveNormalForm() {
-		return normalize().pushQuantifiersDown().ground().tseitin();
+		return normalize().standardize().pushQuantifiersDown().ground().tseitin();
 	}
 }

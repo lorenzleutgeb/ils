@@ -18,6 +18,7 @@ import java.io.PrintStream;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -213,6 +214,40 @@ public class ConjunctiveNormalForm {
 		}
 
 		throw new RuntimeException("How did I get here?");
+	}
+
+	public Iterator<Set<String>> getModelIterator(long bound) {
+		ISolver solver = SolverFactory.newDefault();
+
+		try {
+			solver.addAllClauses(getClauses());
+		} catch (ContradictionException e) {
+			return Collections.emptyIterator();
+		}
+
+		return new CustomModelIterator(solver, bound);
+	}
+
+	private class CustomModelIterator implements Iterator<Set<String>> {
+		private final ISolver delegate;
+
+		public CustomModelIterator(ISolver solver, long bound) {
+			delegate = new ModelIterator(solver, bound);
+		}
+
+		@Override
+		public boolean hasNext() {
+			try {
+				return delegate.isSatisfiable();
+			} catch (TimeoutException e) {
+				return false;
+			}
+		}
+
+		@Override
+		public Set<String> next() {
+			return translate(delegate.model());
+		}
 	}
 
 	public String getStats() {
