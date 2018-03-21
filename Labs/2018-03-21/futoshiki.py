@@ -44,4 +44,22 @@ def read(stream):
 
     return (n, gt, fix)
 
+def decode(point, row, col, n):
+    digits=range(1,n+1)
+    for val in digits:
+        if point[X[row,col,val]]:
+            return str(digits[val-1])
+    return "X"
+
+def display(point,n):
+    digits=range(1,n+1)
+    chars = list()
+    for row in digits:
+        for col in digits:
+            chars.append(decode(point, r, c))
+        chars.append('\n')
+
+    print("".join(chars))
+    
+
 read(stdin)
