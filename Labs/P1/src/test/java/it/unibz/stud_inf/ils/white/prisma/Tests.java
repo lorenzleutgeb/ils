@@ -70,10 +70,10 @@ class Tests {
 	@ValueSource(strings = {
 		"forall @X in {a,b} ~(@X & (exists #Y in [1...3] (t(#Y) -> q(#Y))))",
 
-		"forall $x in {a,b} exists $y in {$x,c} p($x,$y) # noswitch, fine, related, dependent",
-		"exists $x in {a,b} forall $y in {$x,c} p($x,$y) # noswitch, related, dependent",
-		"exists $x in {a,b} forall $y in {c,d} p($x,$y) # noswitch, dependent",
-		"exists $x in {a,b} forall $y in {c,d} (p($x) & p($y)) # noswitch, fine, related, dependent",
+		"forall $x in {a,b} exists $y in {$x,c} p($x,$y)", // noswitch, fine, related, dependent
+		"exists $x in {a,b} forall $y in {$x,c} p($x,$y)", // noswitch, related, dependent
+		"exists $x in {a,b} forall $y in {c,d} p($x,$y)", // noswitch, dependent
+		"exists $x in {a,b} forall $y in {c,d} (p($x) & p($y))", // noswitch, fine, related, dependent
 
 		"exists $y in {a,b,c} forall $x in {a,b,c} (q & (p($x) & p($y)))",
 		"forall $x in {a,b,c} exists $y in {a,b,c} (q & (p($x) & p($y)))",
