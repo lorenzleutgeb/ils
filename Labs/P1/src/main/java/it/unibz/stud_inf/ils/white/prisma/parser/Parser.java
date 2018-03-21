@@ -19,14 +19,12 @@ import it.unibz.stud_inf.ils.white.prisma.ast.IntExpressionRange;
 import it.unibz.stud_inf.ils.white.prisma.ast.IntNumberExpression;
 import it.unibz.stud_inf.ils.white.prisma.ast.IntUnaryConnectiveExpression;
 import it.unibz.stud_inf.ils.white.prisma.ast.IntVariable;
-import it.unibz.stud_inf.ils.white.prisma.ast.MultaryConnectiveExpression;
-import it.unibz.stud_inf.ils.white.prisma.ast.NegatedExpression;
+import it.unibz.stud_inf.ils.white.prisma.ast.ConnectiveExpression;
 import it.unibz.stud_inf.ils.white.prisma.ast.Predicate;
 import it.unibz.stud_inf.ils.white.prisma.ast.PredicateVariable;
 import it.unibz.stud_inf.ils.white.prisma.ast.QuantifiedExpression;
 import it.unibz.stud_inf.ils.white.prisma.ast.Quantifier;
 import it.unibz.stud_inf.ils.white.prisma.ast.Term;
-import it.unibz.stud_inf.ils.white.prisma.ast.TernaryExpression;
 import it.unibz.stud_inf.ils.white.prisma.ast.VariableTerm;
 import org.antlr.v4.runtime.BailErrorStrategy;
 import org.antlr.v4.runtime.CharStream;
@@ -184,13 +182,16 @@ public class Parser {
 
 		@Override
 		public Expression visitUnary(FormulaParser.UnaryContext ctx) {
-			return new NegatedExpression(visit(ctx.expression()));
+			return new ConnectiveExpression(
+				ConnectiveExpression.Connective.NOT,
+				visit(ctx.expression())
+			);
 		}
 
 		@Override
 		public Expression visitBinary(FormulaParser.BinaryContext ctx) {
-			return new MultaryConnectiveExpression(
-				MultaryConnectiveExpression.Connective.fromOperator(ctx.op.getText()),
+			return new ConnectiveExpression(
+				ConnectiveExpression.Connective.fromOperator(ctx.op.getText()),
 				visit(ctx.left),
 				visit(ctx.right)
 			);
@@ -198,7 +199,8 @@ public class Parser {
 
 		@Override
 		public Expression visitTernary(FormulaParser.TernaryContext ctx) {
-			return new TernaryExpression(
+			return new ConnectiveExpression(
+				ConnectiveExpression.Connective.ITE,
 				visit(ctx.condition),
 				visit(ctx.truthy),
 				visit(ctx.falsy)

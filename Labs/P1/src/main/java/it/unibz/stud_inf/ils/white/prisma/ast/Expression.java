@@ -5,8 +5,12 @@ import it.unibz.stud_inf.ils.white.prisma.Groundable;
 
 import java.util.Set;
 
+import static it.unibz.stud_inf.ils.white.prisma.ast.ConnectiveExpression.Connective.AND;
+import static it.unibz.stud_inf.ils.white.prisma.ast.ConnectiveExpression.Connective.NOT;
+import static it.unibz.stud_inf.ils.white.prisma.ast.ConnectiveExpression.Connective.OR;
+
 public abstract class Expression implements Groundable<Expression, Expression> {
-	public Expression compress(Expression left, MultaryConnectiveExpression.Connective connective, Expression right) {
+	public Expression compress(Expression left, ConnectiveExpression.Connective connective, Expression right) {
 		// This should implement some basic compression of the AST. For example,
 		// a | ~a  ->  true
 		// a & ~a  ->  false
@@ -30,45 +34,27 @@ public abstract class Expression implements Groundable<Expression, Expression> {
 
 	public abstract Integer tseitin(ConjunctiveNormalForm cnf);
 
-	public ConjunctiveNormalForm tseitin() {
-		// Are we already in CNF by chance?
-		ConjunctiveNormalForm cnf = tseitinFast(this);
-
-		// Fast path did not yield a result, use Tseitin.
-		if (cnf != null) {
-			return cnf;
-		}
-
-		cnf = new ConjunctiveNormalForm();
-
-		// Assumption: Expression is ground!
-		Integer root = tseitin(cnf);
-		cnf.put(this, root);
-
-		// Ensure that the formula itself is true in every model.
-		cnf.add(root);
-
-		return cnf;
-	}
-
 	public static ConjunctiveNormalForm tseitinFast(Expression expression) {
 		// Assumption: Formula is ground and in NNF.
-		if (expression instanceof Atom) {
-			ConjunctiveNormalForm cnf = new ConjunctiveNormalForm();
-			Integer atom = cnf.put(expression);
-			cnf.add(atom);
-			return cnf;
+		if (expression instanceof ConnectiveExpression) {
+			if (expression.isLiteral()) {
+				ConjunctiveNormalForm cnf = new ConjunctiveNormalForm();
+				Integer atom = cnf.put(((ConnectiveExpression)expression).getExpressions().get(0));
+				cnf.add(-atom);
+				return cnf;
+			} else {
+				return ((ConnectiveExpression)expression).tseitinFast();
+			}
 		}
-		if (expression instanceof NegatedExpression) {
-			ConjunctiveNormalForm cnf = new ConjunctiveNormalForm();
-			Integer atom = cnf.put(((NegatedExpression)expression).getAtom());
-			cnf.add(-atom);
-			return cnf;
-		}
-		if (!(expression instanceof MultaryConnectiveExpression)) {
+
+		if (!(expression instanceof Atom)) {
 			return null;
 		}
-		return ((MultaryConnectiveExpression)expression).tseitinFast();
+
+		ConjunctiveNormalForm cnf = new ConjunctiveNormalForm();
+		Integer atom = cnf.put(expression);
+		cnf.add(atom);
+		return cnf;
 	}
 
 	@Override
@@ -80,23 +66,30 @@ public abstract class Expression implements Groundable<Expression, Expression> {
 		throw new UnsupportedOperationException();
 	}
 
-	public static MultaryConnectiveExpression and(Expression left, Expression right) {
-		return new MultaryConnectiveExpression(
+	public static ConnectiveExpression and(Expression left, Expression right) {
+		return new ConnectiveExpression(
 			left,
-			MultaryConnectiveExpression.Connective.AND,
+			AND,
 			right
 		);
 	}
 
-	public static MultaryConnectiveExpression or(Expression left, Expression right) {
-		return new MultaryConnectiveExpression(
+	public static ConnectiveExpression or(Expression left, Expression right) {
+		return new ConnectiveExpression(
 			left,
-			MultaryConnectiveExpression.Connective.OR,
+			OR,
 			right
 		);
 	}
 
-	public static NegatedExpression not(Expression expression) {
-		return new NegatedExpression(expression);
+	public static ConnectiveExpression not(Expression expression) {
+		return new ConnectiveExpression(
+			NOT,
+			expression
+		);
+	}
+
+	public boolean isLiteral() {
+		return false;
 	}
 }

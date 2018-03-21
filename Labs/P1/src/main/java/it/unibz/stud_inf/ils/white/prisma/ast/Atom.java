@@ -1,6 +1,7 @@
 package it.unibz.stud_inf.ils.white.prisma.ast;
 
 import com.google.common.collect.Sets;
+import it.unibz.stud_inf.ils.white.prisma.ConjunctiveNormalForm;
 import it.unibz.stud_inf.ils.white.prisma.IntIdGenerator;
 import it.unibz.stud_inf.ils.white.prisma.Substitution;
 
@@ -68,13 +69,13 @@ public class Atom extends Expression {
 	}
 
 	@Override
-	public Integer tseitin(it.unibz.stud_inf.ils.white.prisma.ConjunctiveNormalForm cnf) {
+	public Integer tseitin(ConjunctiveNormalForm cnf) {
 		return cnf.put(this);
 	}
 
 	@Override
 	public Expression deMorgan() {
-		return new NegatedExpression(this);
+		return not(this);
 	}
 
 	@Override
@@ -103,5 +104,10 @@ public class Atom extends Expression {
 	@Override
 	public Set<Set<Variable>> getRelatedVariables() {
 		return Set.of(getOccurringVariables());
+	}
+
+	@Override
+	public boolean isLiteral() {
+		return true;
 	}
 }

@@ -45,7 +45,7 @@ public class QuantifiedExpression<T> extends Expression {
 			substitution.remove(quantifier.getVariable());
 		}
 
-		return new MultaryConnectiveExpression(
+		return new ConnectiveExpression(
 			quantifier.getConnective(),
 			instances
 		).compress();
@@ -99,14 +99,14 @@ public class QuantifiedExpression<T> extends Expression {
 				switchScope(scope.scope)
 			).pushQuantifiersDown();
 		}
-		if ((scope instanceof NegatedExpression) || (scope instanceof Atom)) {
+		if (scope.isLiteral()) {
 			return switchScope(scope.pushQuantifiersDown());
 		}
-		if (!(scope instanceof MultaryConnectiveExpression)) {
+		if (!(scope instanceof ConnectiveExpression)) {
 			throw new IllegalStateException();
 		}
 
-		MultaryConnectiveExpression connectiveExpression = (MultaryConnectiveExpression) this.scope;
+		ConnectiveExpression connectiveExpression = (ConnectiveExpression) this.scope;
 
 		if (connectiveExpression.isClause()) {
 			return this;

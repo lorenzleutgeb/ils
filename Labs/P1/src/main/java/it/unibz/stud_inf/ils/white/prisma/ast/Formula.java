@@ -13,7 +13,7 @@ import java.util.Map;
 import java.util.Set;
 
 import static it.unibz.stud_inf.ils.white.prisma.ast.Atom.TRUE;
-import static it.unibz.stud_inf.ils.white.prisma.ast.MultaryConnectiveExpression.Connective.AND;
+import static it.unibz.stud_inf.ils.white.prisma.ast.ConnectiveExpression.Connective.AND;
 import static java.util.Collections.singletonList;
 import static java.util.stream.Collectors.joining;
 import static java.util.stream.Collectors.toList;
@@ -83,7 +83,7 @@ public class Formula implements Iterable<Expression>, Groundable<Formula, Formul
 			);
 		}
 
-		return new Formula(singletonList(new MultaryConnectiveExpression(
+		return new Formula(singletonList(new ConnectiveExpression(
 			AND,
 			expressions.stream().map(e -> e.ground(substitution)).collect(toList())
 		).compress()));
@@ -110,7 +110,7 @@ public class Formula implements Iterable<Expression>, Groundable<Formula, Formul
 		ConjunctiveNormalForm cnf = Expression.tseitinFast(root);
 
 		if (cnf == null) {
-			MultaryConnectiveExpression connectiveExpression = (MultaryConnectiveExpression) root;
+			ConnectiveExpression connectiveExpression = (ConnectiveExpression) root;
 
 			final ConjunctiveNormalForm fcnf = new ConjunctiveNormalForm();
 

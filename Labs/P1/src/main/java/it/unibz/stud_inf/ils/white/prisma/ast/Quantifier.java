@@ -58,8 +58,8 @@ public class Quantifier<T> {
 		return domain;
 	}
 
-	public MultaryConnectiveExpression.Connective getConnective() {
-		return exists ? MultaryConnectiveExpression.Connective.OR : MultaryConnectiveExpression.Connective.AND;
+	public ConnectiveExpression.Connective getConnective() {
+		return exists ? ConnectiveExpression.Connective.OR : ConnectiveExpression.Connective.AND;
 	}
 
 	public Quantifier<T> switchBoth(Variable<T> variable, Domain<T> domain) {
