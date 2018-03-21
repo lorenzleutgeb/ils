@@ -77,7 +77,7 @@ def encode(gt,fix,n):
     fixes = And(*[futo(row,col,val) for (row,col,val) in fix])
 
     # Conjunction of constraints.
-    sol = And(vals,rows,cols,ineqs,fixes)i
+    sol = And(vals,rows,cols,ineqs,fixes)
 
     return sol
 
