@@ -16,6 +16,7 @@ import java.util.stream.Stream;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class Tests {
 	static Stream<? extends Arguments> groundInstances() {
@@ -120,14 +121,11 @@ class Tests {
 
 	@Test
 	void parseExplosion() {
-		for (int n = 1; n < 8; n++) {
-			String in = String.join(" ^ ", Collections.nCopies(n, "p"));
-			String out = Parser.parse(in).toConjunctiveNormalForm().toString();
-			System.out.println(n + " " + in.length() + " " + out.length());
-
-			if (out.length() < 80) {
-				System.out.println(out);
-			}
+		for (int n = 3; n < 11; n++) {
+			final String in = String.join(" ^ ", Collections.nCopies(n, "p"));
+			final String out = Parser.parse(in).toConjunctiveNormalForm().toString();
+			final int ratio = out.length() / in.length();
+			assertTrue(30 < ratio && ratio < 60, "CNF does not explode in size.");
 		}
 	}
 
