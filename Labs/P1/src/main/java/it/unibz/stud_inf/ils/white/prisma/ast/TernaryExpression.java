@@ -1,5 +1,6 @@
 package it.unibz.stud_inf.ils.white.prisma.ast;
 
+import it.unibz.stud_inf.ils.white.prisma.ConjunctiveNormalForm;
 import it.unibz.stud_inf.ils.white.prisma.IntIdGenerator;
 import it.unibz.stud_inf.ils.white.prisma.Substitution;
 
@@ -31,24 +32,15 @@ public class TernaryExpression extends Expression {
 	}
 
 	@Override
-	public Integer tseitin(it.unibz.stud_inf.ils.white.prisma.ConjunctiveNormalForm cnf) {
+	public Integer tseitin(ConjunctiveNormalForm cnf) {
 		throw new IllegalStateException();
 	}
 
 	@Override
 	public Expression normalize() {
-		return new MultaryConnectiveExpression(
-			MultaryConnectiveExpression.Connective.AND,
-			new MultaryConnectiveExpression(
-				MultaryConnectiveExpression.Connective.OR,
-				new NegatedExpression(condition),
-				truthy
-			),
-			new MultaryConnectiveExpression(
-				MultaryConnectiveExpression.Connective.OR,
-				condition,
-				falsy
-			)
+		return and(
+			or(not(condition).normalize(), truthy.normalize()),
+			or(condition.normalize(), falsy.normalize())
 		);
 	}
 
