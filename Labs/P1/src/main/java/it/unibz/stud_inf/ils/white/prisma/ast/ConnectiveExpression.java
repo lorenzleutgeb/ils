@@ -6,6 +6,7 @@ import it.unibz.stud_inf.ils.white.prisma.Groundable;
 import it.unibz.stud_inf.ils.white.prisma.IntIdGenerator;
 import it.unibz.stud_inf.ils.white.prisma.Substitution;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
@@ -57,15 +58,24 @@ public class ConnectiveExpression extends Expression {
 	}
 
 	public ConnectiveExpression compress() {
-		if (expressions.stream().allMatch(e -> {
-			return (e instanceof ConnectiveExpression) && ((ConnectiveExpression) e).connective.equals(connective);
-		})) {
-			return new ConnectiveExpression(
-				connective,
-				stream().flatMap(e -> ((ConnectiveExpression) e).expressions.stream()).collect(toList())
-			);
+		List<Expression> compressed = new ArrayList<>(expressions.size());
+
+		for (Expression e : expressions) {
+			if (e.isLiteral()) {
+				compressed.add(e);
+				continue;
+			}
+			if (!(e instanceof ConnectiveExpression)) {
+				return null;
+			}
+			var ce = (ConnectiveExpression) e;
+			if (connective.equals(ce.connective)) {
+				compressed.addAll(ce.compress().expressions);
+			} else {
+				compressed.add(ce.compress());
+			}
 		}
-		return this;
+		return swap(compressed);
 	}
 
 	private void assertSimple() {
@@ -136,7 +146,7 @@ public class ConnectiveExpression extends Expression {
 			stream()
 				.map(Expression::pushQuantifiersDown)
 				.collect(toList())
-		).compress();
+		);
 	}
 
 	@Override
@@ -206,7 +216,7 @@ public class ConnectiveExpression extends Expression {
 			});
 		}
 
-		return swap(groundExpressions.collect(toList())).compress();
+		return swap(groundExpressions.collect(toList()));
 	}
 
 	public Expression getIdentity() {

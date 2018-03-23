@@ -48,7 +48,7 @@ public class QuantifiedExpression<T> extends Expression {
 		return new ConnectiveExpression(
 			quantifier.getConnective(),
 			instances
-		).compress();
+		);
 	}
 
 	@Override
