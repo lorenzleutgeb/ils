@@ -16,7 +16,7 @@ import static it.unibz.stud_inf.ils.white.prisma.Mode.REPL;
 import static it.unibz.stud_inf.ils.white.prisma.Util.SET_COLLECTOR;
 
 public class Main {
-	private static final String banner =
+	private static final String BANNER =
 		"             _                       \n" +
 		"  _ __  _ __(_)___ _ __ ___   __ _          /\\   \n" +
 		" | '_ \\| '__| / __| '_ ` _ \\ / _` |        /  \\\u001B[96m####\u001B[0m\n" +
@@ -24,10 +24,10 @@ public class Main {
 		" | .__/|_|  |_|___/_| |_| |_|\\__,_|      /      \\\u001B[93m####\u001B[0m\n" +
 		" |_|                                    /________\\\n" +
 		"\n" +
+		" Team White\n" +
 		" powered by ANTLR.org and SAT4J.org\n";
 
 	public static void main(String[] args) throws IOException {
-		System.out.println(banner);
 		Options options = new Options();
 
 		JCommander jc = JCommander.newBuilder().programName("prisma").addObject(options).build();
@@ -35,6 +35,7 @@ public class Main {
 
 		if (options.help) {
 			jc.usage();
+			return;
 		}
 
 		if (REPL.equals(options.mode)) {
@@ -51,12 +52,12 @@ public class Main {
 		}
 
 		Formula formula = Parser.parse(inputStream);
-		ConjunctiveNormalForm cnf = formula.ground().tseitin();
+		ConjunctiveNormalForm cnf = formula.toConjunctiveNormalForm();
 
 		try (PrintStream ps = new PrintStream(options.positionals.isEmpty() ? System.out : new FileOutputStream(options.positionals.get(0)))) {
 			switch (options.mode) {
 				case CNF:
-					cnf.printTo(ps);
+					ps.println(cnf);
 					break;
 				case DIMACS:
 					cnf.printDimacsTo(ps);
@@ -71,22 +72,24 @@ public class Main {
 	}
 
 	private static void repl() {
+		System.out.println(BANNER);
+
 		Formula f = new Formula();
 		BufferedReader reader = new BufferedReader(new InputStreamReader(System.in));
 
 		// Maybe print the grammar here.
-		System.out.println(" \"<expression>\"  to  conjoin it with previous ones\n             \"\"  to  search models\n        \"clear\"  to  start over\n         \"exit\"  to  exit");
+		System.out.println(" \"<expression>\"  to  conjoin it with previous ones\n             \"\"  to  search computeModels\n        \"clear\"  to  start over\n         \"exit\"  to  exit");
 
 		try {
 			System.out.print("> ");
 			String ln;
 			while ((ln = reader.readLine()) != null) {
 				if (ln.isEmpty()) {
-					var it = f.toConjunctiveNormalForm().getModelIterator(Long.MAX_VALUE);
+					var it = f.toConjunctiveNormalForm().computeModels().iterator();
 
 					while (true) {
 						if (!it.hasNext()) {
-							System.out.println("UNSAT");
+							System.out.println(ConjunctiveNormalForm.UNSAT);
 							break;
 						}
 

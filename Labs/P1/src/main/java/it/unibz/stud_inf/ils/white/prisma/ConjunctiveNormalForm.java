@@ -6,26 +6,25 @@ import it.unibz.stud_inf.ils.white.prisma.ast.Atom;
 import it.unibz.stud_inf.ils.white.prisma.ast.Expression;
 import org.sat4j.core.Vec;
 import org.sat4j.core.VecInt;
-import org.sat4j.minisat.SolverFactory;
-import org.sat4j.specs.ContradictionException;
-import org.sat4j.specs.ISolver;
 import org.sat4j.specs.IVec;
 import org.sat4j.specs.IVecInt;
-import org.sat4j.specs.TimeoutException;
-import org.sat4j.tools.ModelIterator;
 
 import java.io.PrintStream;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashSet;
 import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.SortedSet;
+import java.util.TreeSet;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
+import java.util.stream.Stream;
+import java.util.stream.StreamSupport;
 
 import static it.unibz.stud_inf.ils.white.prisma.Util.SET_COLLECTOR;
+import static java.lang.Math.abs;
 
 public class ConjunctiveNormalForm {
+	public static final String UNSAT = "UNSATISFIABLE";
+	private static final String ATOM_PREFIX = ":";
+
 	private final BiMap<String, Integer> map;
 	private final IVec<IVecInt> clauses;
 	private final IntIdGenerator generator = new IntIdGenerator(1);
@@ -44,9 +43,6 @@ public class ConjunctiveNormalForm {
 	}
 
 	public Integer put(Expression expression, Integer variable) {
-		//if (variable <= 0) {
-		//	throw new IllegalArgumentException("variable must be positive non-zero integer");
-		//}
 		return map.put(key(expression), variable);
 	}
 
@@ -58,208 +54,22 @@ public class ConjunctiveNormalForm {
 
 	public Integer computeIfAbsent(Expression expression) {
 		Integer variable = get(expression);
-		if (variable == null) {
-			variable = expression.tseitin(this);
-			put(expression, variable);
+		if (variable != null) {
 			return variable;
 		}
+		variable = expression.tseitin(this);
+		put(expression, variable);
 		return variable;
 	}
 
 	public Integer shallowComputeIfAbsent(Expression expression) {
 		Integer variable = get(expression);
-		if (variable == null) {
-			variable = (int) generator.getNextId();
-			put(expression, variable);
+		if (variable != null) {
 			return variable;
 		}
+		variable = (int) generator.getNextId();
+		put(expression, variable);
 		return variable;
-	}
-
-	public IVec<IVecInt> getClauses() {
-		return clauses;
-	}
-
-	public IVec<IVecInt> add(int... literals) {
-		return clauses.push(new VecInt(literals));
-	}
-
-	private static String key(Expression e) {
-		String key = e.toString();
-		if (e instanceof Atom) {
-			key = ":" + key;
-		}
-		return key;
-	}
-
-	public Set<String> translate(int[] model) {
-		Set<String> set = new HashSet<>();
-		for (Integer literal : model) {
-			if (literal < 0) {
-				continue;
-			}
-
-			String e = get(literal);
-
-			if (filter(e)) {
-				set.add(e.substring(1));
-			}
-		}
-		return set;
-	}
-
-	public void printDimacsTo(PrintStream out) {
-		for (Map.Entry<Integer, String> entry : map.inverse().entrySet()) {
-			if (filter(entry.getValue())) {
-				out.println("c " + entry.getKey() + " " + entry.getValue().substring(1));
-			}
-		}
-		out.println("p cnf " + getStats());
-		for (int i = 0; i < clauses.size(); i++) {
-			IVecInt clause = clauses.get(i);
-			for (int j = 0; j < clause.size(); j++) {
-				out.print(clause.get(j));
-
-				if (j != clause.size() - 1) {
-					out.print(" ");
-				}
-			}
-			out.println(" 0");
-		}
-	}
-
-	public void printTo(PrintStream out) {
-		for (int i = 0; i < clauses.size(); i++) {
-			IVecInt clause = clauses.get(i);
-			out.print("(");
-			for (int j = 0; j < clause.size(); j++) {
-				Integer literal = clause.get(j);
-
-				if (literal < 0) {
-					out.print("~");
-				}
-
-				Integer variable = Math.abs(literal);
-				String expression = get(variable);
-
-				if (expression.startsWith(":")) {
-					out.print(expression.substring(1));
-				} else {
-					out.print("subformula" + variable);
-				}
-
-				if (j != clause.size() - 1) {
-					out.print(" | ");
-				}
-			}
-			if (i != clauses.size() - 1) {
-				out.println(") &");
-			} else {
-				out.println(")");
-			}
-		}
-	}
-
-	public void printModelsTo(PrintStream out, long n) {
-		List<Set<String>> models = solve(n);
-
-		if (models.isEmpty()) {
-			out.println("UNSAT");
-		}
-
-		for (Set<String> model : models) {
-			out.println(model.stream().collect(SET_COLLECTOR));
-		}
-	}
-
-	public void printModelsTo(PrintStream out) {
-		printModelsTo(out, Long.MAX_VALUE);
-	}
-
-	public Set<String> model() {
-		List<Set<String>> models = models(1);
-		if (models.isEmpty()) {
-			return null;
-		}
-		return models.get(0);
-	}
-
-	public List<Set<String>> models(long n) {
-		return solve(n);
-	}
-
-	public List<Set<String>> models() {
-		return solve(Long.MAX_VALUE);
-	}
-
-	private List<Set<String>> solve(long n) {
-		ISolver solver = SolverFactory.newDefault();
-
-		try {
-			solver.addAllClauses(getClauses());
-		} catch (ContradictionException e) {
-			return Collections.emptyList();
-		}
-
-		ISolver iterator = new ModelIterator(solver, n);
-
-		try {
-			List<Set<String>> models = new ArrayList<>();
-			while (iterator.isSatisfiable()) {
-				models.add(translate(iterator.model()));
-			}
-			return models;
-		} catch (TimeoutException e) {
-			e.printStackTrace();
-		}
-
-		throw new RuntimeException("How did I get here?");
-	}
-
-	public Iterator<Set<String>> getModelIterator(long bound) {
-		ISolver solver = SolverFactory.newDefault();
-
-		try {
-			solver.addAllClauses(getClauses());
-		} catch (ContradictionException e) {
-			return Collections.emptyIterator();
-		}
-
-		return new CustomModelIterator(solver, bound);
-	}
-
-	private class CustomModelIterator implements Iterator<Set<String>> {
-		private final ISolver delegate;
-
-		public CustomModelIterator(ISolver solver, long bound) {
-			delegate = new ModelIterator(solver, bound);
-		}
-
-		@Override
-		public boolean hasNext() {
-			try {
-				return delegate.isSatisfiable();
-			} catch (TimeoutException e) {
-				return false;
-			}
-		}
-
-		@Override
-		public Set<String> next() {
-			return translate(delegate.model());
-		}
-	}
-
-	public String getStats() {
-		return (generator.getHighestId() - 1) + " " + clauses.size();
-	}
-
-	private static boolean filter(String e) {
-		return e.startsWith(":") && !e.equals(":true") && !e.equals(":false");
-	}
-
-	public void printModelTo(PrintStream out) {
-		printModelsTo(out, 1);
 	}
 
 	public long getVariableCount() {
@@ -270,10 +80,71 @@ public class ConjunctiveNormalForm {
 		return clauses.size();
 	}
 
+	public IVec<IVecInt> add(int... literals) {
+		return clauses.push(new VecInt(literals));
+	}
+
+	private static String key(Expression e) {
+		final var key = e.toString();
+		if (e instanceof Atom) {
+			return ATOM_PREFIX + key;
+		}
+		return key;
+	}
+
+	public void printDimacsTo(final PrintStream out) {
+		map.inverse().entrySet().stream()
+			.filter(e -> isAtom(e.getValue()))
+			.forEach(e -> out.println("c " + e.getKey() + " " + e.getValue().substring(ATOM_PREFIX.length())));
+
+		out.println("p cnf " + getVariableCount() + " " + getClauseCount());
+
+		// Vec and VecInt implementations of toArray() are cheap since they
+		// only pass a reference.
+
+		Stream.of(clauses.toArray())
+			.map(c -> Stream.of(c.toArray())
+				.map(String::valueOf)
+				.collect(Collectors.joining(" "))
+			)
+			.forEach(s -> {
+				out.print(s);
+				out.println(" 0");
+			});
+	}
+
+	public void printModelsTo(PrintStream out, long n) {
+		Stream<SortedSet<String>> models = computeModels().limit(n);
+
+		boolean found = false;
+		for (Iterator<SortedSet<String>> it = models.iterator(); it.hasNext(); ) {
+			SortedSet<String> model = it.next();
+			found = true;
+			out.println(model.stream().collect(SET_COLLECTOR));
+		}
+
+		if (!found) {
+			out.println(UNSAT);
+		}
+	}
+
+	public Stream<SortedSet<String>> computeModels() {
+		return StreamSupport.stream(new ModelSpliterator<>(clauses, m ->
+			IntStream.of(m)
+				.mapToObj(this::get)
+				.filter(ConjunctiveNormalForm::isAtom)
+				.map(s -> s.substring(1))
+				.collect(Collectors.toCollection(TreeSet::new))
+		), false);
+	}
+
+	private static boolean isAtom(String e) {
+		return e != null && e.startsWith(ATOM_PREFIX) && !e.equals(ATOM_PREFIX + "true") && !e.equals(ATOM_PREFIX + "false");
+	}
+
 	@Override
 	public String toString() {
-		StringBuilder sb = new StringBuilder();
-		sb.append("{");
+		StringBuilder sb = new StringBuilder("{");
 		for (int i = 0; i < clauses.size(); i++) {
 			IVecInt clause = clauses.get(i);
 			sb.append("{");
@@ -284,13 +155,13 @@ public class ConjunctiveNormalForm {
 					sb.append("-");
 				}
 
-				Integer variable = Math.abs(literal);
+				Integer variable = abs(literal);
 				String expression = get(variable);
 
-				if (expression.startsWith(":")) {
-					sb.append(expression.substring(1));
+				if (expression.startsWith(ATOM_PREFIX)) {
+					sb.append(expression.substring(ATOM_PREFIX.length()));
 				} else {
-					sb.append("@");
+					sb.append("*");
 					sb.append(variable);
 				}
 
@@ -298,13 +169,9 @@ public class ConjunctiveNormalForm {
 					sb.append(", ");
 				}
 			}
-			if (i != clauses.size() - 1) {
-				sb.append("}, ");
-			} else {
-				sb.append("}");
-			}
+
+			sb.append(i != clauses.size() - 1 ? "}, " : "}");
 		}
-		sb.append("}");
-		return sb.toString();
+		return sb.append("}").toString();
 	}
 }

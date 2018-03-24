@@ -96,7 +96,7 @@ public class QuantifiedExpression<T> extends Expression {
 			}
 
 			return scope.switchScope(
-				switchScope(scope.scope)
+				switchScope(scope.scope.pushQuantifiersDown()).pushQuantifiersDown()
 			).pushQuantifiersDown();
 		}
 		if (scope.isLiteral()) {
@@ -121,7 +121,7 @@ public class QuantifiedExpression<T> extends Expression {
 		if (cl == cr) {
 			if (!cr) {
 				// Remove useless quantifier.
-				return this.scope;
+				return this.scope.pushQuantifiersDown();
 			} else {
 				return this;
 			}
