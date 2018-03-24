@@ -7,7 +7,6 @@ import it.unibz.stud_inf.ils.white.prisma.IntIdGenerator;
 import it.unibz.stud_inf.ils.white.prisma.Substitution;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -17,44 +16,51 @@ import java.util.stream.Stream;
 
 import static it.unibz.stud_inf.ils.white.prisma.ast.Atom.FALSE;
 import static it.unibz.stud_inf.ils.white.prisma.ast.Atom.TRUE;
-import static it.unibz.stud_inf.ils.white.prisma.ast.ConnectiveExpression.Connective.AND;
-import static it.unibz.stud_inf.ils.white.prisma.ast.ConnectiveExpression.Connective.ITE;
-import static it.unibz.stud_inf.ils.white.prisma.ast.ConnectiveExpression.Connective.NOT;
-import static it.unibz.stud_inf.ils.white.prisma.ast.ConnectiveExpression.Connective.OR;
+import static it.unibz.stud_inf.ils.white.prisma.ast.BooleanConnective.AND;
+import static it.unibz.stud_inf.ils.white.prisma.ast.BooleanConnective.ITE;
+import static it.unibz.stud_inf.ils.white.prisma.ast.BooleanConnective.NOT;
+import static it.unibz.stud_inf.ils.white.prisma.ast.BooleanConnective.OR;
+import static java.util.Arrays.asList;
 import static java.util.Collections.emptySet;
+import static java.util.Collections.unmodifiableList;
 import static java.util.stream.Collectors.joining;
 import static java.util.stream.Collectors.toList;
 
 public class ConnectiveExpression extends Expression {
-	public Connective getConnective() {
-		return connective;
-	}
-
-	private final Connective connective;
+	private final BooleanConnective connective;
 	private final List<Expression> expressions;
 
-	public ConnectiveExpression(Connective connective, List<Expression> expressions) {
+	public ConnectiveExpression(BooleanConnective connective, List<Expression> expressions) {
 		if (expressions.stream().anyMatch(Objects::isNull)) {
 			throw new NullPointerException();
 		}
-		this.expressions = expressions;
+		this.expressions = unmodifiableList(expressions);
 		this.connective = connective;
+		assertArity();
 	}
 
-	public ConnectiveExpression(Connective connective, Expression... expressions) {
-		int enforcedArity = connective.getEnforcedArity();
-		if (enforcedArity != 0 && enforcedArity != expressions.length) {
-			throw new IllegalArgumentException("Refusing multary connective");
-		}
-		this.connective = connective;
-		this.expressions = Arrays.asList(expressions);
-		if (stream().anyMatch(Objects::isNull)) {
-			throw new NullPointerException();
-		}
+	public ConnectiveExpression(BooleanConnective connective, Expression... expressions) {
+		this(connective, asList(expressions));
 	}
 
-	public ConnectiveExpression(Expression left, Connective connective, Expression right) {
-		this(connective, left, right);
+	public static ConnectiveExpression and(Expression... expressions) {
+		return new ConnectiveExpression(AND, expressions);
+	}
+
+	public static ConnectiveExpression or(Expression... expressions) {
+		return new ConnectiveExpression(OR, expressions);
+	}
+
+	public static ConnectiveExpression not(Expression expression) {
+		return new ConnectiveExpression(NOT, expression);
+	}
+
+	public BooleanConnective getConnective() {
+		return connective;
+	}
+
+	public List<Expression> getExpressions() {
+		return expressions;
 	}
 
 	public ConnectiveExpression compress() {
@@ -78,65 +84,39 @@ public class ConnectiveExpression extends Expression {
 		return swap(compressed);
 	}
 
-	private void assertSimple() {
-		int enforcedArity = connective.getEnforcedArity();
-		if (enforcedArity != 2 && enforcedArity != 0) {
-			throw new IllegalStateException("Connective is not simple.");
-		}
-		if (expressions.size() != 2) {
-			throw new IllegalArgumentException("Refusing multary connective");
-		}
-	}
-
-	public Expression getLeft() {
-		assertSimple();
-		return expressions.get(0);
-	}
-
-	public Expression getRight() {
-		assertSimple();
-		return expressions.get(1);
-	}
-
-	public ConnectiveExpression swap(Expression... expressions) {
-		return swap(Arrays.asList(expressions));
-	}
-
 	public ConnectiveExpression swap(List<Expression> expressions) {
 		return new ConnectiveExpression(connective, expressions);
+	}
+
+	private void assertArity() {
+		int enforcedArity = connective.getEnforcedArity();
+		if (enforcedArity == 0) {
+			return;
+		}
+		if (enforcedArity != expressions.size()) {
+			throw new IllegalStateException("Wrong arity!");
+		}
+	}
+
+	public boolean is(BooleanConnective connective) {
+		return connective.equals(this.connective);
 	}
 
 	public boolean isClause() {
 		return is(OR) && stream().allMatch(Expression::isLiteral);
 	}
 
-	public boolean is(Connective connective) {
-		return connective.equals(this.connective);
+	@Override
+	public boolean isLiteral() {
+		return is(NOT) && (expressions.get(0) instanceof Atom);
 	}
 
-	@Override
-	public String toString() {
-		int enforcedArity = connective.getEnforcedArity();
+	private Stream<Expression> stream() {
+		return expressions.stream();
+	}
 
-		if (enforcedArity == 0) {
-			return stream()
-				.map(Object::toString)
-				.collect(joining(" " + connective + " ", "(", ")"));
-		}
-
-		if (is(ITE)) {
-			return "(" + expressions.get(0) + " ? " + expressions.get(1) + " : " + expressions.get(2) + ")";
-		}
-
-		if (is(NOT)) {
-			return "~" + expressions.get(0);
-		}
-
-		if (enforcedArity == 2) {
-			return "(" + expressions.get(0) + " " + connective + " " + expressions.get(1) + ")";
-		}
-
-		throw new RuntimeException("How did I get here?");
+	private ConnectiveExpression map(Function<? super Expression, ? extends Expression> f) {
+		return swap(stream().map(f).collect(toList()));
 	}
 
 	@Override
@@ -156,6 +136,9 @@ public class ConnectiveExpression extends Expression {
 			throw new UnsupportedOperationException();
 		}
 
+		// From here on we assume enforcedArity == expressions.size()
+
+		// Push down negation (NNF) and eliminate double negation.
 		if (is(NOT)) {
 			final var subExpression = expressions.get(0);
 			if (subExpression instanceof Atom) {
@@ -170,8 +153,7 @@ public class ConnectiveExpression extends Expression {
 			return subExpression.normalize().deMorgan();
 		}
 
-		// From here on we assume enforcedArity == expressions.size()
-
+		// Translate ITE into an equivalent conjunction.
 		if (is(ITE)) {
 			final var condition = expressions.get(0);
 			final var truthy = expressions.get(1);
@@ -182,8 +164,8 @@ public class ConnectiveExpression extends Expression {
 			);
 		}
 
-		final var left = getLeft();
-		final var right = getRight();
+		final var left = expressions.get(0);
+		final var right = expressions.get(1);
 
 		switch (this.connective) {
 			case THEN:
@@ -201,7 +183,7 @@ public class ConnectiveExpression extends Expression {
 					or(not(left), not(right)).normalize()
 				);
 			default:
-				return swap(left.normalize(), right.normalize());
+				return swap(asList(left.normalize(), right.normalize()));
 		}
 	}
 
@@ -348,45 +330,29 @@ public class ConnectiveExpression extends Expression {
 		return map(t -> t.standardize(map, generator));
 	}
 
-	public List<Expression> getExpressions() {
-		return expressions;
-	}
+	@Override
+	public String toString() {
+		int enforcedArity = connective.getEnforcedArity();
 
-	public enum Connective {
-		THEN("->", 2),
-		IFF("<->", 2),
-		IF("<-", 2),
-		AND("&", 0),
-		OR("|", 0),
-		XOR("^", 2),
-		ITE("?:", 3),
-		NOT("~", 1);
-
-		private final String asString;
-		private final int enforcedArity;
-
-		Connective(String asString, int enforcedArity) {
-			this.asString = asString;
-			this.enforcedArity = enforcedArity;
+		if (enforcedArity == 0) {
+			return stream()
+				.map(Object::toString)
+				.collect(joining(" " + connective + " ", "(", ")"));
 		}
 
-		public static Connective fromOperator(String op) {
-			for (Connective c : Connective.values()) {
-				if (c.toString().equals(op)) {
-					return c;
-				}
-			}
-			return null;
+		if (is(ITE)) {
+			return "(" + expressions.get(0) + " ? " + expressions.get(1) + " : " + expressions.get(2) + ")";
 		}
 
-		@Override
-		public String toString() {
-			return asString;
+		if (is(NOT)) {
+			return "~" + expressions.get(0);
 		}
 
-		public int getEnforcedArity() {
-			return enforcedArity;
+		if (enforcedArity == 2) {
+			return "(" + expressions.get(0) + " " + connective + " " + expressions.get(1) + ")";
 		}
+
+		throw new RuntimeException("How did I get here?");
 	}
 
 	@Override
@@ -428,18 +394,5 @@ public class ConnectiveExpression extends Expression {
 			.stream()
 			.map(Expression::getRelatedVariables)
 			.reduce(emptySet(), Sets::union);
-	}
-
-	private Stream<Expression> stream() {
-		return expressions.stream();
-	}
-
-	private ConnectiveExpression map(Function<? super Expression, ? extends Expression> f) {
-		return swap(stream().map(f).collect(toList()));
-	}
-
-	@Override
-	public boolean isLiteral() {
-		return is(NOT) && (expressions.get(0) instanceof Atom);
 	}
 }

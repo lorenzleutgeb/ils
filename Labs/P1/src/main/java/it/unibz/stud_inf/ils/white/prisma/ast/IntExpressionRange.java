@@ -28,18 +28,13 @@ public class IntExpressionRange extends Domain<IntNumberExpression> {
 	}
 
 	@Override
-	public int size() {
-		throw new UnsupportedOperationException();
-	}
-
-	@Override
 	public Set<Variable> getOccurringVariables() {
 		return union(min.getOccurringVariables(), max.getOccurringVariables());
 	}
 
 	@Override
 	public String toString() {
-		return "[" + min + "..." + max + "]";
+		return "[" + min + "…" + max + "]";
 	}
 
 	@Override

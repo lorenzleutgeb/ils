@@ -34,16 +34,16 @@ public class Quantifier<T> {
 		return !exists;
 	}
 
-	public Quantifier exists(Variable<T> variable, Domain<T> domain) {
+	public Quantifier<T> exists(Variable<T> variable, Domain<T> domain) {
 		return new Quantifier<>(true, variable, domain);
 	}
 
-	public Quantifier forall(Variable<T> variable, Domain<T> domain) {
+	public Quantifier<T> forall(Variable<T> variable, Domain<T> domain) {
 		return new Quantifier<>(false, variable, domain);
 	}
 
-	public Quantifier flip() {
-		return new Quantifier(!exists, variable, domain);
+	public Quantifier<T> flip() {
+		return new Quantifier<>(!exists, variable, domain);
 	}
 
 	private boolean dependsOn(Quantifier<T> other) {
@@ -58,8 +58,8 @@ public class Quantifier<T> {
 		return domain;
 	}
 
-	public ConnectiveExpression.Connective getConnective() {
-		return exists ? ConnectiveExpression.Connective.OR : ConnectiveExpression.Connective.AND;
+	public BooleanConnective getConnective() {
+		return exists ? BooleanConnective.OR : BooleanConnective.AND;
 	}
 
 	public Quantifier<T> switchBoth(Variable<T> variable, Domain<T> domain) {
@@ -106,6 +106,6 @@ public class Quantifier<T> {
 
 	@Override
 	public String toString() {
-		return exists ? "exists" : "forall";
+		return exists ? "∃" : "∀";
 	}
 }

@@ -26,11 +26,6 @@ public class Enumeration<U extends Groundable<T,U>, T> extends Domain<T> {
 	}
 
 	@Override
-	public int size() {
-		return elements.size();
-	}
-
-	@Override
 	public Set<Variable> getOccurringVariables() {
 		return elements
 			.stream()

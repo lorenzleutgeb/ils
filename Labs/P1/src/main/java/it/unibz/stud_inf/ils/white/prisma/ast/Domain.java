@@ -7,8 +7,5 @@ import java.util.stream.Stream;
 
 public abstract class Domain<T> implements Standardizable<Domain<T>> {
 	public abstract Stream<T> stream(Substitution substitution);
-
-	public abstract int size();
-
 	public abstract Set<Variable> getOccurringVariables();
 }

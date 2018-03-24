@@ -1,5 +1,6 @@
 package it.unibz.stud_inf.ils.white.prisma.ast;
 
+import it.unibz.stud_inf.ils.white.prisma.ConjunctiveNormalForm;
 import it.unibz.stud_inf.ils.white.prisma.IntIdGenerator;
 import it.unibz.stud_inf.ils.white.prisma.Substitution;
 
@@ -11,6 +12,8 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import static java.util.Arrays.asList;
+
 public class QuantifiedExpression<T> extends Expression {
 	private final Quantifier<T> quantifier;
 	private final Expression scope;
@@ -19,7 +22,7 @@ public class QuantifiedExpression<T> extends Expression {
 		return scope;
 	}
 
-	public QuantifiedExpression(Quantifier quantifier, Expression scope) {
+	public QuantifiedExpression(Quantifier<T> quantifier, Expression scope) {
 		this.quantifier = quantifier;
 		this.scope = scope;
 	}
@@ -33,12 +36,12 @@ public class QuantifiedExpression<T> extends Expression {
 
 	@Override
 	public String toString() {
-		return quantifier.toString().toLowerCase() + " " + quantifier.getVariable() + " in " + quantifier.getDomain() + " " + scope;
+		return quantifier.toString().toLowerCase() + " " + quantifier.getVariable() + " ∈ " + quantifier.getDomain() + " " + scope;
 	}
 
 	@Override
 	public Expression ground(Substitution substitution) {
-		List<Expression> instances = new ArrayList<>(/*domain.size()*/);
+		List<Expression> instances = new ArrayList<>();
 		for (T instance : quantifier.getDomain().stream(substitution).collect(Collectors.toList())) {
 			substitution.put(quantifier.getVariable(), instance);
 			instances.add(scope.ground(substitution));
@@ -57,7 +60,7 @@ public class QuantifiedExpression<T> extends Expression {
 		Map<Long, Long> subMap = new HashMap<>(map);
 		subMap.put(quantifier.getVariable().toLong(), id);
 		Variable<T> variable = ((Variable<T>)((Standardizable)quantifier.getVariable()).standardize(subMap, generator));
-		return new QuantifiedExpression<T>(
+		return new QuantifiedExpression<>(
 			quantifier.switchBoth(
 				variable,
 				quantifier.getDomain().standardize(subMap, generator)
@@ -112,8 +115,8 @@ public class QuantifiedExpression<T> extends Expression {
 			return this;
 		}
 
-		Expression l = connectiveExpression.getLeft();
-		Expression r = connectiveExpression.getRight();
+		Expression l = connectiveExpression.getExpressions().get(0);
+		Expression r = connectiveExpression.getExpressions().get(1);
 
 		boolean cl = l.getOccurringVariables().contains(quantifier.getVariable());
 		boolean cr = r.getOccurringVariables().contains(quantifier.getVariable());
@@ -130,15 +133,14 @@ public class QuantifiedExpression<T> extends Expression {
 		Expression shouldBeScope = cr ? r : l;
 		Expression other = cr ? l : r;
 
-
-		return connectiveExpression.swap(
+		return connectiveExpression.swap(asList(
 			switchScope(shouldBeScope.pushQuantifiersDown()),
 			other.pushQuantifiersDown()
-		);
+		));
 	}
 
 	@Override
-	public Integer tseitin(it.unibz.stud_inf.ils.white.prisma.ConjunctiveNormalForm cnf) {
+	public Integer tseitin(ConjunctiveNormalForm cnf) {
 		throw new IllegalStateException();
 	}
 

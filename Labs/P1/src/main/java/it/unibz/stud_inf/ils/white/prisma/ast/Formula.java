@@ -13,7 +13,7 @@ import java.util.Map;
 import java.util.Set;
 
 import static it.unibz.stud_inf.ils.white.prisma.ast.Atom.TRUE;
-import static it.unibz.stud_inf.ils.white.prisma.ast.ConnectiveExpression.Connective.AND;
+import static it.unibz.stud_inf.ils.white.prisma.ast.BooleanConnective.AND;
 import static java.util.Collections.singletonList;
 import static java.util.stream.Collectors.joining;
 import static java.util.stream.Collectors.toList;
@@ -66,7 +66,7 @@ public class Formula implements Iterable<Expression>, Groundable<Formula, Formul
 		return new Formula(singletonList(
 			expressions
 				.stream()
-				.reduce(TRUE, Expression::and)
+				.reduce(TRUE, ConnectiveExpression::and)
 		));
 	}
 

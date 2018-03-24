@@ -5,21 +5,11 @@ import it.unibz.stud_inf.ils.white.prisma.Groundable;
 
 import java.util.Set;
 
-import static it.unibz.stud_inf.ils.white.prisma.ast.ConnectiveExpression.Connective.AND;
-import static it.unibz.stud_inf.ils.white.prisma.ast.ConnectiveExpression.Connective.NOT;
-import static it.unibz.stud_inf.ils.white.prisma.ast.ConnectiveExpression.Connective.OR;
+import static it.unibz.stud_inf.ils.white.prisma.ast.BooleanConnective.AND;
+import static it.unibz.stud_inf.ils.white.prisma.ast.BooleanConnective.NOT;
+import static it.unibz.stud_inf.ils.white.prisma.ast.BooleanConnective.OR;
 
 public abstract class Expression implements Groundable<Expression, Expression> {
-	public Expression compress(Expression left, ConnectiveExpression.Connective connective, Expression right) {
-		// This should implement some basic compression of the AST. For example,
-		// a | ~a  ->  true
-		// a & ~a  ->  false
-		// a | true  ->  true
-		// a | false  ->  a
-		// ...
-		throw new UnsupportedOperationException("Not implemented.");
-	}
-
 	public Expression normalize() {
 		return this;
 	}
@@ -64,29 +54,6 @@ public abstract class Expression implements Groundable<Expression, Expression> {
 
 	public Set<Set<Variable>> getRelatedVariables()  {
 		throw new UnsupportedOperationException();
-	}
-
-	public static ConnectiveExpression and(Expression left, Expression right) {
-		return new ConnectiveExpression(
-			left,
-			AND,
-			right
-		);
-	}
-
-	public static ConnectiveExpression or(Expression left, Expression right) {
-		return new ConnectiveExpression(
-			left,
-			OR,
-			right
-		);
-	}
-
-	public static ConnectiveExpression not(Expression expression) {
-		return new ConnectiveExpression(
-			NOT,
-			expression
-		);
 	}
 
 	public boolean isLiteral() {

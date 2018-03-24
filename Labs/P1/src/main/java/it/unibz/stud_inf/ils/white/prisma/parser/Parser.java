@@ -6,6 +6,7 @@ import it.unibz.stud_inf.ils.white.prisma.antlr.FormulaParser;
 import it.unibz.stud_inf.ils.white.prisma.ast.Arg;
 import it.unibz.stud_inf.ils.white.prisma.ast.ArithmeticAtom;
 import it.unibz.stud_inf.ils.white.prisma.ast.Atom;
+import it.unibz.stud_inf.ils.white.prisma.ast.BooleanConnective;
 import it.unibz.stud_inf.ils.white.prisma.ast.ConstantPredicate;
 import it.unibz.stud_inf.ils.white.prisma.ast.ConstantTerm;
 import it.unibz.stud_inf.ils.white.prisma.ast.Domain;
@@ -183,7 +184,7 @@ public class Parser {
 		@Override
 		public Expression visitUnary(FormulaParser.UnaryContext ctx) {
 			return new ConnectiveExpression(
-				ConnectiveExpression.Connective.NOT,
+				BooleanConnective.NOT,
 				visit(ctx.expression())
 			);
 		}
@@ -191,7 +192,7 @@ public class Parser {
 		@Override
 		public Expression visitBinary(FormulaParser.BinaryContext ctx) {
 			return new ConnectiveExpression(
-				ConnectiveExpression.Connective.fromOperator(ctx.op.getText()),
+				BooleanConnective.fromOperator(ctx.op.getText()),
 				visit(ctx.left),
 				visit(ctx.right)
 			);
@@ -200,7 +201,7 @@ public class Parser {
 		@Override
 		public Expression visitTernary(FormulaParser.TernaryContext ctx) {
 			return new ConnectiveExpression(
-				ConnectiveExpression.Connective.ITE,
+				BooleanConnective.ITE,
 				visit(ctx.condition),
 				visit(ctx.truthy),
 				visit(ctx.falsy)
