@@ -111,7 +111,7 @@ public class ConjunctiveNormalForm {
 	public void printDimacsTo(PrintStream out) {
 		for (Map.Entry<Integer, String> entry : map.inverse().entrySet()) {
 			if (filter(entry.getValue())) {
-				out.println("c " + entry.getKey() + " " + entry.getValue());
+				out.println("c " + entry.getKey() + " " + entry.getValue().substring(1));
 			}
 		}
 		out.println("p cnf " + getStats());
