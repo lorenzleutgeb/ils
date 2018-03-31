@@ -446,13 +446,19 @@ render(ebdd, 'edges')
 # V as number of vertexes (numbered from 1 to V)
 # E as list of directed edges.
 def buildBDT(vs, es):
+  """Builder for the Binary Decision Tree, representing the directed edges of a digraph.
+
+  :param vs: number of vertexes in the graph (labelled from 1 to vs)
+  :param es: list of tuples of the form (source, target), with source, target numbers from 1 to vs.
+  :returns: an expression, representing the BDT of the graph.
+  """
   tree = 0
   for i in reversed(vs):
     success = 0
     adj = [t if s == i else None for s, t in es]
     adj.reverse()
     for b in adj:
-      success = ite(target[b], 1 if b != None else 0, success)
+      success = ite(target[b], b != None, success)
     tree = ite(source[i], success, tree)
   return tree
 
