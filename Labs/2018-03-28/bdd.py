@@ -452,8 +452,7 @@ def buildBDT(vs, es):
     adj = [t if s == i else None for s, t in es]
     adj.reverse()
     for b in adj:
-      if b != None:
-        success = ite(target[b], 1, success)
+      success = ite(target[b], 1 if b != None else 0, success)
     tree = ite(source[i], success, tree)
   return tree
 
