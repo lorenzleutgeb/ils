@@ -1,7 +1,7 @@
 # Team White
 
 from itertools   import permutations, product
-from pyeda.inter import expr2bdd, exprvar, exprvars, And, Equal, Not, Nor, Or
+from pyeda.inter import * #expr2bdd, exprvar, exprvars, And, Equal, Not, Nor, Or
 from subprocess  import Popen, PIPE
 from sys         import exit
 
@@ -17,6 +17,26 @@ def render(o, name, format='svg'):
         if status != 0:
             print(stderrdata.decode('utf-8'))
             exit(status)
+
+# Ideally, this should optimize the size of a BDD by trying out all possible
+# variable orderings. Does not work, since we don't know how to get all
+# variables that occur in a BDD.
+def optimize(bdd):
+    vs = []
+
+    # How to populate vs?
+    #vs = list(filter(lambda x: isinstance(x, BDDVariable), bdd.bfs())))
+
+    best = (size(bdd), bdd, {})
+    other = bddvars('v', best[0])
+    for p in permutations(list(other)):
+        rbdd = bdd.compose(dict(zip(vs, p)))
+        rsize = size(rbdd)
+
+        if rsize < best[0]:
+            best = (rsize, rbdd, p)
+
+    return (best[1], list(map(lambda x: vs[x.indices[0]], best[2])))
 
 # Generate the variables we need for 4a as
 # a list and extract bindings.
@@ -140,7 +160,7 @@ render(expr2bdd(f4c), 'f4c')
 print('f4a {} f4b'.format('===' if f4a.equivalent(f4b) else '!=='))
 
 # For 5 we are looking at a digraph.
-vs = range(1, 8)
+vs = list(range(1, 8))
 es = [
     (1, 2),
     (1, 3),
@@ -155,3 +175,286 @@ es = [
     (4, 7),
     (5, 7),
 ]
+
+# Let's introduce some boolean expressions.
+source = bddvars('source', len(vs) + 1)
+target = bddvars('target', len(vs) + 1)
+
+ebdd = ite(source[1],
+    ite(target[1], False,
+        ite(target[2],
+            ite(target[3], False,
+                ite(target[4], False,
+                    ite(target[5], False,
+                        ite(target[6], False,
+                            ite(target[7], False,
+                                # Now check for other as
+                                ite(source[2], False,
+                                    ite(source[3], False,
+                                        ite(source[4], False,
+                                            ite(source[5], False,
+                                                ite(source[6], False,
+                                                    ite(source[7], False,
+                                                        True
+                                                    )
+                                                )
+                                            )
+                                        )
+                                    )
+                                )
+                            )
+                        )
+                    )
+                )
+            ),
+            ite(target[3],
+                ite(target[4], False,
+                    ite(target[5], False,
+                        ite(target[6], False,
+                            ite(target[7], False,
+                                # Now check for other as
+                                ite(source[2], False,
+                                    ite(source[3], False,
+                                        ite(source[4], False,
+                                            ite(source[5], False,
+                                                ite(source[6], False,
+                                                    ite(source[7], False,
+                                                        True
+                                                    )
+                                                )
+                                            )
+                                        )
+                                    )
+                                )
+                            )
+                        )
+                    )
+                ),
+                ite(target[4],
+                    ite(target[5], False,
+                        ite(target[6], False,
+                            ite(target[7], False,
+                                # Now check for other as
+                                ite(source[2], False,
+                                    ite(source[3], False,
+                                        ite(source[4], False,
+                                            ite(source[5], False,
+                                                ite(source[6], False,
+                                                    ite(source[7], False,
+                                                        True
+                                                    )
+                                                )
+                                            )
+                                        )
+                                    )
+                                )
+                            )
+                        )
+                    ),
+                    ite(target[5],
+                        ite(target[6], False,
+                            ite(target[7], False,
+                                # Now check for other as
+                                ite(source[2], False,
+                                    ite(source[3], False,
+                                        ite(source[4], False,
+                                            ite(source[5], False,
+                                                ite(source[6], False,
+                                                    ite(source[7], False,
+                                                        True
+                                                    )
+                                                )
+                                            )
+                                        )
+                                    )
+                                )
+                            )
+                        ),
+                        False
+                    )
+                )
+            )
+        ),
+    ),
+    ite(source[2],
+        ite(target[1], False,
+            ite(target[2], False,
+                ite(target[3],
+                    ite(target[4], False,
+                        ite(target[5], False,
+                            ite(target[6], False,
+                                ite(target[7], False,
+                                    # Now check for other as
+                                    ite(source[3], False,
+                                        ite(source[4], False,
+                                            ite(source[5], False,
+                                                ite(source[6], False,
+                                                    ite(source[7], False,
+                                                        True
+                                                    )
+                                                )
+                                            )
+                                        )
+                                    )
+                                )
+                            )
+                        )
+                    ),
+                    ite(target[4],
+                        ite(target[5], False,
+                            ite(target[6], False,
+                                ite(target[7], False,
+                                    # Now check for other as
+                                    ite(source[3], False,
+                                        ite(source[4], False,
+                                            ite(source[5], False,
+                                                ite(source[6], False,
+                                                    ite(source[7], False,
+                                                        True
+                                                    )
+                                                )
+                                            )
+                                        )
+                                    )
+                                )
+                            )
+                        ),
+                        ite(target[5], False,
+                            ite(target[6],
+                                ite(target[7], False,
+                                    # Now check for other as
+                                    ite(source[3], False,
+                                        ite(source[4], False,
+                                            ite(source[5], False,
+                                                ite(source[6], False,
+                                                    ite(source[7], False,
+                                                        True
+                                                    )
+                                                )
+                                            )
+                                        )
+                                    )
+                                ),
+                                False
+                            )
+                        )
+                    )
+                )
+            )
+        ),
+        ite(source[3],
+            ite(target[1], False,
+                ite(target[2], False,
+                    ite(target[3], False,
+                        ite(target[4],
+                            ite(target[5], False,
+                                ite(target[6], False,
+                                    ite(target[7], False,
+                                        # Now check for other as
+                                        ite(source[4], False,
+                                            ite(source[5], False,
+                                                ite(source[6], False,
+                                                    ite(source[7], False,
+                                                        True
+                                                    )
+                                                )
+                                            )
+                                        )
+                                    )
+                                )
+                            ),
+                            False
+                        )
+                    )
+                )
+            ),
+            ite(source[4],
+                ite(target[1], False,
+                    ite(target[2], False,
+                        ite(target[4], False,
+                            ite(target[5],
+                                ite(target[6], False,
+                                    ite(target[7], False,
+                                        # Now check for other as
+                                        ite(source[5], False,
+                                            ite(source[6], False,
+                                                ite(source[7], False,
+                                                    True
+                                                )
+                                            )
+                                        )
+                                    )
+                                ),
+                                ite(target[6],
+                                    ite(target[7], False,
+                                        # Now check for other as
+                                        ite(source[5], False,
+                                            ite(source[6], False,
+                                                ite(source[7], False,
+                                                    True
+                                                )
+                                            )
+                                        )
+                                    ),
+                                    ite(target[7],
+                                        # Now check for other as
+                                        ite(source[5], False,
+                                            ite(source[6], False,
+                                                ite(source[7], False,
+                                                    True
+                                                )
+                                            )
+                                        ),
+                                        False
+                                    )
+                                )
+                            )
+                        )
+                    )
+                ),
+                ite(source[5],
+                    ite(target[1], False,
+                        ite(target[2], False,
+                            ite(target[3], False,
+                                ite(target[4], False,
+                                    ite(target[5], False,
+                                        ite(target[6], False,
+                                            ite(target[7],
+                                                # Now check for other as
+                                                ite(source[6], False,
+                                                    ite(source[7], False,
+                                                        True
+                                                    )
+                                                ),
+                                                False
+                                            )
+                                        )
+                                    )
+                                )
+                            )
+                        )
+                    ),
+                    False
+                )
+            )
+        )
+    )
+)
+
+render(ebdd, 'edges')
+
+# V as number of vertexes (numbered from 1 to V)
+# E as list of directed edges.
+def buildBDT(vs, es):
+  tree = 0
+  for i in reversed(vs):
+    success = 0
+    adj = [t if s == i else None for s, t in es]
+    adj.reverse()
+    for b in adj:
+      if b != None:
+        success = ite(target[b], 1, success)
+    tree = ite(source[i], success, tree)
+  return tree
+
+render(buildBDT(vs, es), 'edges2', format='jpg')
