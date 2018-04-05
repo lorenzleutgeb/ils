@@ -18,7 +18,7 @@ def totab(v, e):
 
     s, t = exprvars('s', k), exprvars('t', k)
 
-    return s, t, truthtable(t + s, ''.join(map(str, desired))), k
+    return s, t, truthtable(t + s, ''.join(map(str, desired)))
 
 def parse(f):
     e = []
@@ -34,30 +34,33 @@ def parse(f):
 
     return max([max(a, b) for a, b in e]) + 1, e
 
-def diameter(d, f, s, t, k):
+def diameter(d, f, s, t):
+    k = len(s)
+
     sv = exprvars('sv', d + 2, k)
     tv = exprvars('tv', d + 1, k)
 
-    return sv, tv, Implies(
-        And(*[
-            f.compose(dict(list(zip(s, sv[i])) + list(zip(t, sv[i + 1]))))
-            for i in range(d + 1)
-        ]),
+    qs = [
+        ('a', [xs[i] for xs, i in product(sv, range(k))]),
+        ('e', [xt[i] for xt, i in product(tv, range(k))])
+    ]
+
+    def transition(src, dst):
+        return f.compose(dict(list(zip(s, src)) + list(zip(t, dst))))
+
+    def same(a, b):
+        return And(*[Equal(*it) for it in zip(a, b)])
+
+    return sv, qs, Implies(
+        And(*[transition(sv[i], sv[i + 1]) for i in range(d + 1)]),
         And(
-            *[Equal(*it) for it in zip(tv[0], sv[0])],
-            *[
-                f.compose(dict(list(zip(s, tv[i])) + list(zip(t, tv[i + 1]))))
-                for i in range(d)
-            ],
-            Or(*[
-                And(*[Equal(*it) for it in zip(tv[i], sv[d + 1])])
-                for i in range(d + 1)
-            ])
+            same(tv[0], sv[0]),
+            *[transition(tv[i], tv[i + 1]) for i in range(d)],
+            Or(*[same(tv[i], sv[d + 1]) for i in range(d + 1)])
         )
     )
 
-def to_qdimacs(quants, expr):
-    props, dimacs = expr2dimacscnf(expr.to_cnf())
+def to_qdimacs(props, dimacs, quants):
     dimacs = str(dimacs).split('\n')
 
     qs = []
@@ -71,28 +74,48 @@ def to_qdimacs(quants, expr):
 
     return '\n'.join([dimacs[0]] + qs + dimacs[1:])
 
-def solve(quants, expr):
+def solve(svs, quants, expr):
+    props, dimacs = expr2dimacscnf(expr.to_cnf())
+
     ifd, ifname = mkstemp()
 
-    with open(ifd, 'w') as f: f.write(to_qdimacs(quants, expr))
+    with open(ifd, 'w') as f: f.write(to_qdimacs(props, dimacs, quants))
     proc = run(['depqbf', '--no-dynamic-nenofex', '--qdo', ifname], stderr=STDOUT, stdout=PIPE)
     remove(ifname)
 
-    return sat(proc.stdout.decode('utf-8'))
+    satisfiable, witness = sat(proc.stdout.decode('utf-8'))
+
+    if not satisfiable and witness != {}:
+        return [sum([2 ** i if witness[props[sv[i]]] else 0 for i in range(len(svs[0]))]) for sv in svs]
+    else:
+        return None
 
 def sat(output):
-    result = int(output.strip().split('\n')[0].split(' ')[2])
+    answer = None
+    witness = {}
+    for lno, ln in enumerate(output.strip().split('\n')):
+        # Skip empty lines and comments.
+        if len(ln) == 0 or ln[0] == 'c':
+            continue
 
-    if result not in {0, 1}:
+        ln = ln.split(' ')
+
+        if len(ln) == 5 and ln[0] == 's' and ln[1] == 'cnf':
+            answer = int(ln[2])
+
+        if len(ln) > 1 and ln[0] == 'V':
+            literal = int(ln[1])
+            witness[abs(literal)] = literal > 0
+
+    if answer not in {0, 1}:
         print('Indeterminate result!')
         exit(1)
 
-    return result
+    return bool(answer), witness
 
 def main():
     with open(argv[len(argv) - 1], 'r') as f:
-        v, e = parse(f)
-        s, t, tab, k = totab(v, e)
+        s, t, tab = totab(*parse(f))
 
         if '--table' in argv:
             print('Truth Table of Transition Function (LSBs at 0):')
@@ -100,15 +123,14 @@ def main():
 
         tab = truthtable2expr(tab)
 
+        path = []
         for d in range(v):
-            svs, tvs, ex = diameter(d, tab, s, t, k)
-            quants = [
-                ('a', [sv[i] for sv, i in product(svs, range(k))]),
-                ('e', [tv[i] for tv, i in product(tvs, range(k))])
-            ]
+            witness = solve(*diameter(d, tab, s, t))
 
-            if solve(quants, ex):
-                print(d)
+            if witness:
+                path = witness
+            else:
+                print(' '.join(map(lambda x: str(x + 1), path)) if '--path' in argv else len(path))
                 exit(0)
 
         print('?')
