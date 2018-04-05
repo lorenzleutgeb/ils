@@ -21,27 +21,18 @@ def totab(v, e):
     return s, t, truthtable(t + s, ''.join(map(str, desired))), k
 
 def parse(f):
-    E = []
+    e = []
 
-    for lno, row in enumerate(f):
-        state = row.split(' ')
+    for lno, ln in enumerate(f):
+        ln = list(map(lambda x: x.strip(), ln.split('->')))
 
-        if len(state) != 3 :
-            print('Invalid input file')
+        if len(ln) != 2 or not ln[0].isdigit() or not ln[1].isdigit():
+            print('Invalid input on line {}'.format(lno))
             exit(1)
 
-        if not (state[0].isdigit() or state[2].isdigit()):
-            print('Contains invalid characters')
-            exit(1)
+        e.append(tuple(map(lambda x: int(x) - 1, ln)))
 
-        if not (state[1] == '->'):
-            print('Not a transion state')
-            exit(1)
-
-        E.append((int(state[0]) - 1, int(state[2]) - 1))
-        V = max([max(a,b) for (a,b) in E])
-
-    return (V,E)
+    return max([max(a, b) for a, b in e]), e
 
 # True if dst can be reached via src in *exactly* d transitions.
 # src and dst should be states using zero-based indexing!
@@ -130,7 +121,7 @@ def to_qdimacs(quants, expr):
         result += '{} {} 0\n'.format(q, ' '.join(map(lambda x: str(props[x]), vs)))
 
     result += '\n'.join(dimacs[1:])
-    print(result)
+    #print(result)
     return result
 
 def solve(quants, expr):
