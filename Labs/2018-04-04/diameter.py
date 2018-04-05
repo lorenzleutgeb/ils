@@ -9,17 +9,16 @@ from tempfile    import mkstemp
 
 def totab(v, e):
     k = clog2(v)
+    r = range(2 ** k)
 
-    ss = range(0, 2 ** k)
+    desired = [1 if (a, b) in e else 0 for (a, b) in product(r, r)]
 
-    results = ''.join(['1' if (a, b) in e else '0' for (a, b) in product(ss, ss)])
+    if sum(desired) != len(e):
+        print('Truth table looks off.')
 
-    X = exprvars('s', k)
-    Y = exprvars('t', k)
+    s, t = exprvars('s', k), exprvars('t', k)
 
-    vs = Y + X
-
-    return X, Y, truthtable(vs, results), k
+    return s, t, truthtable(t + s, ''.join(map(str, desired))), k
 
 def parse(f):
     E = []
