@@ -32,55 +32,7 @@ def parse(f):
 
         e.append(tuple(map(lambda x: int(x) - 1, ln)))
 
-    return max([max(a, b) for a, b in e]), e
-
-# True if dst can be reached via src in *exactly* d transitions.
-# src and dst should be states using zero-based indexing!
-def reachableExactly(d, f, s, t, k, src, dst):
-    if d < 0:
-        return False
-
-    if d == 0:
-        return src == dest
-
-    sv = exprvars('sv', d + 1, k)
-
-    src = num2point(src, sv[0])
-    dst = num2point(dst, sv[d])
-
-    return And(
-        *[Equal(*it) for it in src.items()],
-        *[
-            f.compose(dict(list(zip(s, sv[i])) + list(zip(t, sv[i + 1]))))
-            for i in range(d)
-        ],
-        *[Equal(*it) for it in dst.items()]
-    )
-
-# True if dst can be reached via src in *at most* d transitions.
-# src and dst should be states using zero-based indexing!
-def reachableAtMost(d, f, s, t, k, src, dst):
-    if d < 0:
-        return False
-
-    if d == 0:
-        return src == dest
-
-    sv = exprvars('sv', d + 1, k)
-
-    src = num2point(src, sv[0])
-
-    return And(
-        *[Equal(*it) for it in src.items()],
-        *[
-            f.compose(dict(list(zip(s, sv[i])) + list(zip(t, sv[i + 1]))))
-            for i in range(d)
-        ],
-        Or(*[
-            And(*[Equal(*it) for it in num2point(dst, sv[i]).items()])
-            for i in range(1, d + 1)
-        ])
-    )
+    return max([max(a, b) for a, b in e]) + 1, e
 
 def diameter(d, f, s, t, k):
     sv = exprvars('sv', d + 2, k)
@@ -105,24 +57,19 @@ def diameter(d, f, s, t, k):
     )
 
 def to_qdimacs(quants, expr):
-    result = ''
     props, dimacs = expr2dimacscnf(expr.to_cnf())
-
     dimacs = str(dimacs).split('\n')
 
-    result = dimacs[0] + '\n'
-
+    qs = []
     for q, vs in quants:
         vs = list(filter(lambda x: x in props, vs))
 
         if len(vs) == 0:
             continue
 
-        result += '{} {} 0\n'.format(q, ' '.join(map(lambda x: str(props[x]), vs)))
+        qs.append('{} {} 0'.format(q, ' '.join(map(lambda x: str(props[x]), vs))))
 
-    result += '\n'.join(dimacs[1:])
-    #print(result)
-    return result
+    return '\n'.join([dimacs[0]] + qs + dimacs[1:])
 
 def solve(quants, expr):
     ifd, ifname = mkstemp()
@@ -131,24 +78,41 @@ def solve(quants, expr):
     proc = run(['depqbf', '--no-dynamic-nenofex', '--qdo', ifname], stderr=STDOUT, stdout=PIPE)
     remove(ifname)
 
-    return proc.stdout.decode('utf-8').strip().split('\n')
+    return sat(proc.stdout.decode('utf-8'))
+
+def sat(output):
+    result = int(output.strip().split('\n')[0].split(' ')[2])
+
+    if result not in {0, 1}:
+        print('Indeterminate result!')
+        exit(1)
+
+    return result
 
 def main():
-    with open(argv[1], 'r') as f:
+    with open(argv[len(argv) - 1], 'r') as f:
         v, e = parse(f)
-
         s, t, tab, k = totab(v, e)
-        print('Truth Table of Transition Function (LSBs are at 0):')
-        print(tab)
 
-        for d in range(1, 2 ** v):
+        if '--table' in argv:
+            print('Truth Table of Transition Function (LSBs at 0):')
+            print(tab)
+
+        tab = truthtable2expr(tab)
+
+        for d in range(v):
             svs, tvs, ex = diameter(d, tab, s, t, k)
             quants = [
                 ('a', [sv[i] for sv, i in product(svs, range(k))]),
                 ('e', [tv[i] for tv, i in product(tvs, range(k))])
             ]
 
-            print(d, solve(quants, ex))
+            if solve(quants, ex):
+                print(d)
+                exit(0)
+
+        print('?')
+        exit(2)
 
 if __name__ == '__main__':
     main()
