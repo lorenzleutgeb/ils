@@ -122,13 +122,16 @@ def to_qdimacs(quants, expr):
 
     result = dimacs[0] + '\n'
 
-    for q, v in quants:
-        if v not in props:
+    for q, vs in quants:
+        vs = list(filter(lambda x: x in props, vs))
+
+        if len(vs) == 0:
             continue
 
-        result += '{} {} 0\n'.format(q, props[v])
+        result += '{} {} 0\n'.format(q, ' '.join(map(lambda x: str(props[x]), vs)))
 
     result += '\n'.join(dimacs[1:])
+    print(result)
     return result
 
 def solve(quants, expr):
@@ -150,7 +153,11 @@ def main():
 
         for d in range(1, 2 ** v):
             svs, tvs, ex = diameter(d, tab, s, t, k)
-            quants = [('a', sv[i]) for sv, i in product(svs, range(k))] + [('e', tv[i]) for tv, i in product(tvs, range(k))]
+            quants = [
+                ('a', [sv[i] for sv, i in product(svs, range(k))]),
+                ('e', [tv[i] for tv, i in product(tvs, range(k))])
+            ]
+
             print(d, solve(quants, ex))
 
 if __name__ == '__main__':
