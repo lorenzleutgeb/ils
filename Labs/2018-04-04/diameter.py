@@ -2,10 +2,8 @@
 
 from pyeda.inter import *
 from itertools   import product
-from os          import remove
 from subprocess  import PIPE, STDOUT, run
-from sys         import argv, exit, stdin, stdout
-from tempfile    import mkstemp
+from sys         import argv, exit
 
 def totab(v, e):
     k = clog2(v)
@@ -77,18 +75,20 @@ def to_qdimacs(props, dimacs, quants):
 def solve(svs, quants, expr):
     props, dimacs = expr2dimacscnf(expr.to_cnf())
 
-    ifd, ifname = mkstemp()
+    satisfiable, witness = sat(run(
+        ['depqbf', '--no-dynamic-nenofex', '--qdo'],
+        encoding='utf-8',
+        input=to_qdimacs(props, dimacs, quants),
+        stdout=PIPE,
+        stderr=STDOUT
+    ).stdout)
 
-    with open(ifd, 'w') as f: f.write(to_qdimacs(props, dimacs, quants))
-    proc = run(['depqbf', '--no-dynamic-nenofex', '--qdo', ifname], stderr=STDOUT, stdout=PIPE)
-    remove(ifname)
-
-    satisfiable, witness = sat(proc.stdout.decode('utf-8'))
-
-    if not satisfiable and witness != {}:
-        return [sum([2 ** i if witness[props[sv[i]]] else 0 for i in range(len(svs[0]))]) for sv in svs]
-    else:
+    if satisfiable:
         return None
+
+    #occ = filter(lambda x: any(lambda y: y in props, x), svs)
+
+    return [sum([2 ** i if props[sv[i]] in witness and witness[props[sv[i]]] else 0 for i in range(len(svs[0]))]) for sv in svs]
 
 def sat(output):
     answer = None
@@ -113,28 +113,50 @@ def sat(output):
 
     return bool(answer), witness
 
+def gv_highlight(v, e, h):
+    he = [(h[i], h[i + 1]) for i in range(len(h) - 1)]
+    return '\n'.join(['digraph G {'] +
+        ['\t' + str(x + 1) + (' [color = "red"];' if x in h else '') for x in range(v)] +
+        ['\t{} -> {}'.format(a + 1, b + 1) + (' [color = "red"];' if (a, b) in he else '') for a, b in e] +
+        ['}']
+    )
+
 def main():
+    v, e = 0, []
     with open(argv[len(argv) - 1], 'r') as f:
-        s, t, tab = totab(*parse(f))
+        v, e = parse(f)
 
-        if '--table' in argv:
-            print('Truth Table of Transition Function (LSBs at 0):')
-            print(tab)
+    s, t, tab = totab(v, e)
 
-        tab = truthtable2expr(tab)
+    if '--table' in argv:
+        print('Truth Table of Transition Function (LSBs at index 0):')
+        print(tab)
 
-        path = []
-        for d in range(v):
-            witness = solve(*diameter(d, tab, s, t))
+    tab = truthtable2expr(tab)
 
-            if witness:
-                path = witness
-            else:
-                print(' '.join(map(lambda x: str(x + 1), path)) if '--path' in argv else len(path))
-                exit(0)
+    path = None
+    for d in range(v):
+        witness = solve(*diameter(d, tab, s, t))
 
+        if witness:
+            path = witness
+        else:
+            break
+
+    if path == None:
         print('?')
         exit(2)
+
+    if '--path' in argv:
+        print(' '.join(map(lambda x: str(x + 1), path)))
+        exit(0)
+
+    if '--gv' not in argv:
+        print(len(path) - 1)
+        exit(0)
+
+    print(gv_highlight(v, e, path))
+    exit(0)
 
 if __name__ == '__main__':
     main()
