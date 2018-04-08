@@ -6,6 +6,10 @@ from subprocess  import PIPE, STDOUT, run
 from sys         import argv, exit
 
 def totab(v, e):
+    """
+        Generates a truth table that represents the directed edges
+        of a given graph.
+    """
     k = clog2(v)
     r = range(2 ** k)
 
@@ -59,6 +63,11 @@ def diameter(d, f, s, t):
     )
 
 def to_qdimacs(props, dimacs, quants):
+    """
+        Takes a formula in DIMACS format (props maps expressions to
+        propositional variables, and dimacs is the actual DIMACS
+        string) and augments it using the given quantifier prefix.
+    """
     dimacs = str(dimacs).split('\n')
 
     qs = []
@@ -73,6 +82,9 @@ def to_qdimacs(props, dimacs, quants):
     return '\n'.join([dimacs[0]] + qs + dimacs[1:])
 
 def solve(svs, quants, expr):
+    """
+        Runs DepQBF and extracts witness as path if possible.
+    """
     props, dimacs = expr2dimacscnf(expr.to_cnf())
 
     satisfiable, witness = sat(run(
@@ -86,11 +98,19 @@ def solve(svs, quants, expr):
     if satisfiable:
         return None
 
-    #occ = filter(lambda x: any(lambda y: y in props, x), svs)
-
-    return [sum([2 ** i if props[sv[i]] in witness and witness[props[sv[i]]] else 0 for i in range(len(svs[0]))]) for sv in svs]
+    # Reconstruct path from raw witness.
+    return [
+        sum([
+            2 ** i if props[sv[i]] in witness and witness[props[sv[i]]] else 0
+            for i in range(len(svs[0]))
+        ])
+        for sv in svs
+    ]
 
 def sat(output):
+    """
+        Parses DepQBF output and extracts raw witness if possible.
+    """
     answer = None
     witness = {}
     for lno, ln in enumerate(output.strip().split('\n')):
@@ -114,6 +134,9 @@ def sat(output):
     return bool(answer), witness
 
 def gv_highlight(v, e, h):
+    """
+        Renders a graph for Graphviz, highlighting a specific path.
+    """
     he = [(h[i], h[i + 1]) for i in range(len(h) - 1)]
     return '\n'.join(['digraph G {'] +
         ['\t' + str(x + 1) + (' [color = "red"];' if x in h else '') for x in range(v)] +
@@ -134,29 +157,18 @@ def main():
 
     tab = truthtable2expr(tab)
 
-    path = None
-    for d in range(v):
-        witness = solve(*diameter(d, tab, s, t))
-
-        if witness:
-            path = witness
-        else:
+    result = None
+    for d in range(v + 1):
+        if not solve(*diameter(d, tab, s, t)):
+            result = d
             break
 
-    if path == None:
+    if result == None:
         print('?')
         exit(2)
-
-    if '--path' in argv:
-        print(' '.join(map(lambda x: str(x + 1), path)))
+    else:
+        print(result)
         exit(0)
-
-    if '--gv' not in argv:
-        print(len(path) - 1)
-        exit(0)
-
-    print(gv_highlight(v, e, path))
-    exit(0)
 
 if __name__ == '__main__':
     main()
