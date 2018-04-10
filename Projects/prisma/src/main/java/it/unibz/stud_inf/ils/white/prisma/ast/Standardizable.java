@@ -1,11 +1,9 @@
 package it.unibz.stud_inf.ils.white.prisma.ast;
 
-import it.unibz.stud_inf.ils.white.prisma.IntIdGenerator;
+import it.unibz.stud_inf.ils.white.prisma.util.Counter;
 
 import java.util.Map;
 
-@Deprecated
 public interface Standardizable<S> {
-	@Deprecated
-	S standardize(Map<Long, Long> map, IntIdGenerator generator);
+	S standardize(Map<Long, Long> map, Counter generator);
 }

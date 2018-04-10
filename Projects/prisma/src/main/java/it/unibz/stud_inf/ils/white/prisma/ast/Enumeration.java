@@ -1,9 +1,7 @@
 package it.unibz.stud_inf.ils.white.prisma.ast;
 
 import com.google.common.collect.Sets;
-import it.unibz.stud_inf.ils.white.prisma.Groundable;
-import it.unibz.stud_inf.ils.white.prisma.IntIdGenerator;
-import it.unibz.stud_inf.ils.white.prisma.Substitution;
+import it.unibz.stud_inf.ils.white.prisma.util.Counter;
 
 import java.util.List;
 import java.util.Map;
@@ -39,7 +37,7 @@ public class Enumeration<U extends Groundable<T,U>, T> extends Domain<T> {
 	}
 
 	@Override
-	public Domain<T> standardize(Map<Long, Long> map, IntIdGenerator generator) {
+	public Domain<T> standardize(Map<Long, Long> map, Counter generator) {
 		return new Enumeration<U,T>(
 			elements.stream().map(e -> e.standardize(map, generator)).collect(Collectors.toList())
 		);

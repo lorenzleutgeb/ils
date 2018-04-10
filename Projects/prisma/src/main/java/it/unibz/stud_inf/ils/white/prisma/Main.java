@@ -1,7 +1,8 @@
 package it.unibz.stud_inf.ils.white.prisma;
 
 import com.beust.jcommander.JCommander;
-import it.unibz.stud_inf.ils.white.prisma.ast.Formula;
+import it.unibz.stud_inf.ils.white.prisma.ast.expressions.Formula;
+import it.unibz.stud_inf.ils.white.prisma.cnf.ClauseAccumulator;
 import it.unibz.stud_inf.ils.white.prisma.parser.Parser;
 import org.antlr.v4.runtime.CharStream;
 import org.antlr.v4.runtime.CharStreams;
@@ -13,7 +14,7 @@ import java.io.InputStreamReader;
 import java.io.PrintStream;
 
 import static it.unibz.stud_inf.ils.white.prisma.Mode.REPL;
-import static it.unibz.stud_inf.ils.white.prisma.Util.SET_COLLECTOR;
+import static it.unibz.stud_inf.ils.white.prisma.util.Util.SET_COLLECTOR;
 
 public class Main {
 	private static final String BANNER =
@@ -52,7 +53,7 @@ public class Main {
 		}
 
 		Formula formula = Parser.parse(inputStream);
-		ConjunctiveNormalForm cnf = formula.toConjunctiveNormalForm();
+		ClauseAccumulator cnf = formula.accumulate();
 
 		try (PrintStream ps = new PrintStream(options.positionals.isEmpty() ? System.out : new FileOutputStream(options.positionals.get(0)))) {
 			switch (options.mode) {
@@ -60,10 +61,10 @@ public class Main {
 					ps.println(cnf);
 					break;
 				case DIMACS:
-					cnf.printDimacsTo(ps);
+					cnf.compress().printDimacsTo(ps);
 					break;
 				case SOLVE:
-					cnf.printModelsTo(ps, options.models);
+					cnf.compress().printModelsTo(ps, options.models);
 					break;
 				default:
 					bailOut("?", null);
@@ -85,11 +86,11 @@ public class Main {
 			String ln;
 			while ((ln = reader.readLine()) != null) {
 				if (ln.isEmpty()) {
-					var it = f.toConjunctiveNormalForm().computeModels().iterator();
+					var it = f.accumulate().compress().computeModels().iterator();
 
 					while (true) {
 						if (!it.hasNext()) {
-							System.out.println(ConjunctiveNormalForm.UNSAT);
+							System.out.println("UNSATISFIABLE");
 							break;
 						}
 

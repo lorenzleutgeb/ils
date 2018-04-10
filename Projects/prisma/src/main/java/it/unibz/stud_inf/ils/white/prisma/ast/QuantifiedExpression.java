@@ -1,8 +1,9 @@
 package it.unibz.stud_inf.ils.white.prisma.ast;
 
-import it.unibz.stud_inf.ils.white.prisma.ConjunctiveNormalForm;
-import it.unibz.stud_inf.ils.white.prisma.IntIdGenerator;
-import it.unibz.stud_inf.ils.white.prisma.Substitution;
+import it.unibz.stud_inf.ils.white.prisma.cnf.ClauseAccumulator;
+import it.unibz.stud_inf.ils.white.prisma.util.Counter;
+import it.unibz.stud_inf.ils.white.prisma.ast.expressions.ConnectiveExpression;
+import it.unibz.stud_inf.ils.white.prisma.ast.expressions.Expression;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -48,15 +49,15 @@ public class QuantifiedExpression<T> extends Expression {
 			substitution.remove(quantifier.getVariable());
 		}
 
-		return new ConnectiveExpression(
+		return create(
 			quantifier.getConnective(),
 			instances
 		);
 	}
 
 	@Override
-	public QuantifiedExpression<T> standardize(Map<Long, Long> map, IntIdGenerator generator) {
-		long id = generator.getNextId();
+	public QuantifiedExpression<T> standardize(Map<Long, Long> map, Counter generator) {
+		long id = generator.getAsInt();
 		Map<Long, Long> subMap = new HashMap<>(map);
 		subMap.put(quantifier.getVariable().toLong(), id);
 		Variable<T> variable = ((Variable<T>)((Standardizable)quantifier.getVariable()).standardize(subMap, generator));
@@ -140,7 +141,7 @@ public class QuantifiedExpression<T> extends Expression {
 	}
 
 	@Override
-	public Integer tseitin(ConjunctiveNormalForm cnf) {
+	public Integer tseitin(ClauseAccumulator cnf) {
 		throw new IllegalStateException();
 	}
 

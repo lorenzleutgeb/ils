@@ -1,6 +1,8 @@
 package it.unibz.stud_inf.ils.white.prisma;
 
-import it.unibz.stud_inf.ils.white.prisma.ast.Formula;
+import it.unibz.stud_inf.ils.white.prisma.ast.expressions.Formula;
+import it.unibz.stud_inf.ils.white.prisma.cnf.ClauseAccumulator;
+import it.unibz.stud_inf.ils.white.prisma.cnf.DIMACSCNF;
 import it.unibz.stud_inf.ils.white.prisma.parser.Parser;
 import org.antlr.v4.runtime.CharStreams;
 import org.junit.jupiter.api.Test;
@@ -21,19 +23,26 @@ import static org.junit.jupiter.params.provider.Arguments.of;
 class Tests {
 	static Stream<? extends Arguments> groundInstances() {
 		return Stream.of(
+			of("~(q | p)",     2, 2, 1),
+			of("~(q & p)",     2, 1, 3),
+			of("~~(q | p)",    2, 1, 3),
+			of("~~q",          1, 1, 1),
 			of("~q",           1, 1, 1),
 			of("p | q",        2, 1, 3),
 			of("p & q",        2, 2, 1),
 			of("p ^ q",        2, 2, 2),
-			of("p & ~p",       1, 2, 0),
+			of("(p | q) ^ (r | s)", -1, -1, 6),
+			of("(p & q) ^ (r & s)", -1, -1, 6),
+			of("(p -> q) -> r",     -1, -1, 5),
+			of("p & ~p",       0, 1, 0),
 			of("~~~~q",        1, 1, 1),
 			of("p -> q",       2, 1, 3),
 			of("p <-> q",      2, 2, 2),
 			of("p ? q : r",    3, 2, 4),
 			of("p <- q",       2, 1, 3),
 			of("~(p -> q)",    2, 2, 1),
-			of("true & false", 1, 2, 0),
-			of("1 > 2",        1, 2, 0),
+			of("true & false", 0, 1, 0),
+			of("1 > 2",        0, 1, 0),
 
 			of("~(~(~p & ~q) & ~(~q & r))", 3 + 2, 7, 3), // Yields DNF for NNF.
 			of("~(p -> s -> (q & r))", 4, 2, 9)
@@ -91,21 +100,22 @@ class Tests {
 		System.out.println("Quantifiers minimized: " + (f = f.pushQuantifiersDown()));
 		System.out.println("Ground:                " + (f = f.ground()));
 
-		final ConjunctiveNormalForm cnf = f.tseitin();
-		System.out.println("CNF size:              " + cnf.getVariableCount() + " " + cnf.getClauseCount());
+		final ClauseAccumulator cnf = f.tseitin();
+		DIMACSCNF comp = cnf.compress();
+		System.out.println("CNF size:             " + comp.getVariableCount() + " " + comp.getClauseCount());
 		System.out.println("CNF follows:");
-		System.out.println(cnf);
+		System.out.println(comp);
 		System.out.println("Models follow:");
-		cnf.printModelsTo(System.out, Long.MAX_VALUE);
+		comp.printModelsTo(System.out, Long.MAX_VALUE);
 
 		if (vars >= 0) {
-			assertEquals(vars, cnf.getVariableCount(), "Number of Variables");
+			assertEquals(vars, comp.getVariableCount(), "Number of Variables");
 		}
 		if (clauses >= 0) {
-			assertEquals(clauses, cnf.getClauseCount(), "Number of Clauses");
+			assertEquals(clauses, comp.getClauseCount(), "Number of Clauses");
 		}
 		if (models >= 0) {
-			assertEquals(models, cnf.computeModels().count(), "Number of Models");
+			assertEquals(models, comp.computeModels().count(), "Number of Models");
 		}
 	}
 
@@ -119,9 +129,9 @@ class Tests {
 	void parseExplosion() {
 		for (int n = 3; n < 11; n++) {
 			final String in = String.join(" ^ ", Collections.nCopies(n, "p"));
-			final String out = Parser.parse(in).toConjunctiveNormalForm().toString();
+			final String out = Parser.parse(in).accumulate().toString();
 			final int ratio = out.length() / in.length();
-			assertTrue(30 < ratio && ratio < 60, "CNF does not explode in size.");
+			assertTrue(29 < ratio && ratio < 60, "CNF does not explode in size.");
 		}
 	}
 
@@ -129,7 +139,12 @@ class Tests {
 	@ValueSource(strings = {"/sudoku.bool", "/sudoku-empty.bool", "/quants-3.bool", "/quants-5.bool"})
 	void instance(String fileName) throws IOException {
 		Formula f = Parser.parse(CharStreams.fromStream(getClass().getResourceAsStream(fileName)));
-		ConjunctiveNormalForm cnf = f.toConjunctiveNormalForm();
+		ClauseAccumulator cnf = f.accumulate();
 		System.out.println(cnf.getVariableCount() + " " + cnf.getClauseCount());
+	}
+
+	@Test
+	void my() {
+		solveAndAssert("~(~(~p & ~q) & ~(~q & r))",  3 + 2, 7, 3);
 	}
 }

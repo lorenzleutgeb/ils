@@ -1,0 +1,14 @@
+#QCIR-G14
+
+exists(r1)
+forall(b2)
+exists(r3)
+forall(b4)
+
+output(g5)
+
+g1 = ite(r3,b4,true)
+g2 = ite(r3,false,b4)
+g3 = ite(b2,g1,r3)
+g4 = ite(b2,true,g2)
+g5 = ite(r1,g4,g3)
