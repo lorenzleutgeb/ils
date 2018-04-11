@@ -1,4 +1,5 @@
 from sys import argv, exit
+from pyeda.inter import *
 
 def sgn_change(lst):
   return list(map(lambda x: -x, lst))
@@ -24,13 +25,10 @@ def parse(filename):
 
   with open(filename, 'r') as f:
     for lno, raw in enumerate(f):
-      line = raw.strip('\n').strip(';').split(' ')
-
-      if line[0] == "*":
-        continue
+      line = raw.strip(';\n').split(' ')
 
       # Ignoring optimization constraints for now.
-      if line[0] == "min:":
+      if line[0] == "*" or line[0] == "min:":
         continue
 
       ops = ["=", "<=", "<", ">=", ">"]
@@ -38,14 +36,13 @@ def parse(filename):
       cofs = [line[2*i] for i in range(len(line)//2 - 1)]
       vars = [line[2*i+1] for i in range(len(line)//2 - 1)]
 
-      term, op = line[-1], line[-2]
-
       try:
-        term = int(term)
+        term = int(line[-1])
       except ValueError:
         print("input malformed at line {}: {} is not an integer coefficient.".format(lno, term))
         exit(1)
 
+      op = line[-2]
       if not (op in ops):
         print("input malformed at line {}: incorrect symbol for (in)equality.".format(lno))
         exit(1)
@@ -72,6 +69,22 @@ def parse(filename):
       
       c += term
 
-  return(coeffs, c)
+  return(list(reversed(sorted([(y,x) for (x,y) in coeffs.items()]))), c)
+
+# Assume consecutive keys, starting from 1.
+def setBDD(poly, c):
+
+  # v = list(range(1,len(poly) + 1))
+  v = list(map(bddvar, range(1,len(poly))))
+  return recBDD(v, poly, c, 0)
 
 
+def recBDD(v, poly, c, i):
+  if c < 0:
+    return True
+  elif i == len(poly):
+    return False
+  else:
+    a, b = poly[i]
+    # return "ite({},\n{}{},\n{}{})".format(v[b-1], '\t'*i, recBDD(v,poly, c - a, i + 1), '\t'*i, recBDD(v, poly, c, i + 1))
+    return ite(v[b], recBDD(v,poly, c - a, i + 1), recBDD(v, poly, c, i + 1))
