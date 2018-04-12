@@ -72,10 +72,7 @@ def parse(filename):
   return(list(reversed(sorted([(y,x) for (x,y) in coeffs.items()]))), c)
 
 # Assume consecutive keys, starting from 1.
-def setBDD(poly, c):
-
-  # v = list(range(1,len(poly) + 1))
-  v = list(map(bddvar, range(1,len(poly))))
+def setBDD(v, poly, c):
   return recBDD(v, poly, c, 0)
 
 
@@ -86,5 +83,21 @@ def recBDD(v, poly, c, i):
     return False
   else:
     a, b = poly[i]
-    # return "ite({},\n{}{},\n{}{})".format(v[b-1], '\t'*i, recBDD(v,poly, c - a, i + 1), '\t'*i, recBDD(v, poly, c, i + 1))
-    return ite(v[b], recBDD(v,poly, c - a, i + 1), recBDD(v, poly, c, i + 1))
+    return ite(v[b-1], recBDD(v,poly, c - a, i + 1), recBDD(v, poly, c, i + 1))
+
+def BDD2CNF(d):
+    return bdd2expr(d).to_cnf()
+
+def truthvalue(sol):
+    if sol == None or sol == 0:
+        return False
+    else:
+        return True
+
+# ISSUE: losing connection between bddvars and exprvars.
+def solve(poly, c):
+    v = bddvars('x',len(poly))
+    sol = BDD2CNF(setBDD(v, poly,c)).satisfy_one()
+    print(sol)
+    for i in range(len(poly)):
+        print("x{} = {}".format(i+1, truthvalue(sol.get(v[i]))))
