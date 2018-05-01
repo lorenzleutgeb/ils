@@ -18,7 +18,7 @@ qs = {
 # Structure of the formula.
 f = ITE(r1, ITE(b2, True, ITE(r3, False, b4)), ITE(b2, ITE(r3, b4, True),r3))
 
-# COmpute CNF and get DIMACS format.
+# Compute CNF and get DIMACS format.
 props, dimacs = expr2dimacscnf(f.to_cnf())
 dimacs = str(dimacs).split('\n')
 

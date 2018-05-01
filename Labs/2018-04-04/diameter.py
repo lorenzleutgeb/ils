@@ -48,7 +48,10 @@ def diameter(d, f, s, t):
     ]
 
     def transition(src, dst):
-        return f.compose(dict(list(zip(s, src)) + list(zip(t, dst))))
+        return f.compose(dict(
+            (zip(s, src)) +
+            (zip(t, dst))
+        ))
 
     def same(a, b):
         return And(*[Equal(*it) for it in zip(a, b)])
