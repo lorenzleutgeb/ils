@@ -3,6 +3,16 @@
 import Action
 import Orientation
 
+N = 4
+
+# Initially we do not know about stench/breeze/glitter
+# anywhere.
+world = [][(None, None, None)] * N] * N
+
+position = (1, 1)
+
+orientation = Orientation.RIGHT
+
 def PyAgent_Constructor ():
     print "PyAgent_Constructor"
 
@@ -14,6 +24,11 @@ def PyAgent_Initialize ():
     print "PyAgent_Initialize"
 
 def PyAgent_Process (stench,breeze,glitter,bump,scream):
+    if bump == 1:
+        print "We bumped. Should never happen."
+
+    world[position[0]][position[1]] = (stench == 1, breeze == 1, glitter == 1)
+
     # 1. Add the knowledge that we obtain as percepts to
     #    our model/state of the world. We should
     #    a. not move to dangerous cells (might die).
@@ -36,10 +51,6 @@ def PyAgent_Process (stench,breeze,glitter,bump,scream):
         perceptStr += "Glitter=True,"
     else:
         perceptStr += "Glitter=False,"
-    if (bump == 1):
-        perceptStr += "Bump=True,"
-    else:
-        perceptStr += "Bump=False,"
     if (scream == 1):
         perceptStr += "Scream=True"
     else:
