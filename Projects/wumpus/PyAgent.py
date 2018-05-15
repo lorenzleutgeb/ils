@@ -7,7 +7,7 @@ N = 4
 
 # Initially we do not know about stench/breeze/glitter
 # anywhere.
-world = [][(None, None, None)] * N] * N
+world = [[(None, None, None)] * N] * N
 
 position = (1, 1)
 
@@ -57,12 +57,6 @@ def PyAgent_Process (stench,breeze,glitter,bump,scream):
         perceptStr += "Scream=False"
     print "PyAgent_Process: " + perceptStr
 
-    # GOFORWARD
-    # TURNLEFT
-    # TURNRIGHT
-    # GRAB      to pick up the gold  only do that if we are percepting glitter
-    # SHOOT     to kill the Wumpus   only do that if we are facing the Wumpus
-    # CLIMB     to leave the cave    only do that if we have the gold and are at (1,1)
     return Action.GOFORWARD
 
 def PyAgent_GameOver (score):
