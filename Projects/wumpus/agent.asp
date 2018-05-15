@@ -17,7 +17,22 @@ cell(4,2).
 cell(4,3).
 cell(4,4).
 
+
+% Cells that are in front of the agent.
+
+facing(X,Y) :- position(X,Z), Z < Y, orientation(right).
+facing(X,Y) :- position(X,Z), Y < Z, orientation(left).
+facing(X,Y) :- position(Z,Y), Z < X, orientation(up).
+facing(X,Y) :- position(Z,Y), X < Z, orientation(down).
+
 % Result should be action(A).
+
+% Pick gold if there's some in the cell.
+action(grab) :- position(X,Y), gold(X,Y).
+% When to shoot to the wumbus?
+action(shoot) :- wumpus(X,Y), facing(X,Y).
+% Climb if gold is picked and back to initial cell.
+action(climb) :- gold_picked, position(1,1).
 
 % Neighboring cells along the horizontal and vertical axis.
 neighbor(X1,Y1,X2,Y2) :- cell(X1,Y1), cell(X2,Y2), X2 = X1 + 1, Y2 = Y1.
