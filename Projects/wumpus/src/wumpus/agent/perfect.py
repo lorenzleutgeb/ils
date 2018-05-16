@@ -1,110 +1,107 @@
+from functools import reduce
 from itertools import product
-from sys import exit
+from sys       import exit
+from time      import sleep
 
 import networkx as nx
-import matplotlib.pyplot as plt
 
-from ..common import Action, Location, Orientation
+# The following two imports are only necessary for plotting:
+#import matplotlib.pyplot as plt
+#from networkx.drawing.nx_agraph import write_dot
+
+from ..common    import Action, Location, Orientation
 from ..simulator import World
 
 class PerfectAgent():
     def __init__(self, world: World):
-        self.world = world
-        self.location = Location(1, 1)
-        self.orientation = Orientation.RIGHT
-        self.path = []
-
-        noGold = self.isPit(self.world.gold)
-
-        if noGold:
+        if world.gold in world.pits:
+            self.plan = [Action.CLIMB]
             return
 
-        mustKill = self.world.wumpus == self.world.gold
+        # NOTE: In the following, all code that generates human-readable
+        # labels is commented out to save memory. In case you want to
+        # debug and/or print the graph, you should un-comment these lines.
 
-        r = range(1, self.world.worldSize + 1)
+        r = range(1, world.worldSize + 1)
 
+        # We build a graph that respresents reachability (with cost) for all cells.
         g = nx.DiGraph()
 
-        labels = {}
+        for x, y, o in product(r, r, Orientation):
+            lo = Location(x, y)
+            #la = label=' '.join(map(str,
+            #    (['G'] if lo == world.gold else []) +
+            #    (['W'] if lo == world.wumpus else []) +
+            #    [lo, o]
+            #))
 
-        def otoi(o):
-            if o == Orientation.LEFT:
-                return 0
-            elif o == Orientation.RIGHT:
-                return 1
-            elif o == Orientation.UP:
-                return 2
-            elif o == Orientation.DOWN:
-                return 3
+            g.add_node((lo, o), location=lo, orientation=o)#, label=la)
 
+            # Case 1: We go in the direction that we are facing (represented by o):
+            a = lo.getAdjacent(o, world.worldSize)
 
-        def nid(l, o):
-            return l.y * 4 * self.world.worldSize + l.x * 4 + otoi(o)
-
-        # Find the shortest path between (1, 1) and the gold.
-        for x, y, q in product(r, r, Orientation):
-            l = Location(x, y)
-            labels[nid(l, q)] = str(l) + ", " + str(q)[len("Orientation."):len("Orientation.")+1]
-
-            # First case: We go in the directoin that we are facing (represented by q):
-            a = l.getAdjacent(q, self.world.worldSize)
-            if a == None:
-                continue
-
-            labels[nid(a, q)] = str(a) + ", " + str(q)[len("Orientation."):len("Orientation.")+1]
-
-            if not self.isPit(a):
+            # Avoid bumping and falling down into a pit.
+            if a != None and a not in world.pits:
                 cost = 1
-                # If we go there, we have to first shoot the wumpus which costs 9 more.
-                if a == self.world.wumpus:
-                    cost += 9
-                g.add_edge(nid(l, q), nid(a, q), cost=cost)
+                act = [Action.GOFORWARD]
 
+                # If we go there, we have to first shoot
+                # the wumpus which costs 9 more.
+                if a == world.wumpus:
+                    cost += 9
+                    act = [Action.SHOOT, Action.GOFORWARD]
+
+                g.add_edge((lo, o), (a, o), cost=cost, action=act)#, label=str(cost) + " G " + ("S" if a == world.wumpus else ""))
+
+            # Case 2: We turn ourselves.
             for action in {Action.TURNLEFT, Action.TURNRIGHT}:
-                o = q.turn(action)
-                labels[nid(a, o)] = str(a) + ", " + str(o)[len("Orientation."):len("Orientation.")+1]
-                g.add_edge(nid(l, q), nid(l, o), cost=1)
+                # Case 2a: We turn once.
+                oa = o.turn(action)
+                g.add_edge((lo, o), (lo, oa), cost=1, action=[action])#, label="1 " + str(action))
+
+                # Case 2b: We turn twice.
+                ob = oa.turn(action)
+                g.add_edge((lo, oa), (lo, ob), cost=1, action=[action])#, label="1 " + str(action))
+
+        # Here is some code to plot the graph for debuging. Use it in
+        # combination with labels.
+        #pos = nx.spring_layout(g, scale=3, k=0.05, iterations=20)
+        #nx.draw_networkx(g, pos=pos, arrows=True, labels=labels)
+        #edge_labels = nx.get_edge_attributes(g, 'label')
+        #nx.draw_networkx_edge_labels(g, pos, edge_labels=edge_labels)
+        #plt.draw()
+        #plt.show()
+        #write_dot(g, 'perfect.gv')
 
         paths = []
         for o in Orientation:
             try:
-                paths += (list(nx.all_shortest_paths(g, nid(self.location, self.orientation), nid(self.world.gold, o))))
+                paths += list(nx.all_shortest_paths(g, (Location(1, 1), Orientation.RIGHT), (world.gold, o), weight='cost'))
             except nx.exception.NetworkXNoPath:
-                print("Hmm...")
+                # This means that the gold is actually not rechable.
+                self.plan = [Action.CLIMB]
+                return
 
-        for path in paths:
-            print([labels[node] for node in path])
-            #print(list(map(lambda x: labels[x], path)))
+        # Handy function to compute the cost of a whole path.
+        def costs(path):
+            return reduce(lambda c, e: c + g.get_edge_data(*e)['cost'], zip(path, path[1:]), 0)
 
-        pos = nx.spring_layout(g, scale=3, k=0.05, iterations=20)
-        nx.draw_networkx(g, pos=pos, arrows=True, labels=labels)
-        edge_labels = nx.get_edge_attributes(g, 'cost')
-        nx.draw_networkx_edge_labels(g, pos, edge_labels = edge_labels)
-        plt.draw()
-        plt.show()
+        # Handy function to derive a list of actions from a path.
+        def actions(path):
+            return reduce(lambda c, e: c + g.get_edge_data(*e)['action'], zip(path, path[1:]), [])
 
-    def isPit(self, l):
-        return any(map(lambda pit: pit == l, self.world.pits))
+        goThere = actions(min(map(lambda x: (x, costs(x)), paths), key=lambda x: x[1])[0])
+        pickUpThatShiny = [Action.GRAB]
+        turnAround = [Action.TURNLEFT, Action.TURNLEFT]
+        comeBack = list(map(lambda x: x.mirror(), filter(lambda x: x != Action.SHOOT, goThere[::-1])))
+
+        # This is to avoid a useless turn as the last move coming back.
+        if comeBack[-1] == Action.TURNRIGHT:
+            comeBack = comeBack[:-1]
+
+        climbOut = [Action.CLIMB]
+
+        self.plan = goThere + pickUpThatShiny + turnAround + comeBack + climbOut
 
     def process(self, percept):
-        # If we have an empty path we know that we cannot get the gold.
-        # Note that the gold cannot be at (1, 1).
-        if self.path == []:
-            return Action.CLIMB
-
-        while True:
-            c = input("Action? {f,l,r,g,s,c} ")[0].lower()
-            if c == 'f':
-                return Action.GOFORWARD
-            elif c == 'l':
-                return Action.TURNLEFT
-            elif c == 'r':
-                return Action.TURNRIGHT
-            elif c == 'g':
-                return Action.GRAB
-            elif c == 's':
-                return Action.SHOOT
-            elif c == 'c':
-                return Action.CLIMB
-            else:
-                print("Huh?")
+        return self.plan.pop(0)

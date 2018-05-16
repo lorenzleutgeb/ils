@@ -23,3 +23,15 @@ class Orientation(Enum):
                 Orientation.DOWN : Orientation.LEFT,
             },
         }[action][self]
+
+    def __str__(self):
+        if self == Orientation.RIGHT:
+            return '→'#'R'
+        elif self == Orientation.UP:
+            return '↑'#'U'
+        elif self == Orientation.LEFT:
+            return '←'#'L'
+        elif self == Orientation.DOWN:
+            return '↓'#'D'
+        else:
+            return '?'
