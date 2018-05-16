@@ -168,20 +168,7 @@ class World():
                 eatenByWumpus = self.wumpusAlive and self.wumpus == self.agentLocation
                 self.agentAlive = not (fallsIntoPit or eatenByWumpus)
         elif action in {Action.TURNLEFT, Action.TURNRIGHT}:
-            self.agentOrientation =  {
-                Action.TURNLEFT: {
-                    Orientation.RIGHT: Orientation.UP,
-                    Orientation.UP   : Orientation.LEFT,
-                    Orientation.LEFT : Orientation.DOWN,
-                    Orientation.DOWN : Orientation.RIGHT,
-                },
-                Action.TURNRIGHT: {
-                    Orientation.RIGHT: Orientation.DOWN,
-                    Orientation.UP   : Orientation.RIGHT,
-                    Orientation.LEFT : Orientation.UP,
-                    Orientation.DOWN : Orientation.LEFT,
-                },
-            }[action][self.agentOrientation]
+            self.agentOrientation = self.agentOrientation.turn(action)
         elif action == Action.GRAB:
             if not self.agentHasGold and self.agentLocation == self.gold:
                 self.agentHasGold = True

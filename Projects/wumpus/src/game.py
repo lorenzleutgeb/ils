@@ -4,6 +4,7 @@ from random import seed
 from wumpus.common import *
 from wumpus.simulator import World
 from wumpus.agent import ProxyAgent
+from wumpus.agent import PerfectAgent
 
 MAX_MOVES = 1000
 
@@ -56,7 +57,8 @@ def main():
         #print("World size = " + str(worldSize) + "x" + str(worldSize))
         #wumpusWorld.Write (".world")
 
-        agent = ProxyAgent()
+        #agent = ProxyAgent()
+        agent = PerfectAgent(wumpusWorld)
 
         trialScore = 0
         for tries in range(1, numTries + 1):
