@@ -1,7 +1,5 @@
 from functools import reduce
 from itertools import product
-from sys       import exit
-from time      import sleep
 
 import networkx as nx
 
@@ -27,6 +25,7 @@ class PerfectAgent():
         # We build a graph that respresents reachability (with cost) for all cells.
         g = nx.DiGraph()
 
+        # Sheesh, this is in O(n² · 4)!
         for x, y, o in product(r, r, Orientation):
             lo = Location(x, y)
             #la = label=' '.join(map(str,
@@ -34,24 +33,20 @@ class PerfectAgent():
             #    (['W'] if lo == world.wumpus else []) +
             #    [lo, o]
             #))
-
-            g.add_node((lo, o), location=lo, orientation=o)#, label=la)
+            #g.add_node((lo, o), location=lo, orientation=o), label=la)
 
             # Case 1: We go in the direction that we are facing (represented by o):
             a = lo.getAdjacent(o, world.worldSize)
 
             # Avoid bumping and falling down into a pit.
             if a != None and a not in world.pits:
-                cost = 1
-                act = [Action.GOFORWARD]
-
-                # If we go there, we have to first shoot
-                # the wumpus which costs 9 more.
-                if a == world.wumpus:
-                    cost += 9
-                    act = [Action.SHOOT, Action.GOFORWARD]
-
-                g.add_edge((lo, o), (a, o), cost=cost, action=act)#, label=str(cost) + " G " + ("S" if a == world.wumpus else ""))
+                noWumpusThere = a != world.wumpus
+                g.add_edge(
+                    (lo, o),
+                    (a, o),
+                    cost=1 if noWumpusThere else 10,
+                    action=[Action.GOFORWARD] if noWumpusThere else [Action.SHOOT, Action.GOFORWARD]
+                )#, label=str(cost) + " G " + ("S" if wumpusThere else ""))
 
             # Case 2: We turn ourselves.
             for action in {Action.TURNLEFT, Action.TURNRIGHT}:
@@ -94,12 +89,11 @@ class PerfectAgent():
         pickUpThatShiny = [Action.GRAB]
         turnAround = [Action.TURNLEFT, Action.TURNLEFT]
         comeBack = list(map(lambda x: x.mirror(), filter(lambda x: x != Action.SHOOT, goThere[::-1])))
+        climbOut = [Action.CLIMB]
 
         # This is to avoid a useless turn as the last move coming back.
         if comeBack[-1] == Action.TURNRIGHT:
             comeBack = comeBack[:-1]
-
-        climbOut = [Action.CLIMB]
 
         self.plan = goThere + pickUpThatShiny + turnAround + comeBack + climbOut
 
