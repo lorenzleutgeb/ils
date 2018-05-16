@@ -47,9 +47,9 @@ class World():
                         self.pits.append(Location(x, y))
 
         self.percept = Percept(
-            False,#((agentLocation.isAdjacent(wumpus)) or (agentLocation.equals(wumpus))),
-            False,#pits.stream().anyMatch(l -> l.isAdjacent(agentLocation)),
-            False,#((!agentHasGold) and (agentLocation.equals(gold))),
+            ((self.agentLocation.isAdjacent(self.wumpus)) or (self.agentLocation == self.wumpus)),
+            any(map(lambda pit: pit.isAdjacent(self.agentLocation), self.pits)),
+            ((not self.agentHasGold) and (self.agentLocation == self.gold)),
             False,
             False
         )
@@ -144,11 +144,8 @@ class World():
     def execute(self, action: Action):
         # We assume the agent is alive and in the cave (i.e., game not over)
         self.numActions += 1
-        if action != Action.GOFORWARD:
-            print("NOT MOVING SINCE ACTION IS " + str(action))
         if action is Action.GOFORWARD:
             newLocation: Location = self.agentLocation.getAdjacent(self.agentOrientation, self.worldSize)
-            print("MOVING")
             if newLocation == None:
                 self.percept = Percept(
                     self.percept.isStench(),
@@ -159,17 +156,16 @@ class World():
                 )
             else:
                 self.agentLocation = newLocation
-                print("MOVED")
                 self.percept = Percept(
-                    False,#((agentLocation.isAdjacent(wumpus)) or (agentLocation.equals(wumpus))),
-                    False,#pits.stream().anyMatch(l -> l.isAdjacent(agentLocation)),
-                    False,#((not agentHasGold) and (agentLocation.equals(gold))),
+                    ((self.agentLocation.isAdjacent(self.wumpus)) or (self.agentLocation == self.wumpus)),
+                    any(map(lambda pit: pit.isAdjacent(self.agentLocation), self.pits)),
+                    ((not self.agentHasGold) and (self.agentLocation == self.gold)),
                     False,
                     False
                 )
 
-                fallsIntoPit = False#pits.stream().anyMatch(l -> l.equals(agentLocation))
-                eatenByWumpus = False#wumpusAlive and wumpus.equals(agentLocation)
+                fallsIntoPit = any(map(lambda pit: pit == self.agentLocation, self.pits))
+                eatenByWumpus = self.wumpusAlive and self.wumpus == self.agentLocation
                 self.agentAlive = not (fallsIntoPit or eatenByWumpus)
         elif action == Action.TURNLEFT:
             if self.agentOrientation == Orientation.RIGHT:
@@ -190,7 +186,7 @@ class World():
             elif self.agentOrientation == Orientation.DOWN:
                 self.agentOrientation = Orientation.LEFT
         elif action == Action.GRAB:
-            if not self.agentHasGold and self.agentLocation.equals(gold):
+            if not self.agentHasGold and self.agentLocation == gold:
                 self.agentHasGold = True
                 self.percept = Percept(
                     self.percept.isStench(),
@@ -206,7 +202,7 @@ class World():
             if not self.wumpusAlive:
                 return
             target = agentLocation.getAdjacent(agentOrientation, worldSize)
-            if wumpus.equals(target):
+            if wumpus == target:
                 self.wumpusAlive = False
                 self.percept = Percept(
                     self.percept.isStench(),

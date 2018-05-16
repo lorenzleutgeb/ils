@@ -1,9 +1,9 @@
 from sys import argv, exit, stdout
 from random import seed
 
-from ..common import *
-from . import World
-from ..agent import ProxyAgent
+from wumpus.common import *
+from wumpus.simulator import World
+from wumpus.agent import ProxyAgent
 
 MAX_MOVES = 1000
 
@@ -28,7 +28,7 @@ def main():
         elif arg == "-world":
             worldFile = arg
         else:
-            print("unknown option " + arg)
+            print("Ignoring unknown option " + arg)
             #exit(1)
 
     if seedV != None:

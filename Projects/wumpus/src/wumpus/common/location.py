@@ -30,3 +30,9 @@ class Location():
 
     def isAt(self, x, y):
         return self.x == x and self.y == y
+
+    def __eq__(self, other):
+        if other == None:
+            return False
+
+        return self.x == other.x and self.y == other.y
