@@ -10,7 +10,7 @@ class ASPAgent():
         self.position = (0, 0)
         self.orientation = Orientation.RIGHT
 
-    def process(percept):
+    def process(self, percept):
         stench = percept.stench
         breeze = percept.breeze
         glitter = percept.glitter
@@ -20,14 +20,14 @@ class ASPAgent():
         if bump:
             print("We bumped. Should never happen.")
 
-        world[position[0]][position[1]] = (stench == 1, breeze == 1, glitter == 1)
+        self.world[self.position[0]][self.position[1]] = (stench == 1, breeze == 1, glitter == 1)
 
         perception = [
-            "position(" + str(position[0]) + "," + str(position[1]) + ").",
-            "orientation(" + str(orientation) + ")."
+            "position(" + str(self.position[0]) + "," + str(self.position[1]) + ").",
+            "orientation(" + str(self.orientation) + ")."
         ]
 
-        for i, row in enumerate(world):
+        for i, row in enumerate(self.world):
             for j, (stench, breeze, glitter) in enumerate(row):
                 if stench is not None:
                     prefix = "-" if not stench else ""

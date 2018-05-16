@@ -3,8 +3,7 @@ from random import seed
 
 from wumpus.common import *
 from wumpus.simulator import World
-from wumpus.agent import ProxyAgent
-from wumpus.agent import PerfectAgent
+from wumpus.agent import *
 
 MAX_MOVES = 1000
 
@@ -14,23 +13,23 @@ def main():
     numTries = 1
     seedV = None
     worldFile = None
+    agentName = 'proxy'
 
-    for arg in argv[1:]:
+    for arg, val in zip(argv[1:], argv[2:]):
         if arg == "-size":
-            worldSize = int(arg)
+            worldSize = int(val)
             if worldSize < 2:
                 worldSize = 2
         elif arg == "-trials":
-            numTrials = int(arg)
+            numTrials = int(val)
         elif arg == "-tries":
-            numTries = int(arg)
+            numTries = int(val)
         elif arg == "-seed":
-            seedV = int(arg)
+            seedV = int(val)
         elif arg == "-world":
-            worldFile = arg
-        else:
-            print("Ignoring unknown option " + arg)
-            #exit(1)
+            worldFile = val
+        elif arg == "-agent":
+            agentName = val
 
     if seedV != None:
         seed(seedV)
@@ -57,8 +56,12 @@ def main():
         #print("World size = " + str(worldSize) + "x" + str(worldSize))
         #wumpusWorld.Write (".world")
 
-        #agent = ProxyAgent()
-        agent = PerfectAgent(wumpusWorld)
+        if agentName == 'proxy':
+            agent = ProxyAgent()
+        elif agentName == 'perfect':
+            agent = PerfectAgent(wumpusWorld)
+        elif agentName == 'asp':
+            agent = ASPAgent(wumpusWorld.worldSize)
 
         trialScore = 0
         for tries in range(1, numTries + 1):
