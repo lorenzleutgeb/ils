@@ -1,4 +1,5 @@
 #maxint = 100.
+% TODO: where is N given? Here or in KB?
 
 cell(1,1).
 cell(1,2).
@@ -18,8 +19,26 @@ cell(4,3).
 cell(4,4).
 
 
-% Cells that are in front of the agent.
+% The agent is not ubiquitous.
+:- position(X,Y), position(X,Z), Y != Z.
+:- position(X,Y), position(Z,Y), X != Z.
 
+
+% Signalling bumps.
+% TODO: how to properly denote N?
+
+bump(up) :- position(_,N).
+bump(down) :- position(_,1).
+bump(left) :- position(1,_).
+bump(right) :- position(N,_).
+
+% Preventing bumps.
+:- action(goforward), orientation(o), bump(o).
+
+% Oh, look! Something is glittering...
+gold(X,Y) :- glitter(X,Y), -gold_picked.
+
+% Cells that are in front of the agent.
 facing(X,Y) :- position(X,Z), Z < Y, orientation(right).
 facing(X,Y) :- position(X,Z), Y < Z, orientation(left).
 facing(X,Y) :- position(Z,Y), Z < X, orientation(up).
@@ -74,7 +93,3 @@ pit(X,Y) :- Y1 = Y - 1, breeze(X,Y1), Y2 = Y - 3, breeze(X,Y2).
 pit(X,Y) :- Y1 = Y + 1, breeze(X,Y1), X1 = X + 1, breeze(X1,Y).
 pit(X,Y) :- Y1 = Y + 1, breeze(X,Y1), X1 = X - 1, breeze(X1,Y).
 pit(X,Y) :- Y1 = Y + 1, breeze(X,Y1), Y2 = Y + 3, breeze(X,Y2).
-
-wumpus(X,Y) :- X1 = X - 1, stench(X1, Y), Y1 = Y - 1, stench(X, Y1), X2 = X + 1, stench(X2, Y), Y2 = Y + 1, stench(X, Y2).
-pit(X,Y) :- X1 = X - 1, breeze(X1, Y), Y1 = Y - 1, breeze(X, Y1), X2 = X + 1, breeze(X2, Y), Y2 = Y + 1, breeze(X, Y2).
-%gold(X,Y) :- -gold_picked, glitter(X,Y).
