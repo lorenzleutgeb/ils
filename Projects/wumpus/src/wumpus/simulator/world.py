@@ -148,9 +148,9 @@ class World():
             newLocation: Location = self.agentLocation.getAdjacent(self.agentOrientation, self.worldSize)
             if newLocation == None:
                 self.percept = Percept(
-                    self.percept.isStench(),
-                    self.percept.isBreeze(),
-                    self.percept.isGlitter(),
+                    self.percept.stench,
+                    self.percept.breeze,
+                    self.percept.glitter,
                     True,
                     False
                 )
@@ -167,30 +167,27 @@ class World():
                 fallsIntoPit = any(map(lambda pit: pit == self.agentLocation, self.pits))
                 eatenByWumpus = self.wumpusAlive and self.wumpus == self.agentLocation
                 self.agentAlive = not (fallsIntoPit or eatenByWumpus)
-        elif action == Action.TURNLEFT:
-            if self.agentOrientation == Orientation.RIGHT:
-                self.agentOrientation = Orientation.UP
-            elif self.agentOrientation == Orientation.UP:
-                self.agentOrientation = Orientation.LEFT
-            elif self.agentOrientation == Orientation.LEFT:
-                self.agentOrientation = Orientation.DOWN
-            elif self.agentOrientation == Orientation.DOWN:
-                self.agentOrientation = Orientation.RIGHT
-        elif action == Action.TURNRIGHT:
-            if self.agentOrientation == Orientation.RIGHT:
-                self.agentOrientation = Orientation.DOWN
-            elif self.agentOrientation == Orientation.UP:
-                self.agentOrientation = Orientation.RIGHT
-            elif self.agentOrientation == Orientation.LEFT:
-                self.agentOrientation = Orientation.UP
-            elif self.agentOrientation == Orientation.DOWN:
-                self.agentOrientation = Orientation.LEFT
+        elif action in {Action.TURNLEFT, Action.TURNRIGHT}:
+            self.agentOrientation =  {
+                Action.TURNLEFT: {
+                    Orientation.RIGHT: Orientation.UP,
+                    Orientation.UP   : Orientation.LEFT,
+                    Orientation.LEFT : Orientation.DOWN,
+                    Orientation.DOWN : Orientation.RIGHT,
+                },
+                Action.TURNRIGHT: {
+                    Orientation.RIGHT: Orientation.DOWN,
+                    Orientation.UP   : Orientation.RIGHT,
+                    Orientation.LEFT : Orientation.UP,
+                    Orientation.DOWN : Orientation.LEFT,
+                },
+            }[action][self.agentOrientation]
         elif action == Action.GRAB:
-            if not self.agentHasGold and self.agentLocation == gold:
+            if not self.agentHasGold and self.agentLocation == self.gold:
                 self.agentHasGold = True
                 self.percept = Percept(
-                    self.percept.isStench(),
-                    self.percept.isBreeze(),
+                    self.percept.stench,
+                    self.percept.breeze,
                     False,
                     False,
                     False
@@ -201,18 +198,17 @@ class World():
             self.agentHasArrow = False
             if not self.wumpusAlive:
                 return
-            target = agentLocation.getAdjacent(agentOrientation, worldSize)
-            if wumpus == target:
+            if self.wumpus == self.agentLocation.getAdjacent(self.agentOrientation, self.worldSize):
                 self.wumpusAlive = False
                 self.percept = Percept(
-                    self.percept.isStench(),
-                    self.percept.isBreeze(),
-                    self.percept.isGlitter(),
+                    self.percept.stench,
+                    self.percept.breeze,
+                    self.percept.glitter,
                     False,
                     True
                 )
         elif action == Action.CLIMB:
-            if self.agentLocation.equals(Location(1, 1)):
+            if self.agentLocation == Location(1, 1):
                 self.agentInCave = False
                 self.percept = Percept(False, False, False, False, False)
 
