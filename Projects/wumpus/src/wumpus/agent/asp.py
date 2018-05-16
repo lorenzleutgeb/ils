@@ -1,9 +1,12 @@
-from tempfile import mkstemp
+from os.path    import dirname, join
+from subprocess import PIPE, STDOUT, run
+from tempfile   import mkstemp
 
 from ..common import Action, Orientation
 
 class ASPAgent():
     def __init__(self, n):
+        self.n = n
         # Initially we do not know about stench/breeze/glitter
         # anywhere.
         self.world = [[(None, None, None) for i in range(n)] for j in range(n)]
@@ -23,8 +26,9 @@ class ASPAgent():
         self.world[self.position[0]][self.position[1]] = (stench == 1, breeze == 1, glitter == 1)
 
         perception = [
+            "#const n = " + str(self.n) + ".",
             "position(" + str(self.position[0]) + "," + str(self.position[1]) + ").",
-            "orientation(" + str(self.orientation) + ")."
+            "orientation(" + self.orientation.toSymbol() + ")."
         ]
 
         for i, row in enumerate(self.world):
@@ -39,9 +43,22 @@ class ASPAgent():
                     prefix = "-" if not stench else ""
                     perception.append(prefix + "glitter({},{}).".format(i,j))
 
-        # make a temp file and add perception there then pass that to dlv
+        d = dirname(__file__)
+        proc = run(
+            [
+                'dlv',
+                '-silent',
+                join(d, 'constants.asp'),
+                join(d, 'agent.asp'),
+                '--'
+            ],
+            stderr=STDOUT,
+            stdout=PIPE,
+            input="\n".join(perception),
+            encoding='utf-8'
+        )
 
-        print("\n".join(perception))
+        print(proc.stdout)
 
         # 1. Add the knowledge that we obtain as percepts to
         #    our model/state of the world. We should

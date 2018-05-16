@@ -24,6 +24,22 @@ class Action(Enum):
         else:
             return '?'
 
+    def toSymbol(self):
+        if self == Action.GOFORWARD:
+            return 'goforward'
+        elif self == Action.TURNLEFT:
+            return 'turnleft'
+        elif self == Action.TURNRIGHT:
+            return 'turnright'
+        elif self == Action.GRAB:
+            return 'grab'
+        elif self == Action.SHOOT:
+            return 'shoot'
+        elif self == Action.CLIMB:
+            return 'climb'
+        else:
+            return '?'
+
     def mirror(self):
         if self == Action.TURNLEFT:
             return Action.TURNRIGHT

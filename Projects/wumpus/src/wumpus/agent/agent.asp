@@ -1,5 +1,9 @@
 #maxint = 100.
-% TODO: where is N given? Here or in KB?
+
+% NOTE: n (the size of the world) is given as constant and
+%       not encoded explicitly here. It will usually be set:
+%        - by the calling Python agent
+%        - through another ASP file.
 
 cell(1,1).
 cell(1,2).
@@ -18,19 +22,17 @@ cell(4,2).
 cell(4,3).
 cell(4,4).
 
-
 % The agent is not ubiquitous.
 :- position(X,Y), position(X,Z), Y != Z.
 :- position(X,Y), position(Z,Y), X != Z.
 
-
 % Signalling bumps.
 % TODO: how to properly denote N?
 
-bump(up) :- position(_,N).
+bump(up) :- position(_,n).
 bump(down) :- position(_,1).
 bump(left) :- position(1,_).
-bump(right) :- position(N,_).
+bump(right) :- position(n,_).
 
 % Preventing bumps.
 :- action(goforward), orientation(o), bump(o).
@@ -48,12 +50,15 @@ facing(X,Y) :- position(Z,Y), X < Z, orientation(down).
 
 % Pick gold if there's some in the cell.
 action(grab) :- position(X,Y), gold(X,Y).
+
 % Cannot pick up something that's already been picked!
 % TODO: how to remove gold from knowledge once it's been collected?
 %       SOLUTION: at next call, add -gold(X,Y) to KB.
 :- gold(X,Y), position(X,Y), gold_picked.
-% When to shoot at the wumbus?
+
+% When to shoot at the wumpus?
 action(shoot) :- wumpus(X,Y), facing(X,Y).
+
 % Climb if gold is picked and back to initial cell.
 action(climb) :- gold_picked, position(1,1).
 

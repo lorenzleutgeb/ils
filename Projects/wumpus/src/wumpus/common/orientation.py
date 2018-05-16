@@ -35,3 +35,15 @@ class Orientation(Enum):
             return '↓'#'D'
         else:
             return '?'
+
+    def toSymbol(self):
+        if self == Orientation.RIGHT:
+            return 'right'#'R'
+        elif self == Orientation.UP:
+            return 'up'#'U'
+        elif self == Orientation.LEFT:
+            return 'left'#'L'
+        elif self == Orientation.DOWN:
+            return 'down'#'D'
+        else:
+            return '?'
