@@ -1,6 +1,6 @@
 #maxint = 100.
 
-% NOTE: n (the size of the world) is given as constant and
+% NOTE: size (the size of the world) is given as constant and
 %       not encoded explicitly here. It will usually be set:
 %        - by the calling Python agent
 %        - through another ASP file.
@@ -27,12 +27,24 @@ cell(4,4).
 :- position(X,Y), position(Z,Y), X != Z.
 
 % Signalling bumps.
-% TODO: how to properly denote N?
 
-bump(up) :- position(_,n).
+bump(up) :- position(_,size).
 bump(down) :- position(_,1).
 bump(left) :- position(1,_).
-bump(right) :- position(n,_).
+bump(right) :- position(size,_).
+
+% Directions from the agent's perspective.
+% Only left and right, meaningful for turning 90°.
+
+agentLeft(up) :- orientation(right).
+agentLeft(left) :- orientation(up).
+agentLeft(down) :- orientation(left).
+agentLeft(right) :- orientation(down).
+
+agentRight(up) :- orientation(left).
+agentRight(left) :- orientation(down).
+agentRight(down) :- orientation(right).
+agentRight(right) :- orientation(up).
 
 % Preventing bumps.
 :- action(goforward), orientation(o), bump(o).
@@ -61,6 +73,9 @@ action(shoot) :- wumpus(X,Y), facing(X,Y).
 
 % If current cell and orientation are not dangerous, explore forward.
 action(goforward) :- position(X,Y), orientation(O), -danger(X,Y,O).
+
+% If we are facing a danger, first we try to turn right.
+action(turnright) :- position(X,Y), orientation(O), danger(X,Y,O).
 
 % Climb if gold is picked and back to initial cell.
 action(climb) :- gold_picked, position(1,1).
