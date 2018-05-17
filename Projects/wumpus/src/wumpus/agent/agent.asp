@@ -22,6 +22,20 @@ cell(4,2).
 cell(4,3).
 cell(4,4).
 
+% When to shoot at the wumpus?
+action(shoot) :- wumpus(X,Y), facing(X,Y).
+
+% If current cell and orientation are not dangerous, explore forward.
+action(goforward) :- position(X,Y), orientation(O), -danger(X,Y,O).
+
+% If we are facing a danger, first we try to turn right.
+action(turnright) :- position(X,Y), orientation(O), danger(X,Y,O), agentRight(P), -danger(X,Y,P).
+% If danger is also in there, we turn left.
+action(turnleft) :- position(X,Y), orientation(O), danger(X,Y,O), agentRight(P), danger(X,Y,P).
+
+% Climb if gold is picked and back to initial cell.
+action(climb) :- gold_picked, position(1,1).
+
 % The agent is not ubiquitous.
 :- position(X,Y), position(X,Z), Y != Z.
 :- position(X,Y), position(Z,Y), X != Z.
@@ -70,20 +84,6 @@ action(grab) :- position(X,Y), gold(X,Y).
 
 % Don't shoot if the wumpus is already dead!
 :- action(shoot), wumpus_dead.
-
-% When to shoot at the wumpus?
-action(shoot) :- wumpus(X,Y), facing(X,Y).
-
-% If current cell and orientation are not dangerous, explore forward.
-action(goforward) :- position(X,Y), orientation(O), -danger(X,Y,O).
-
-% If we are facing a danger, first we try to turn right.
-action(turnright) :- position(X,Y), orientation(O), danger(X,Y,O), agentRight(P), -danger(X,Y,P).
-% If danger is also in there, we turn left.
-action(turnleft) :- position(X,Y), orientation(O), danger(X,Y,O), agentRight(P), danger(X,Y,P).
-
-% Climb if gold is picked and back to initial cell.
-action(climb) :- gold_picked, position(1,1).
 
 % Neighboring cells along the horizontal and vertical axis.
 neighbor(X1,Y1,X2,Y2,right) :- cell(X1,Y1), cell(X2,Y2), X2 = X1 + 1, Y2 = Y1.
