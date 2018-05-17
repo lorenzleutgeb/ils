@@ -40,7 +40,7 @@ action(climb) :- gold_picked, position(1,1).
 :- position(X,Y), position(X,Z), Y != Z.
 :- position(X,Y), position(Z,Y), X != Z.
 
-% Signalling bumps.
+% Signaling bumps.
 
 bump(up) :- position(_,size).
 bump(down) :- position(_,1).
@@ -123,3 +123,6 @@ pit(X,Y) :- cell(X,Y), Y1 = Y - 1, breeze(X,Y1), Y2 = Y - 3, breeze(X,Y2).
 pit(X,Y) :- Y1 = Y + 1, breeze(X,Y1), X1 = X + 1, breeze(X1,Y).
 pit(X,Y) :- Y1 = Y + 1, breeze(X,Y1), X1 = X - 1, breeze(X1,Y).
 pit(X,Y) :- cell(X,Y), Y1 = Y + 1, breeze(X,Y1), Y2 = Y + 3, breeze(X,Y2).
+
+% Strategy
+action(climb) :- position(1,1), breeze(1,2), breeze(2,1).

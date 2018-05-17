@@ -20,6 +20,7 @@ class ASPAgent():
         self.position = (0, 0)
         self.orientation = Orientation.RIGHT
         self.previous_actions = []
+        self.wumpus_Dead = False
 
         # TODO: Check whether DLV is on path. If not, download it.
         #       Set some variable that points at the DLV binary to
@@ -35,12 +36,16 @@ class ASPAgent():
         if bump:
             print("We bumped. Should never happen.")
 
+        if scream:
+            self.wumpus_Dead = True
+
         self.world[self.position[0]][self.position[1]] = (stench == 1, breeze == 1, glitter == 1)
 
         perception = [
             "#const n = " + str(self.n) + ".",
             "position(" + str(self.position[0]) + "," + str(self.position[1]) + ").",
-            "orientation(" + self.orientation.toSymbol() + ")."
+            "orientation(" + self.orientation.toSymbol() + ").",
+            "wumpus_dead." if self.wumpus_Dead else ""
         ]
 
         for i, row in enumerate(self.world):
