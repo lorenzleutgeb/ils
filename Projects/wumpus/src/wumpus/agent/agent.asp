@@ -68,6 +68,9 @@ action(grab) :- position(X,Y), gold(X,Y).
 %       SOLUTION: at next call, add -gold(X,Y) to KB.
 :- gold(X,Y), position(X,Y), gold_picked.
 
+% Don't shoot if the wumpus is already dead!
+:- action(shoot), wumpus_dead.
+
 % When to shoot at the wumpus?
 action(shoot) :- wumpus(X,Y), facing(X,Y).
 
@@ -75,7 +78,9 @@ action(shoot) :- wumpus(X,Y), facing(X,Y).
 action(goforward) :- position(X,Y), orientation(O), -danger(X,Y,O).
 
 % If we are facing a danger, first we try to turn right.
-action(turnright) :- position(X,Y), orientation(O), danger(X,Y,O).
+action(turnright) :- position(X,Y), orientation(O), danger(X,Y,O), agentRight(P), -danger(X,Y,P).
+% If danger is also in there, we turn left.
+action(turnleft) :- position(X,Y), orientation(O), danger(X,Y,O), agentRight(P), danger(X,Y,P).
 
 % Climb if gold is picked and back to initial cell.
 action(climb) :- gold_picked, position(1,1).
