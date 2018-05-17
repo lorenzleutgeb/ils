@@ -100,7 +100,7 @@ def play(worldSize, worldFile, agentName, numTrials, numTries, porcelain):
         elif agentName == 'perfect':
             agent = PerfectAgent(wumpusWorld)
         elif agentName == 'asp':
-            agent = ASPAgent(wumpusWorld.worldSize)
+            agent = ASPAgent()
         elif agentName == 'asp-cheat':
             agent = ASPAgent(wumpusWorld)
 
