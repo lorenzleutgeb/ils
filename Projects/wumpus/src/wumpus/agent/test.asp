@@ -1,1 +1,3 @@
-#const N = 4.
+#const size = 4.
+
+action(0).
