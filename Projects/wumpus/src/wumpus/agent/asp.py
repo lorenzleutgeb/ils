@@ -75,7 +75,7 @@ class ASPAgent():
             input="\n".join(perception),
             encoding='utf-8'
         )
-
+        print(proc.stdout)
         #extract the action and save it to a list
         action = proc.stdout[8]
         actionName = Action(int(action))
