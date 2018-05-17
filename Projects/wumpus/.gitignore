@@ -2,6 +2,8 @@
 wumpsim
 pywumpsim
 
+last-world.txt
+
 # Created by https://www.gitignore.io/api/c++,python
 
 ### C++ ###
