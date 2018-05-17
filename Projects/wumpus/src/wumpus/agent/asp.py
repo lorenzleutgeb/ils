@@ -19,6 +19,7 @@ class ASPAgent():
         self.world = [[(None, None, None) for i in range(self.n)] for j in range(self.n)]
         self.position = (0, 0)
         self.orientation = Orientation.RIGHT
+        self.previous_actions = []
 
         # TODO: Check whether DLV is on path. If not, download it.
         #       Set some variable that points at the DLV binary to
@@ -54,11 +55,17 @@ class ASPAgent():
                     prefix = "-" if not stench else ""
                     perception.append(prefix + "glitter({},{}).".format(i,j))
 
+
+        for i, a in enumerate(self.previous_actions):
+            perception.append("previousAction({},{}).".format(i, a.toSymbol()))
+
+
         d = dirname(__file__)
         proc = run(
             [
                 'dlv',
                 '-silent',
+                '-filter=action',
                 join(d, 'constants.asp'),
                 join(d, 'agent.asp'),
                 '--'
@@ -69,7 +76,10 @@ class ASPAgent():
             encoding='utf-8'
         )
 
-        print(proc.stdout)
+        #extract the action and save it to a list
+        action = proc.stdout[8]
+        actionName = Action(int(action))
+        self.previous_actions.append(actionName)
 
         # 1. Add the knowledge that we obtain as percepts to
         #    our model/state of the world. We should
