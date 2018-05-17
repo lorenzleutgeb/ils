@@ -1,0 +1,8 @@
+'Hunt the Wumpus':
+  image: fedora:28
+  before_script:
+    - cd Projects/wumpus/src
+    - pip3 install --upgrade pip
+    - pip3 install -r requirements.txt
+  script:
+    - ./benchmark.sh '*'
