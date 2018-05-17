@@ -2,14 +2,21 @@ from os.path    import dirname, join
 from subprocess import PIPE, STDOUT, run
 from tempfile   import mkstemp
 
-from ..common import Action, Orientation
+from ..common    import Action, Orientation
+from ..simulator import World
 
 class ASPAgent():
-    def __init__(self, n):
-        self.n = n
+    def __init__(self, init):
+        if type(init) is World:
+            self.n = init.worldSize
+            # We can cheat!
+            print('We can cheat!')
+        elif type(init) is int:
+            self.n = init
+
         # Initially we do not know about stench/breeze/glitter
         # anywhere.
-        self.world = [[(None, None, None) for i in range(n)] for j in range(n)]
+        self.world = [[(None, None, None) for i in range(self.n)] for j in range(self.n)]
         self.position = (0, 0)
         self.orientation = Orientation.RIGHT
 
