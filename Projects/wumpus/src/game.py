@@ -47,14 +47,11 @@ def main():
 
     for trial in range(1, numTrials + 1):
         if worldFile != None:
-            print("Reading a world file is not implemented, sorry.")
-            exit(1)
-            #wumpusWorld = World.read(Paths.get(worldFile))
+            wumpusWorld = World.readFrom(worldFile)
         else:
             wumpusWorld = World(worldSize)
 
-        #print("World size = " + str(worldSize) + "x" + str(worldSize))
-        #wumpusWorld.Write (".world")
+        wumpusWorld.writeTo('last-world.txt')
 
         if agentName == 'proxy':
             agent = ProxyAgent()

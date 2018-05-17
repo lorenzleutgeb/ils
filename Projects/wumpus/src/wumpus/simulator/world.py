@@ -5,7 +5,7 @@ from ..common import *
 PIT_PROBABILITY = 0.2
 
 class World():
-    def __init__(self, size):
+    def __init__(self, size=4, wumpus=None, gold=None, pits=None):
         self.agentLocation = Location(1,1)
         self.agentOrientation = Orientation.RIGHT
         self.agentAlive = True
@@ -16,35 +16,40 @@ class World():
         self.pits = []
         self.gold = None
         self.wumpus = None
-        self.worldSize = size
         self.numActions = 0
         self.percept = None
 
-        # Choose wumpus location (anywhere except [1,1])
-        x = 1
-        y = 1
-        while ((x == 1) and (y == 1)):
-            x = (randint(1, size))
-            y = (randint(1, size))
+        self.worldSize = size
+        self.wumpus = wumpus
+        self.gold = gold
+        self.pits = pits
 
-        self.wumpus = Location(x, y)
+        if self.wumpus == None:
+            # Choose wumpus location (anywhere except [1,1])
+            x, y = 1, 1
+            while x == 1 and y == 1:
+                x, y = randint(1, size), randint(1, size)
 
-        # Choose gold location (anywhere except [1,1])
-        x = 1
-        y = 1
-        while ((x == 1) and (y == 1)):# or wumpus.isAt(x, y):
-            x = (randint(1, size))
-            y = (randint(1, size))
+            self.wumpus = Location(x, y)
 
-        self.gold = Location(x, y)
+        if self.gold == None:
+            # Choose gold location (anywhere except [1,1])
+            x, y = 1, 1
+            while x == 1 and y == 1:# or wumpus.isAt(x, y):
+                x, y = randint(1, size), randint(1, size)
 
-        # Choose pit locations (anywhere except [1,1]) and location of gold
-        self.pits = []
-        for x in range(1, size + 1):
-            for y in range(1, size + 1):
-                if ((x != 1) or (y != 1)):# and not gold.isAt(x, y) and not wumpus.isAt(x, y):
-                    if random() < PIT_PROBABILITY:
-                        self.pits.append(Location(x, y))
+            self.gold = Location(x, y)
+
+        if self.pits == None:
+            # Choose pit locations (anywhere except [1,1]) and location of gold
+            self.pits = []
+            for x in range(1, size + 1):
+                for y in range(1, size + 1):
+                    if (x == 1) and (y == 1): # or gold.isAt(x, y) or wumpus.isAt(x, y):
+                        continue
+                    if random() >= PIT_PROBABILITY:
+                        continue
+                    self.pits.append(Location(x, y))
 
         self.percept = Percept(
             ((self.agentLocation.isAdjacent(self.wumpus)) or (self.agentLocation == self.wumpus)),
@@ -54,92 +59,31 @@ class World():
             False
         )
 
-#     public static World read(Path path:
-#         throw new UnsupportedOperationException()
-#
-# ifstream worldFileStream
-#     string tokenStr
-#     int intArg1
-#     int intArg2
-#
-#     worldFileStream.open (worldFile)
-#     if worldFileStream.is_open())
-#     {
-#         worldFileStream >> tokenStr
-#         if tokenStr != "size")
-#         {
-#             cout + "Incorrect token in world file: " + tokenStr + endl
-#             exit(1)
-#         else:
-#             worldFileStream >> intArg1
-#             if intArg1 < 2)
-#             {
-#                 intArg1 = 2
-#             }
-#             worldSize = intArg1
-#         }
-#         worldFileStream >> tokenStr
-#         if tokenStr != "wumpus")
-#         {
-#             cout + "Incorrect token in world file: " + tokenStr + endl
-#             exit(1)
-#         else:
-#             worldFileStream >> intArg1
-#             worldFileStream >> intArg2
-#             if (intArg1 < 1) or (intArg1 > worldSize) or
-#                 (intArg2 < 1) or (intArg2 > worldSize) or
-#                 ((intArg1 == 1) and (intArg2 == 1)))
-#             {
-#                 cout + "Bad wumpus location in world file" + endl
-#                 exit (1)
-#             }
-#             wumpus = Location (intArg1, intArg2)
-#         }
-#         worldFileStream >> tokenStr
-#         if tokenStr != "gold")
-#         {
-#             cout + "Incorrect token in world file: " + tokenStr + endl
-#             exit(1)
-#         else:
-#             worldFileStream >> intArg1
-#             worldFileStream >> intArg2
-#             if (intArg1 < 1) or (intArg1 > worldSize) or
-#                 (intArg2 < 1) or (intArg2 > worldSize) or
-#                 ((intArg1 == 1) and (intArg2 == 1)))
-#             {
-#                 cout + "Bad gold location in world file" + endl
-#                 exit (1)
-#             }
-#             gold = Location (intArg1, intArg2)
-#         }
-#         # Read pit locations
-#         while (worldFileStream >> tokenStr)
-#         {
-#             if tokenStr != "pit")
-#             {
-#                 cout + "Incorrect token in world file: " + tokenStr + endl
-#                 exit(1)
-#             else:
-#                 worldFileStream >> intArg1
-#                 worldFileStream >> intArg2
-#                 if (intArg1 < 1) or (intArg1 > worldSize) or
-#                     (intArg2 < 1) or (intArg2 > worldSize) or
-#                     ((intArg1 == 1) and (intArg2 == 1)))
-#                 {
-#                     cout + "Bad pit location in world file" + endl
-#                     exit (1)
-#                 }
-#                 pits.push_back (Location (intArg1, intArg2))
-#             }
-#         }
-#     else:
-#         cout + "Unable to open world file " + worldFile + endl
-#         exit (1)
-#     }
-#     worldFileStream.close()
-#     cout + "Read world file" + endl
-#          */
-#     }
+    @classmethod
+    def readFrom(cls, fname):
+        size, wumpus, gold, pits = 4, None, None, []
+        with open(fname, 'r') as f:
+            for ln in f:
+                ln = ln.strip()
+                if ln == '' or ln.startswith('#'):
+                    continue
+                ln = ln.split(' ')
+                if ln[0] == 'size':
+                    size = int(ln[1])
+                elif ln[0] == 'wumpus':
+                    wumpus = Location(int(ln[1]), int(ln[2]))
+                elif ln[0] == 'gold':
+                    gold = Location(int(ln[1]), int(ln[2]))
+                elif ln[0] == 'pit':
+                    pits.append(Location(int(ln[1]), int(ln[2])))
+
+        # World must contain wumpus and gold!
+        if wumpus == None or gold == None:
+            return None
+
+        return cls(
+            size=size, wumpus=wumpus, gold=gold, pits=pits
+        )
 
     def execute(self, action: Action):
         # We assume the agent is alive and in the cave (i.e., game not over)
@@ -259,14 +203,7 @@ class World():
             # Print agent line
             for x in range(1, self.worldSize + 1):
                 if self.agentAlive and (self.agentLocation.isAt(x, y)):
-                    if self.agentOrientation == Orientation.RIGHT:
-                        ps.write(" A>")
-                    elif self.agentOrientation == Orientation.UP:
-                        ps.write(" A^")
-                    elif self.agentOrientation == Orientation.LEFT:
-                        ps.write(" A<")
-                    else:
-                        ps.write(" Av")
+                    ps.write(" A" + str(self.agentOrientation))
                 else:
                     ps.write("   ")
 
@@ -306,26 +243,16 @@ class World():
         ps.write("State{hasGold=" + str(self.agentHasGold) + ", hasArrow=" + str(self.agentHasArrow) + ", score=" + str(self.getScore()) + "}\n")
         ps.write(str(self.percept) + "\n")
 
-#     def writeTo(Path path:
-#         ofstream worldFileStream
-#
-#         worldFileStream.open (fileName)
-#         if worldFileStream.is_open())
-#     {
-#         worldFileStream + "size " + worldSize + endl
-#         worldFileStream + "wumpus " + wumpus.X
-#                     + " " + wumpus.Y + endl
-#         worldFileStream + "gold " + gold.X
-#                     + " " + gold.Y + endl
-#         vector<Location>::iterator itr
-#         for (itr = pits.begin()
-#              itr != pits.end() itr++)
-#         {
-#             worldFileStream + "pit " + (*itr).X + " "
-#                         + (*itr).Y + endl
-#         }
-#     else:
-#                 cout + "Unable to write world file " + fileName + endl
-#                 exit (1)
-#         }
-#         worldFileStream.close()
+    def writeTo(self, fname):
+        with open(fname, 'w') as f:
+            f.write('\n'.join(
+                [
+                    'size {}'.format(self.worldSize),
+                    'wumpus {} {}'.format(self.wumpus.x, self.wumpus.y),
+                    'gold {} {}'.format(self.gold.x, self.gold.y)
+                ] + [
+                    'pit {} {}'.format(pit.x, pit.y) for pit in self.pits
+                ] + [
+                    ''
+                ]
+            ))

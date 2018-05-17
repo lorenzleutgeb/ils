@@ -13,6 +13,10 @@ class ASPAgent():
         self.position = (0, 0)
         self.orientation = Orientation.RIGHT
 
+        # TODO: Check whether DLV is on path. If not, download it.
+        #       Set some variable that points at the DLV binary to
+        #       be used in the process function.
+
     def process(self, percept):
         stench = percept.stench
         breeze = percept.breeze
