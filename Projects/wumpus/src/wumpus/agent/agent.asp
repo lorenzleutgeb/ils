@@ -85,17 +85,18 @@ danger(X,Y,O) :- cell(X,Y), cell(X1,Y1), neighbor(X,Y,X1,Y1,O), stench(X1,Y1), -
 danger(X,Y,O) :- cell(X,Y), cell(X1,Y1), neighbor(X,Y,X1,Y1,O), breeze(X1,Y1), -pit(X1,Y1).
 
 % To detect the wumpus, we just need to find 2 stenches out of 4.
-wumpus(X,Y) :- X1 = X - 1, stench(X1,Y), Y1 = Y + 1, stench(X,Y1), -wumpusDead.
+% ISSUE: acutally this is true only if the stenches are antipodal.
+wumpus(X,Y) :- X1 = X - 1, stench(X1,Y), Y1 = Y + 1, stench(X,Y1), safe(X1,Y1), -wumpusDead.
 wumpus(X,Y) :- X1 = X - 1, stench(X1,Y), Y1 = Y - 1, stench(X,Y1), -wumpusDead.
 wumpus(X,Y) :- cell(X,Y), X1 = X - 1, stench(X1,Y), X2 = X - 3, stench(X2,Y), -wumpusDead.
-wumpus(X,Y) :- X1 = X + 1, stench(X1,Y), Y1 = Y + 1, stench(X,Y1), -wumpusDead.
+wumpus(X,Y) :- X1 = X + 1, stench(X1,Y), Y1 = Y + 1, stench(X,Y1), safe(X1,Y1), -wumpusDead.
 wumpus(X,Y) :- X1 = X + 1, stench(X1,Y), Y1 = Y - 1, stench(X,Y1), -wumpusDead.
 wumpus(X,Y) :- cell(X,Y), X1 = X + 1, stench(X1,Y), X2 = X + 3, stench(X2,Y), -wumpusDead.
-wumpus(X,Y) :- Y1 = Y - 1, stench(X,Y1), X1 = X + 1, stench(X1,Y), -wumpusDead.
+wumpus(X,Y) :- Y1 = Y - 1, stench(X,Y1), X1 = X + 1, stench(X1,Y), safe(X1,Y1), -wumpusDead.
 wumpus(X,Y) :- Y1 = Y - 1, stench(X,Y1), X1 = X - 1, stench(X1,Y), -wumpusDead.
 wumpus(X,Y) :- cell(X,Y), Y1 = Y - 1, stench(X,Y1), Y2 = Y - 3, stench(X,Y2), -wumpusDead.
-wumpus(X,Y) :- Y1 = Y + 1, stench(X,Y1), X1 = X + 1, stench(X1,Y), -wumpusDead.
-wumpus(X,Y) :- Y1 = Y + 1, stench(X,Y1), X1 = X - 1, stench(X1,Y), -wumpusDead.
+wumpus(X,Y) :- Y1 = Y + 1, stench(X,Y1), X1 = X + 1, stench(X1,Y), safe(X1,Y1), -wumpusDead.
+wumpus(X,Y) :- Y1 = Y + 1, stench(X,Y1), X1 = X - 1, stench(X1,Y), safe(X1,Y1), -wumpusDead.
 wumpus(X,Y) :- cell(X,Y), Y1 = Y + 1, stench(X,Y1), Y2 = Y + 3, stench(X,Y2), -wumpusDead.
 
 -wumpusDetected :- not wumpusDetected.
@@ -137,6 +138,7 @@ safe(X,Y) :- cell(X,Y), not -safe(X,Y).
 currentMode(explore) :- toExplore(_,_), -grabbed.
 currentMode(escape) :- not canExplore.
 currentMode(escape) :- grabbed.
+%currentMode(kill) :- wumpusDetected, -grabbed.
 
 toExplore(X,Y) :- safe(X,Y), -explored(X,Y).
 canExplore :- safe(X,Y), -explored(X,Y).

@@ -12,8 +12,8 @@ from networkx.algorithms.shortest_paths.generic import shortest_path
 
 # The following two imports are only necessary for plotting,
 # if you want them pip install -r plotting-requirements.txt
-import matplotlib.pyplot as plt
-from networkx.drawing.nx_agraph import write_dot
+#import matplotlib.pyplot as plt
+#from networkx.drawing.nx_agraph import write_dot
 
 from ..common    import Action, Orientation, Location
 from ..simulator import World
