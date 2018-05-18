@@ -1,6 +1,6 @@
 #!/bin/bash
 
-AGENTS=(perfect)
+AGENTS=(asp)
 
 echo -ne 'instance\toptimum\t'
 
