@@ -156,6 +156,8 @@ candidate(X,Y,O,C) :- currentMode(explore), pathCost(X,Y,O,C), orientation(O), t
 candidate(1,1,O,C) :- currentMode(escape), pathCost(1,1,O,C), orientation(O), -canClimb.
 
 :~ goal(_,_,_,C1), goal(_,_,_,C2), C2 > C1.
+:~ goal(X1,_,_,C), goal(X2,_,_,C), X1 < X2, C = #min{Cm: goal(_,_,_,Cm)}.
+:~ goal(_,Y1,_,C), goal(_,Y2,_,C), Y1 < Y2, C = #min{Cm: goal(_,_,_,Cm)}.
 
 foundGoal :- goal(_,_,_,_).
 
