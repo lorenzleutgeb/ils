@@ -5,7 +5,7 @@
 %  stench(X,Y)  ... The agent has perceived a stench at position X, Y.
 %  breeze(X,Y)  ...               breeze
 %  glitter(X,Y) ...               glitter
-%  wumpus_dead  ... The wumpus is dead.
+%  wumpusDead   ... The wumpus is dead.
 
 % INPUT CONSISTENCY
 
@@ -13,11 +13,16 @@
 %       not encoded explicitly here. It will usually be set:
 %        - by the calling Python agent
 %        - through another ASP file.
-%       In case we bump, the Python agent will recognize this
-%       and decrease size accordingly.
+
+exploredSize(X) :- explored(X,_).
+exploredSize(Y) :- explored(_,Y).
+
+sizeKnown :- bumpedSize(_).
+size(S) :- not sizeKnown, Sm = #max{Se: exploredSize(Se)}, S = Sm + 1.
+size(S) :- bumpedSize(S).
 
 % Span the space of cells.
-cell(X,Y) :- #int(X), #int(Y), Y > 0, X > 0, Y <= worldSize, X <= worldSize.
+cell(X,Y) :- #int(X), #int(Y), Y > 0, X > 0, Y <= S, X <= S, size(S).
 
 % When to shoot at the wumpus?
 % TODO: Shooting the wumpus is costly. We should only
@@ -41,10 +46,10 @@ do(climb) :- shouldClimb.
 canClimb :- now(1,1,_).
 
 % Signaling bumps.
-bump :- now(   _,worldSize,   up).
-bump :- now(   _,   1, down).
-bump :- now(   1,   _, left).
-bump :- now(worldSize,   _,right).
+bump :- now(_,1, down).
+bump :- now(1,_, left).
+bump :- now(_,S,   up), size(S).
+bump :- now(S,_,right), size(S).
 
 % Rotation of orientations through actions.
 %  rotate(X,A,Y) ... From orientation X, action A will lead to orientation Y.
@@ -164,7 +169,7 @@ do(A) :- goal(X,Y,O,_), towards(X,Y,O,A).
 
 % CONSISTENCY
 
-% Preventing bumps.
+%0 Preventing bumps.
 bad(0) :- do(goforward), bump.
 
 %1 Cannot pick up something that's already been picked!

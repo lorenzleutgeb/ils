@@ -66,7 +66,7 @@ def parse(a, interesting):
     return result
 
 def pretty(x, interesting):
-    result = ''
+    result = '\n'
     width = max(map(len, interesting))
     selection = list(interesting.keys())
     selection.sort()
@@ -199,11 +199,13 @@ class ASPAgent():
         #       started from (easy: reverse the path).
 
         knowledge = [
-            '#const worldSize = {}.'.format(min(self.size, 6)),
             fact(True, 'now', [self.position.x, self.position.y, self.orientation.toSymbol()]),
             fact(self.wumpusDead, 'wumpusDead'),
             fact(Action.GRAB in self.previousActions, 'grabbed')
         ]
+
+        if self.size < 100:
+            knowledge.append(fact(True, 'bumpedSize', [self.size]))
 
         for l in self.world:
             stench, breeze, glitter = self.world[l]
@@ -309,9 +311,13 @@ class ASPAgent():
             for sign, terms in result['bad']:
                 prefix = '%' + str(terms[0]) + ' '
                 with open(join(d, 'agent.asp'), 'r') as f:
+                    found = False
                     for ln in f:
                         if ln.startswith(prefix):
+                            found = True
                             logger.debug('\033[31mCONSISTENCY ' + str(terms[0]) + ': ' + ln[len(prefix):] + '\033[0m')
+                    if not found:
+                        logger.debug('No comment describing bad({}). Add a line starting with \'%{} \' followed by a description.'.format(terms[0], terms[0]))
             return None
 
         action = result['do'][0][1][0]
