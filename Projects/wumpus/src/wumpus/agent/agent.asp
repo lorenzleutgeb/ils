@@ -137,20 +137,20 @@ state(X,Y,right) :- cell(X,Y).
 % Penalty for doing nothing?
 %cost(X,Y,O,X,Y,O,n) :- state(X,Y,O).
 % Cost for rotating is 1.
-cost(X,Y,O1,X,Y,O2,1) :- cell(X,Y), rotate(O1,_,O2).
+%cost(X,Y,O1,X,Y,O2,1) :- cell(X,Y), rotate(O1,_,O2).
 % Cost for going in the same direction is 1.
-cost(X1,Y1,O,X2,Y2,O,1) :- neighbor(X1,Y1,X2,Y2,O).
+%cost(X1,Y1,O,X2,Y2,O,1) :- neighbor(X1,Y1,X2,Y2,O).
 
 % TODO: This transitive monster just blows up like crazy...
-cost(X1,Y1,O1,X3,Y3,O3,C3) :-
-	state(X1,Y1,O1),
-	state(X2,Y2,O2),
-	state(X3,Y3,O3),
-	cost(X1,Y1,O1,X2,Y2,O2,C1),
-	cost(X2,Y2,O2,X3,Y3,O3,C2),
-	C3 = C1 + C2.
+%cost(X1,Y1,O1,X3,Y3,O3,C3) :-
+%	state(X1,Y1,O1),
+%	state(X2,Y2,O2),
+%	state(X3,Y3,O3),
+%	cost(X1,Y1,O1,X2,Y2,O2,C1),
+%	cost(X2,Y2,O2,X3,Y3,O3,C2),
+%	C3 = C1 + C2.
 
-pathCost(X2,Y2,O2,C) :- now(X1,Y1,O1), state(X2,Y2,O2), C = #min{Cx: cost(X1,Y1,O1,X2,Y2,O2,Cx)}.
+%pathCost(X2,Y2,O2,C) :- now(X1,Y1,O1), state(X2,Y2,O2), C = #min{Cx: cost(X1,Y1,O1,X2,Y2,O2,Cx)}.
 
 % Any cell where the wumpus is is not safe.
 -safe(X1,Y1) :- wumpus(X1,Y1), -explored(X1,Y1).

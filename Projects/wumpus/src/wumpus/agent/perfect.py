@@ -3,7 +3,8 @@ from itertools import product
 
 import networkx as nx
 
-# The following two imports are only necessary for plotting:
+# The following two imports are only necessary for plotting,
+# if you want them pip install -r plotting-requirements.txt
 #import matplotlib.pyplot as plt
 #from networkx.drawing.nx_agraph import write_dot
 

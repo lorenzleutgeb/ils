@@ -28,14 +28,33 @@ class Location():
         elif orientation == Orientation.RIGHT:
             return Location(self.x + 1, self.y) if self.x < n else None
 
+    def neighbors(self, n):
+        return filter(lambda x: x != None, [self.getAdjacent(o, n) for o in Orientation])
+
     def isAt(self, x, y):
         return self.x == x and self.y == y
 
     def __str__(self):
         return '({}, {})'.format(self.x, self.y)
 
+    def __getitem__(self, index):
+        if index == 0:
+            return self.x
+        elif index == 1:
+            return self.y
+        raise IndexError('')
+
     def __eq__(self, other):
         if other == None:
+            return False
+
+        if type(other) != Location:
+            raise ValueError('Why are you giving me this? ' + str(other))
+
+        if type(other) == tuple and len(other) == 2:
+            return self.x == other[0] and self.y == other[1]
+
+        if type(other) != Location:
             return False
 
         return self.x == other.x and self.y == other.y
