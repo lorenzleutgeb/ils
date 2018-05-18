@@ -34,7 +34,8 @@ do(turnright) :- now(X,Y,O), danger(X,Y,O), agentRight(P), -danger(X,Y,P).
 do(turnleft) :- now(X,Y,O), danger(X,Y,O), agentRight(P), danger(X,Y,P).
 
 % Climb if gold is picked and back to initial cell.
-do(climb) :- currentMode(escape), now(1,1,_).
+shouldClimb :- canClimb, currentMode(escape).
+do(climb) :- shouldClimb.
 
 -canClimb :- not canClimb.
 canClimb :- now(1,1,_).
@@ -149,16 +150,14 @@ candidate(X,Y,O,C) :- currentMode(explore), pathCost(X,Y,O,C), orientation(O), t
 candidate(1,1,O,C) :- currentMode(escape), pathCost(1,1,O,C), orientation(O), -canClimb.
 
 :~ goal(_,_,_,C1), goal(_,_,_,C2), C2 > C1.
-%:~ goal(X,Y,O1,C1), goal(X,Y,O2,C2), O1 != O2, C2 > C1.
-%:~ goal(X1,Y1,O1,C1), goal(X2,Y1,O2,C2), X1 != X2, C2 > C1.
-%:~ goal(X1,Y1,O1,C1), goal(X1,Y2,O2,C2), Y1 != Y2, C2 > C1.
-%:~ goal(X1,Y1,O1,C1), goal(X2,Y2,O2,C2), X1 != X2, Y1 != Y2, C2 > C1.
-%:~ goal(X1,Y1,O1,C1), goal(X2,Y1,O2,C2), O1 != O2, X1 != X2, C2 > C1.
-%:~ goal(X1,Y1,O1,C1), goal(X1,Y2,O2,C2), O1 != O2, Y1 != Y2, C2 > C1.
-%:~ goal(X1,Y1,O1,C1), goal(X2,Y2,O2,C2), O1 != O2, X1 != X2, Y1 != Y2, C2 > C1.
 
-foundGoal :- goal(X,Y,O,C).
-:- not foundGoal.
+foundGoal :- goal(_,_,_,_).
+
+% Usually it is problematic if we do not find a goal. Exceptions are:
+%  - We should grab the gold.
+%  - We should exit the cave.
+:- not foundGoal, -shouldGrab, -shouldClimb.
+
 goal(X,Y,O,C) v -goal(X,Y,O,C) :- candidate(X,Y,O,C).
 
 do(A) :- goal(X,Y,O,_), towards(X,Y,O,A).
