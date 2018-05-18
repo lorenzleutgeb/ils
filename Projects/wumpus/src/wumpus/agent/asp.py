@@ -6,6 +6,7 @@ from tempfile   import mkstemp
 
 from ..common    import Action, Orientation, Location
 from ..simulator import World
+from ..util      import dlv
 
 def atom(sign, predicate, terms=[]):
     result = ''
@@ -25,6 +26,8 @@ def fact(sign, predicate, terms=[]):
 
 class ASPAgent():
     def __init__(self, init=None):
+        self.dlv = dlv()
+
         if init == None:
             # Assume some large world. Will get adjusted once we bump.
             self.size = 4
@@ -116,7 +119,7 @@ class ASPAgent():
         d = dirname(__file__)
         proc = run(
             [
-                'dlv',
+                self.dlv,
                 '-silent',
                 #'-filter=goal',
                 #'-filter=do',

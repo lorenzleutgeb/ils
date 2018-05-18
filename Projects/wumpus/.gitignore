@@ -2,6 +2,7 @@
 wumpsim
 pywumpsim
 
+dlv
 last-world.txt
 
 # Created by https://www.gitignore.io/api/c++,python
