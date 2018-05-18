@@ -260,7 +260,7 @@ class ASPAgent():
             'danger': (int, int),
             'gold': (int, int),
             'grabbed': (),
-            'mode': (int,),
+            'currentMode': (int,),
             'wumpus': (int,int),
             'stench': (int,int),
         }
@@ -292,7 +292,7 @@ class ASPAgent():
 
         if result.startswith('Best model: {'):
             start, end = result.find('{'), result.find('}')
-            result = result[start:end]
+            result = result[start:end+1]
 
         if result[0] != '{':
             logger.error('ASP Errors:\n  \033[31m' + result.replace('\n', '\n  ') + '\033[0m')
