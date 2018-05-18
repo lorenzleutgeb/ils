@@ -28,7 +28,7 @@ cell(X,Y) :- #int(X), #int(Y), Y > 0, X > 0, Y <= S, X <= S, size(S).
 % TODO: Shooting the wumpus is costly. We should only
 %       do so in case the wumpus blocks the way or
 %       the wumpus is in the same place as the gold.
-do(shoot) :- wumpus(X,Y), facing(X,Y).
+do(shoot) :- wumpus(X,Y), facing(X,Y), currentMode(kill).
 
 % If current cell and orientation are not dangerous, explore forward.
 do(goforward) :- now(X,Y,O), -danger(X,Y,O).
@@ -40,6 +40,7 @@ do(turnleft) :- now(X,Y,O), danger(X,Y,O), agentRight(P), danger(X,Y,P).
 
 % Climb if gold is picked and back to initial cell.
 shouldClimb :- canClimb, currentMode(escape).
+-shouldClimb :- not shouldClimb.
 do(climb) :- shouldClimb.
 
 -canClimb :- not canClimb.
@@ -165,7 +166,7 @@ foundGoal :- goal(_,_,_,_).
 
 goal(X,Y,O,C) v -goal(X,Y,O,C) :- candidate(X,Y,O,C).
 
-do(A) :- goal(X,Y,O,_), towards(X,Y,O,A).
+do(A) :- goal(X,Y,O,_), towards(X,Y,O,A), -shouldGrab, -shouldClimb.
 
 % CONSISTENCY
 

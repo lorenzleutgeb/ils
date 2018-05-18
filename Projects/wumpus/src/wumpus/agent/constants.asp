@@ -16,5 +16,6 @@ action(0..5).
 
 #const explore = 0.
 #const escape  = 1.
+#const kill    = 2.
 
-mode(0..1).
+mode(0..2).
