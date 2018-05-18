@@ -13,3 +13,8 @@ orientation(0..3).
 #const climb     = 5.
 
 action(0..5).
+
+#const explore = 0.
+#const escape  = 1.
+
+mode(0..1).

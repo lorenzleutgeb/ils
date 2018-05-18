@@ -9,10 +9,6 @@
 
 % INPUT CONSISTENCY
 
-% The agent is not ubiquitous.
-:- now(X,Y,_), now(X,Z,_), Y != Z.
-:- now(X,Y,_), now(Z,Y,_), X != Z.
-
 % NOTE: size (the size of the world) is given as constant and
 %       not encoded explicitly here. It will usually be set:
 %        - by the calling Python agent
@@ -38,16 +34,16 @@ do(turnright) :- now(X,Y,O), danger(X,Y,O), agentRight(P), -danger(X,Y,P).
 do(turnleft) :- now(X,Y,O), danger(X,Y,O), agentRight(P), danger(X,Y,P).
 
 % Climb if gold is picked and back to initial cell.
-do(climb) :- gold_picked, now(1,1,_).
+do(climb) :- currentMode(escape), now(1,1,_).
+
+-canClimb :- not canClimb.
+canClimb :- now(1,1,_).
 
 % Signaling bumps.
 bump :- now(   _,worldSize,   up).
 bump :- now(   _,   1, down).
 bump :- now(   1,   _, left).
 bump :- now(worldSize,   _,right).
-
-% Preventing bumps.
-:- do(goforward), bump.
 
 % Rotation of orientations through actions.
 %  rotate(X,A,Y) ... From orientation X, action A will lead to orientation Y.
@@ -64,26 +60,18 @@ agentLeft(Y) :- now(_,_,X), rotate(X,turnleft,Y).
 agentRight(Y) :- now(_,_,X), rotate(X,turnright,Y).
 
 % Oh, look! Something is glittering...
-gold(X,Y) :- glitter(X,Y), -gold_picked.
+%gold(X,Y) :- glitter(X,Y), -goldPicked.
 
 % Pick gold if there's some in the cell.
-do(grab) :- now(X,Y,_), gold(X,Y).
+-shouldGrab :- not shouldGrab.
+shouldGrab :- now(X,Y,_), glitter(X,Y).
+do(grab) :- shouldGrab.
 
 % Cells that are in front of the agent.
-facing(X,Y) :- now(X,Z,right), cell(X,Y), Z < Y.
+facing(X,Y) :- now(X,Z,up), cell(X,Y), Z < Y.
 facing(X,Y) :- now(X,Z,left), cell(X,Y), Y < Z.
-facing(X,Y) :- now(Z,Y,up), cell(X,Y), Z < X.
+facing(X,Y) :- now(Z,Y,right), cell(X,Y), Z < X.
 facing(X,Y) :- now(Z,Y,down), cell(X,Y), X < Z.
-
-% Result should be do(A).
-
-% Cannot pick up something that's already been picked!
-% TODO: how to remove gold from knowledge once it's been collected?
-%       SOLUTION: at next call, add -gold(X,Y) to KB.
-:- gold(X,Y), now(X,Y,_), gold_picked.
-
-% Don't shoot if the wumpus is already dead!
-:- do(shoot), wumpusDead.
 
 % Neighboring cells along the horizontal and vertical axis.
 neighbor(X1,Y1,X2,Y2,right) :- cell(X1,Y1), cell(X2,Y2), X2 = X1 + 1, Y2 = Y1.
@@ -97,18 +85,21 @@ danger(X,Y,O) :- cell(X,Y), cell(X1,Y1), neighbor(X,Y,X1,Y1,O), stench(X1,Y1), -
 danger(X,Y,O) :- cell(X,Y), cell(X1,Y1), neighbor(X,Y,X1,Y1,O), breeze(X1,Y1), -pit(X1,Y1).
 
 % To detect the wumpus, we just need to find 2 stenches out of 4.
-wumpus(X,Y) :- X1 = X - 1, stench(X1,Y), Y1 = Y + 1, stench(X,Y1).
-wumpus(X,Y) :- X1 = X - 1, stench(X1,Y), Y1 = Y - 1, stench(X,Y1).
-wumpus(X,Y) :- cell(X,Y), X1 = X - 1, stench(X1,Y), X2 = X - 3, stench(X2,Y).
-wumpus(X,Y) :- X1 = X + 1, stench(X1,Y), Y1 = Y + 1, stench(X,Y1).
-wumpus(X,Y) :- X1 = X + 1, stench(X1,Y), Y1 = Y - 1, stench(X,Y1).
-wumpus(X,Y) :- cell(X,Y), X1 = X + 1, stench(X1,Y), X2 = X + 3, stench(X2,Y).
-wumpus(X,Y) :- Y1 = Y - 1, stench(X,Y1), X1 = X + 1, stench(X1,Y).
-wumpus(X,Y) :- Y1 = Y - 1, stench(X,Y1), X1 = X - 1, stench(X1,Y).
-wumpus(X,Y) :- cell(X,Y), Y1 = Y - 1, stench(X,Y1), Y2 = Y - 3, stench(X,Y2).
-wumpus(X,Y) :- Y1 = Y + 1, stench(X,Y1), X1 = X + 1, stench(X1,Y).
-wumpus(X,Y) :- Y1 = Y + 1, stench(X,Y1), X1 = X - 1, stench(X1,Y).
-wumpus(X,Y) :- cell(X,Y), Y1 = Y + 1, stench(X,Y1), Y2 = Y + 3, stench(X,Y2).
+wumpus(X,Y) :- X1 = X - 1, stench(X1,Y), Y1 = Y + 1, stench(X,Y1), -wumpusDead.
+wumpus(X,Y) :- X1 = X - 1, stench(X1,Y), Y1 = Y - 1, stench(X,Y1), -wumpusDead.
+wumpus(X,Y) :- cell(X,Y), X1 = X - 1, stench(X1,Y), X2 = X - 3, stench(X2,Y), -wumpusDead.
+wumpus(X,Y) :- X1 = X + 1, stench(X1,Y), Y1 = Y + 1, stench(X,Y1), -wumpusDead.
+wumpus(X,Y) :- X1 = X + 1, stench(X1,Y), Y1 = Y - 1, stench(X,Y1), -wumpusDead.
+wumpus(X,Y) :- cell(X,Y), X1 = X + 1, stench(X1,Y), X2 = X + 3, stench(X2,Y), -wumpusDead.
+wumpus(X,Y) :- Y1 = Y - 1, stench(X,Y1), X1 = X + 1, stench(X1,Y), -wumpusDead.
+wumpus(X,Y) :- Y1 = Y - 1, stench(X,Y1), X1 = X - 1, stench(X1,Y), -wumpusDead.
+wumpus(X,Y) :- cell(X,Y), Y1 = Y - 1, stench(X,Y1), Y2 = Y - 3, stench(X,Y2), -wumpusDead.
+wumpus(X,Y) :- Y1 = Y + 1, stench(X,Y1), X1 = X + 1, stench(X1,Y), -wumpusDead.
+wumpus(X,Y) :- Y1 = Y + 1, stench(X,Y1), X1 = X - 1, stench(X1,Y), -wumpusDead.
+wumpus(X,Y) :- cell(X,Y), Y1 = Y + 1, stench(X,Y1), Y2 = Y + 3, stench(X,Y2), -wumpusDead.
+
+-wumpusDetected :- not wumpusDetected.
+wumpusDetected :- wumpus(_,_).
 
 % To detect a pit, we just need to find 2 breezes out of 4.
 % TODO: this causes issues.
@@ -134,42 +125,74 @@ state(X,Y,down) :- cell(X,Y).
 state(X,Y,left) :- cell(X,Y).
 state(X,Y,right) :- cell(X,Y).
 
-% Penalty for doing nothing?
-%cost(X,Y,O,X,Y,O,n) :- state(X,Y,O).
-% Cost for rotating is 1.
-%cost(X,Y,O1,X,Y,O2,1) :- cell(X,Y), rotate(O1,_,O2).
-% Cost for going in the same direction is 1.
-%cost(X1,Y1,O,X2,Y2,O,1) :- neighbor(X1,Y1,X2,Y2,O).
-
-% TODO: This transitive monster just blows up like crazy...
-%cost(X1,Y1,O1,X3,Y3,O3,C3) :-
-%	state(X1,Y1,O1),
-%	state(X2,Y2,O2),
-%	state(X3,Y3,O3),
-%	cost(X1,Y1,O1,X2,Y2,O2,C1),
-%	cost(X2,Y2,O2,X3,Y3,O3,C2),
-%	C3 = C1 + C2.
-
-%pathCost(X2,Y2,O2,C) :- now(X1,Y1,O1), state(X2,Y2,O2), C = #min{Cx: cost(X1,Y1,O1,X2,Y2,O2,Cx)}.
-
 % Any cell where the wumpus is is not safe.
--safe(X1,Y1) :- wumpus(X1,Y1), -explored(X1,Y1).
+-safe(X1,Y1) :- wumpus(X1,Y1).
+-safe(X2,Y2) :- anyNeighbor(X1,Y1,X2,Y2), stench(X1,Y1), -wumpusDetected.
 % Any cell with an adjacent cell that has a breeze
--safe(X1,Y1) :- anyNeighbor(X1,Y1,X1,X2), breeze(X2,Y2), -explored(X1,Y1).
--safe(X1,Y1) :- anyNeighbor(X1,Y1,X1,X2), breeze(X1,X2).
+%-safe(X1,Y1) :- anyNeighbor(X1,Y1,X1,X2), breeze(X2,Y2), -explored(X1,Y1).
+-safe(X2,Y2) :- anyNeighbor(X1,Y1,X2,Y2), breeze(X1,Y1).
 
 safe(X,Y) :- cell(X,Y), not -safe(X,Y).
 
+currentMode(explore) :- toExplore(_,_), -grabbed.
+currentMode(escape) :- not canExplore.
+currentMode(escape) :- grabbed.
+
+toExplore(X,Y) :- safe(X,Y), -explored(X,Y).
+canExplore :- safe(X,Y), -explored(X,Y).
+
 % Interesting candidates are those cells that we have not yet explored
 % and we know that they are safe.
-candidate(X,Y) :- safe(X,Y), -explored(X,Y).
+candidate(X,Y,O,C) :- currentMode(explore), pathCost(X,Y,O,C), orientation(O), toExplore(X,Y), -shouldGrab.
+candidate(1,1,O,C) :- currentMode(escape), pathCost(1,1,O,C), orientation(O), -canClimb.
 
-% TODO: The goal should be the candidate with the least cost to reach.
-goal(X1,Y1) :-
-	candidate(X1,Y1),
-	candidate(X2,Y2),
-	X1 != X2,
-	Y1 != Y2,
-	pathCost(X1,Y1,_,C1),
-	pathCost(X2,Y2,_,C2),
-	C1 < C2.
+:~ goal(_,_,_,C1), goal(_,_,_,C2), C2 > C1.
+%:~ goal(X,Y,O1,C1), goal(X,Y,O2,C2), O1 != O2, C2 > C1.
+%:~ goal(X1,Y1,O1,C1), goal(X2,Y1,O2,C2), X1 != X2, C2 > C1.
+%:~ goal(X1,Y1,O1,C1), goal(X1,Y2,O2,C2), Y1 != Y2, C2 > C1.
+%:~ goal(X1,Y1,O1,C1), goal(X2,Y2,O2,C2), X1 != X2, Y1 != Y2, C2 > C1.
+%:~ goal(X1,Y1,O1,C1), goal(X2,Y1,O2,C2), O1 != O2, X1 != X2, C2 > C1.
+%:~ goal(X1,Y1,O1,C1), goal(X1,Y2,O2,C2), O1 != O2, Y1 != Y2, C2 > C1.
+%:~ goal(X1,Y1,O1,C1), goal(X2,Y2,O2,C2), O1 != O2, X1 != X2, Y1 != Y2, C2 > C1.
+
+foundGoal :- goal(X,Y,O,C).
+:- not foundGoal.
+goal(X,Y,O,C) v -goal(X,Y,O,C) :- candidate(X,Y,O,C).
+
+do(A) :- goal(X,Y,O,_), towards(X,Y,O,A).
+
+% CONSISTENCY
+
+% Preventing bumps.
+bad(0) :- do(goforward), bump.
+
+%1 Cannot pick up something that's already been picked!
+% TODO: how to remove gold from knowledge once it's been collected?
+%       SOLUTION: at next call, add -gold(X,Y) to KB.
+bad(1) :- gold(X,Y), now(X,Y,_), goldPicked.
+
+%2 Don't shoot if the wumpus is already dead!
+bad(2) :- do(shoot), wumpusDead.
+
+%3 The agent is not ubiquitous.
+bad(3) :- now(X,Y,_), now(X,Z,_), Y != Z.
+bad(3) :- now(X,Y,_), now(Z,Y,_), X != Z.
+
+%4 We cannot be in more than one mode.
+bad(4) :- currentMode(X), currentMode(Y), X != Y.
+
+%5 We must be in one mode.
+inSomeMode :- mode(M), currentMode(M).
+bad(5) :- not inSomeMode.
+
+%6 We cannot do two things.
+bad(6) :- do(A1), do(A2), A1 != A2.
+
+%7 We must do something.
+doingSomething :- action(A), do(A).
+bad(7) :- not doingSomething.
+
+%8 Wumpus detection must be accurate. There is only one wumpus.
+bad(8) :- wumpus(X1,Y), wumpus(X2,Y), X1 != X2.
+bad(8) :- wumpus(X,Y1), wumpus(X,Y2), Y1 != Y2.
+bad(8) :- wumpus(X1,Y1), wumpus(X2,Y2), X1 != X2, Y1 != Y2.
