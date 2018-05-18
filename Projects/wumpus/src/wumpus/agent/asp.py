@@ -1,4 +1,3 @@
-from sys        import exit
 from os.path    import dirname, join
 from os         import remove
 from subprocess import PIPE, STDOUT, run
@@ -20,7 +19,7 @@ from ..simulator import World
 from ..util      import dlv
 
 # For debugging:
-logging.basicConfig(level=logging.DEBUG)
+#logging.basicConfig(level=logging.DEBUG)
 
 logger = logging.getLogger('asp-agent')
 
@@ -285,9 +284,9 @@ class ASPAgent():
         result = proc.stdout
 
         if len(result) == 0:
-            logger.error('ASP program did not return any answer sets! Inconsistency?')
-            logger.error(result)
-            exit(1)
+            logger.debug('ASP program did not return any answer sets! Inconsistency?')
+            logger.debug(result)
+            return None
 
         if result.startswith('Best model: {'):
             start, end = result.find('{'), result.find('}')
@@ -295,7 +294,7 @@ class ASPAgent():
 
         if result[0] != '{':
             logger.error('ASP Errors:\n  \033[31m' + result.replace('\n', '\n  ') + '\033[0m')
-            exit(1)
+            return None
 
         result = result.strip().split('\n')
         result = list(map(lambda x: parse(x, interesting), result))
@@ -312,8 +311,8 @@ class ASPAgent():
                 with open(join(d, 'agent.asp'), 'r') as f:
                     for ln in f:
                         if ln.startswith(prefix):
-                            logger.error('\033[31mCONSISTENCY ' + str(terms[0]) + ': ' + ln[len(prefix):] + '\033[0m')
-            exit(1)
+                            logger.debug('\033[31mCONSISTENCY ' + str(terms[0]) + ': ' + ln[len(prefix):] + '\033[0m')
+            return None
 
         action = result['do'][0][1][0]
         logger.debug(action)
