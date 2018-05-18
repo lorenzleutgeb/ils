@@ -112,18 +112,22 @@ def play(worldSize, worldFile, agentName, numTrials, numTries, porcelain):
             if not porcelain:
                 print(str(trial) + ":" + str(tries))
 
+            aborted = False
             while (not(wumpusWorld.isGameOver())) and (numMoves < MAX_MOVES):
                 if not porcelain:
                     wumpusWorld.printTo(stdout)
                 percept = wumpusWorld.percept
                 action = agent.process(percept)
+                if action == None:
+                    aborted = True
+                    break
                 wumpusWorld.execute(action)
                 numMoves += 1
 
-            score = wumpusWorld.getScore()
+            score = -MAX_MOVES if aborted else wumpusWorld.getScore()
 
             if porcelain:
-                print(score)
+                print(score if not aborted else '!')
             else:
                 trialScore = trialScore + score
                 print("Trial " + str(trial) + ", Try " + str(tries) + " complete: Score = " + str(score))
