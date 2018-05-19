@@ -7,8 +7,11 @@
 %  glitter(X,Y) ...               glitter
 %  wumpusDead   ... The wumpus is dead.
 
-%diff(X1,Y1,X2,Y2) :- X1 != X2, cell(X1,Y1), cell(X2,Y2).
-%diff(X1,Y1,X2,Y2) :- Y1 != Y2, cell(X1,Y1), cell(X2,Y2).
+diff(X1,Y1,X2,Y2) :- X1 != X2, cell(X1,Y1), cell(X2,Y2).
+diff(X1,Y1,X2,Y2) :- Y1 != Y2, cell(X1,Y1), cell(X2,Y2).
+
+axis(up).
+axis(right).
 
 % WORLD SIZE DETECTION
 
@@ -17,8 +20,8 @@ exploredSize(Y) :- explored(_,Y).
 
 sizeKnown :- bump(_,_).
 size(S) :- not sizeKnown, Sm = #max{Se: exploredSize(Se)}, S = Sm + 1.
-size(S) :- bump(S,Y), S > Y.
-size(S) :- bump(X,S), S > X.
+size(S) :- bump(Sm,Y), Sm > Y, S = Sm - 1.
+size(S) :- bump(X,Sm), Sm > X, S = Sm - 1.
 
 % CELLS, NEIGHBORS, FACING AND BUMPS
 
@@ -34,21 +37,15 @@ neighbor(X1,Y1,X2,Y2,down ) :- cell(X1,Y1), cell(X2,Y2), X2 = X1, Y2 = Y1 - 1.
 anyNeighbor(X1,Y1,X2,Y2) :- neighbor(X1,Y1,X2,Y2,O), orientation(O).
 
 % Cells that are in front of the agent.
-facing(X,Y) :- cell(X,Y), Z < Y, now(X,Z,up   ).
-facing(X,Y) :- cell(X,Y), Y < Z, now(X,Z,left ).
-facing(X,Y) :- cell(X,Y), Z < X, now(Z,Y,right).
-facing(X,Y) :- cell(X,Y), X < Z, now(Z,Y,down ).
+% TODO: Deactivated for now. We will need it for the kill mode.
+%facing(X,Y) :- cell(X,Y), Z < Y, now(X,Z,up   ).
+%facing(X,Y) :- cell(X,Y), Y < Z, now(X,Z,left ).
+%facing(X,Y) :- cell(X,Y), Z < X, now(Z,Y,right).
+%facing(X,Y) :- cell(X,Y), X < Z, now(Z,Y,down ).
 
-% Signaling bumps.
-wouldBump :- now(_,1,down ).
-wouldBump :- now(1,_,left ).
-wouldBump :- now(_,S,up   ), size(S).
-wouldBump :- now(S,_,right), size(S).
-
-% TODO: Why does this break everything?
+% Complete information about information. We only do this here and
+% not in Python since we might have assumed a size.
 -explored(X,Y) :- cell(X,Y), not explored(X,Y).
--notExplored(X,Y) :- cell(X,Y), not notExplored(X,Y).
-notExplored(X,Y) :- cell(X,Y), not explored(X,Y).
 
 % HIGH PRIORITY ACTIONS
 
@@ -59,90 +56,92 @@ notExplored(X,Y) :- cell(X,Y), not explored(X,Y).
 %do(shoot) :- wumpus(X,Y), facing(X,Y), currentMode(kill).
 
 % Pick gold if there's some in the cell.
--shouldGrab :- not shouldGrab.
 shouldGrab :- now(X,Y,_), glitter(X,Y).
 do(grab) :- shouldGrab.
 
 % Climb if gold is picked and back to initial cell.
-shouldClimb :- canClimb, currentMode(escape).
--shouldClimb :- not shouldClimb.
+shouldClimb :- now(1,1,_), currentMode(escape).
 do(climb) :- shouldClimb.
 
--canClimb :- not canClimb.
-canClimb :- now(1,1,_).
+% DETECTION OF WUMPUS
 
-% DETECTION OF PITS AND WUMPUS
 
-% To detect the wumpus, we just need to find 2 stenches out of 4.
-% ISSUE: acutally this is true only if the stenches are antipodal.
-wumpus(X,Y) :- X1 = X - 1, stench(X1,Y), Y1 = Y + 1, stench(X,Y1), explored(X1,Y1), -wumpusDead.
-wumpus(X,Y) :- X1 = X - 1, stench(X1,Y), Y1 = Y - 1, stench(X,Y1), explored(X1,Y1), -wumpusDead.
-%wumpus(X,Y) :- cell(X,Y), X1 = X - 1, stench(X1,Y), X2 = X - 3, stench(X2,Y), -wumpusDead.
-wumpus(X,Y) :- X1 = X + 1, stench(X1,Y), Y1 = Y + 1, stench(X,Y1), explored(X1,Y1), -wumpusDead.
-wumpus(X,Y) :- X1 = X + 1, stench(X1,Y), Y1 = Y - 1, stench(X,Y1), explored(X1,Y1), -wumpusDead.
-wumpus(X,Y) :- cell(X,Y), X1 = X + 1, stench(X1,Y), X2 = X - 1, stench(X2,Y), -wumpusDead.
-wumpus(X,Y) :- Y1 = Y - 1, stench(X,Y1), X1 = X + 1, stench(X1,Y), explored(X1,Y1), -wumpusDead.
-wumpus(X,Y) :- Y1 = Y - 1, stench(X,Y1), X1 = X - 1, stench(X1,Y), explored(X1,Y1), -wumpusDead.
-wumpus(X,Y) :- cell(X,Y), Y1 = Y - 1, stench(X,Y1), Y2 = Y + 1, stench(X,Y2), -wumpusDead.
-wumpus(X,Y) :- Y1 = Y + 1, stench(X,Y1), X1 = X + 1, stench(X1,Y), explored(X1,Y1), -wumpusDead.
-wumpus(X,Y) :- Y1 = Y + 1, stench(X,Y1), X1 = X - 1, stench(X1,Y), explored(X1,Y1), -wumpusDead.
-%wumpus(X,Y) :- cell(X,Y), Y1 = Y + 1, stench(X,Y1), Y2 = Y + 3, stench(X,Y2), -wumpusDead.
+wumpus(X1,Y1) :- anyNeighbor(X1,Y1,X2,Y2), anyNeighbor(X1,Y1,X3,Y3), diff(X2,Y2,X3,Y3), anyNeighbor(X2,Y2,X4,Y4), anyNeighbor(X3,Y3,X4,Y4), diff(X1,Y1,X4,Y4), stench(X2,Y2), stench(X3,Y3), explored(X4,Y4), -wumpusDead.
 
-% TODO: Possibly shorter wumpus detection?
-%wumpus(X1,Y1) :- anyNeighbor(X1,Y1,X2,Y2), anyNeighbor(X1,Y1,X3,Y3), diff(X2,Y2,X3,Y3), stench(X2,Y2), stench()
+% Antipodal matching.
+%wumpus(X2,Y2) :- neighbor(X1,Y1,X2,Y2,A), neighbor(X2,Y2,X3,Y3,A), stench(X1,Y1), stench(X3,Y3), diff(X1,Y1,X3,Y3), axis(A), -wumpusDead.
 
--wumpusDetected :- not wumpusDetected.
-wumpusDetected :- wumpus(_,_).
+% Auxiliary flag to signal detection of wumpus.
+wumpusDetected :- cell(X,Y), wumpus(X,Y).
+
+% If wumpus is not certainly detected, we must exclude other cells where it might be.
+possibleWumpus(X2,Y2) :- anyNeighbor(X1,Y1,X2,Y2), stench(X1,Y1), not wumpusDetected, -explored(X2,Y2).
+
+% DETECTION OF PITS
 
 % Any explored cell certainly cannot be a pit, otherwise we would be dead by now.
 cannotBePit(X,Y) :- explored(X,Y).
-% If we have explored a cell already and felt no brezee, then no neighbor be a pit.
+
+% If we have explored a cell already and felt no brezee, then no neighbor can be a pit.
 cannotBePit(X2,Y2) :- -breeze(X1,Y1), anyNeighbor(X1,Y1,X2,Y2).
+
+% A neighbor of a breeze is a possible pit if it can be.
 possiblePit(XB,YB,XP,YP) :- breeze(XB,YB), anyNeighbor(XB,YB,XP,YP), not cannotBePit(XP,YP).
-%pit(XP,YP) :- possiblePit(XB,YB,XP,YP), 1 = #count{XPc,YPc: possiblePit(XB,YB,XPc,YPc)}.
 
 % SAFETY OF CELLS
 
 % Any cell where the wumpus is is not safe.
+safe(X,Y) :- explored(X,Y).
 -safe(X1,Y1) :- wumpus(X1,Y1).
--safe(X2,Y2) :- anyNeighbor(X1,Y1,X2,Y2), stench(X1,Y1), -wumpusDetected, notExplored(X2,Y2).
+-safe(X1,Y1) :- possibleWumpus(X1,Y1).
 -safe(X2,Y2) :- possiblePit(X1,Y1,X2,Y2).
 
 safe(X,Y) :- cell(X,Y), not -safe(X,Y).
 
-toExplore(X,Y) :- safe(X,Y), notExplored(X,Y).
+reachable(X,Y) :- pathCost(X,Y,_,_).
+
+toExplore(X,Y) :- reachable(X,Y), safe(X,Y), -explored(X,Y).
+
+% Auxiliary flag to signal whether we can still explore further.
 canExplore :- toExplore(_,_).
 
 % Interesting candidates are those cells that we have not yet explored
 % and we know that they are safe.
-candidate(X,Y,O,C) :- currentMode(explore), pathCost(X,Y,O,C), orientation(O), toExplore(X,Y), -shouldGrab.
-candidate(1,1,O,C) :- currentMode(escape), pathCost(1,1,O,C), orientation(O), -shouldClimb.
+candidate(X,Y,O,C) :- pathCost(X,Y,O,C), orientation(O), currentMode(explore), toExplore(X,Y).
+candidate(1,1,O,C) :- pathCost(1,1,O,C), orientation(O), currentMode(escape).
 
-:~ candidate(_,_,_,C1), candidate(X,Y,O,C2), C2 > C1, goal(X,Y,O,C2). [5:1]
-:~ goal(_,_,_,C1), goal(_,_,_,C2), C2 > C1. [4:1]
-:~ goal(X1,_,_,C), goal(X2,_,_,C), X1 < X2. [3:1]
-:~ goal(X,Y1,_,C), goal(X,Y2,_,C), Y1 < Y2. [2:1]
-:~ goal(X,Y,O1,C), goal(X,Y,O2,C), O1 < O2. [1:1]
+%goal(X,Y,O,C) :- candidate(X,Y,O,C), 1 = #count{Xc,Yc,Oc,Cc: candidate(Xc,Yc,Oc,Cc)}.
+%strange(X,Y) :- candidate(X,Y,O,C), 1 = #count{Xc,Yc,Oc,Cc: candidate(Xc,Yc,Oc,Cc)}.
+
+% Minimize cost of goals:
+:~ candidate(_,_,_,C1), candidate(X,Y,O,C2), C2 > C1, goal(X,Y,O,C2).
+
+% Tie breaking:
+:- goal(_,_,_,C1), goal(_,_,_,C2), C2 > C1.
+:- goal(X1,_,_,C), goal(X2,_,_,C), X1 < X2.
+:- goal(X,Y1,_,C), goal(X,Y2,_,C), Y1 < Y2.
+:- goal(X,Y,O1,C), goal(X,Y,O2,C), O1 < O2.
 
 foundGoal :- goal(_,_,_,_).
 
-% Usually it is problematic if we do not find a goal. Exceptions are:
-%  - We should grab the gold.
-%  - We should exit the cave.
-:- not foundGoal, -shouldGrab, -shouldClimb.
-
 goal(X,Y,O,C) v -goal(X,Y,O,C) :- candidate(X,Y,O,C).
 
-currentMode(explore) :- toExplore(_,_), -grabbed.
-currentMode(escape) :- not canExplore.
-currentMode(escape) :- grabbed.
-%currentMode(kill) :- wumpusDetected, -grabbed.
+do(A) :- goal(X,Y,O,_), towards(X,Y,O,A), not shouldGrab, not shouldClimb.
 
-do(A) :- goal(X,Y,O,_), towards(X,Y,O,A), -shouldGrab, -shouldClimb.
+%autopilot :- foundGoal, not shouldGrab, not shouldClimb, currentMode(explore).
+
+% MODES
+
+currentMode(explore) :- canExplore, -grabbed.
+currentMode(escape) :- not currentMode(explore).
 
 % CONSISTENCY
 
-%0 Preventing bumps.
+%0 We should not go forward, since that would be our second time to bump.
+wouldBump :- now(_,1,down ).
+wouldBump :- now(1,_,left ).
+wouldBump :- now(_,S,up   ), size(S).
+wouldBump :- now(S,_,right), size(S).
 bad(0) :- do(goforward), wouldBump.
 
 %1 Cannot pick up something that's already been picked!
@@ -193,3 +192,6 @@ bad(12) :- explored(X,Y), notExplored(X,Y).
 
 %13 A cell cannot be -safe and explored.
 bad(13) :- cell(X,Y), -safe(X,Y), explored(X,Y).
+
+%14 We are in explore mode, have no triggers to climb or shoot, but still did not find a goal.
+bad(14) :- not foundGoal, not shouldGrab, not shouldClimb, mode(explore).

@@ -1,3 +1,4 @@
+from functools  import reduce
 from os.path    import dirname, join
 from os         import remove
 from subprocess import PIPE, STDOUT, run
@@ -20,10 +21,13 @@ from ..util      import dlv
 from .mode       import Mode
 
 # For debugging:
-logging.basicConfig(level=logging.DEBUG)
+#logging.basicConfig(level=logging.DEBUG)
 PRINT_KNOWLEDGE=False
 
 logger = logging.getLogger('asp-agent')
+
+def flatten(xs):
+    return reduce(lambda x, y: x + [y] if type(y) != list else y + x, xs, [])
 
 def atom(sign, predicate, terms=[]):
     result = ''
@@ -88,6 +92,7 @@ def pretty(x, interesting):
 class ASPAgent():
     def __init__(self, init=None):
         self.dlv = dlv()
+        self.actions = []
 
         if init == None:
             # Assume some large world. Will get adjusted once we bump.
@@ -120,27 +125,18 @@ class ASPAgent():
     def previousAction(self):
         return None if self.previousActions == [] else self.previousActions[-1]
 
+    def decodeAction(self, u, v):
+        return self.g.get_edge_data(u, v)['action']
+
     def process(self, percept):
         prevAct = self.previousAction()
 
         # Infer size of the world.
         if percept.bump:
             self.size = max(self.position.x, self.position.y)
+            if self.bump != None:
+                logger.debug('We appear to be bumping a second time.')
             self.bump = self.position.getAdjacent(self.orientation, self.size + 1)
-            # for i in range(1, self.size + 1):
-            #     for l in [Location(self.size + 1, i), Location(i, self.size + 1)]:
-            #         print("IAMHERE")
-            #         for k in self.world.keys():
-            #             if k == l:
-            #                 print('MATCH')
-            #             else:
-            #                 print('{} != {}'.format(k,l))
-            #         print(l)
-            #         if l in self.world:
-            #             print("IREMOVE")
-            #             del self.world[l]
-            #         else:
-            #             print(self.world)
             # TODO: Remove unnecessary nodes from self.g.
 
         # If we moved without bump, account for the move!
@@ -154,9 +150,20 @@ class ASPAgent():
         if percept.scream:
             self.wumpusDead = True
 
+        here = (self.position, self.orientation)
+
         explored = self.position not in self.world
 
         self.world[self.position] = (percept.stench, percept.breeze, percept.glitter)
+
+        if explored:
+            self.actions = []
+        elif self.actions != []:
+            action = self.actions.pop(0)
+            self.previousActions.append(action)
+            logger.debug('Autopilot is active!')
+            return action
+
         #print(list(map(str, self.world.keys())))
 
         # We need to add all neighboring nodes to the graph to reason about them.
@@ -270,27 +277,11 @@ class ASPAgent():
 
         interesting = {
             'goal': (int, int, Orientation, int),
-            'candidate': (int, int, Orientation, int),
             'do': (Action,),
             'safe': (int, int),
-            'cell': (int, int),
-            'bump': (int, int),
             'bad': (int,),
-            'size': (int,),
-            #'facing': (int, int),
-            'explored': (int, int),
-            #'danger': (int, int),
-            'gold': (int, int),
-            'grabbed': (),
-            'canExplore': (),
-            'toExplore': (int,int),
             'currentMode': (Mode,),
-            'wumpus': (int,int),
-            'stench': (int,int),
-            'possiblePit': (int,int,int,int),
-            'pit': (int,int),
-            'notExplored': (int,int),
-            'breeze': (int,int),
+            'autopilot': (),
         }
 
         # 2. Run solver.
@@ -349,7 +340,38 @@ class ASPAgent():
                         logger.debug('No comment describing bad({}). Add a line starting with \'%{} \' followed by a description.'.format(terms[0], terms[0]))
             return None
 
-        action = result['do'][0][1][0]
+        autopilot = False
+        # TODO: Autopilot is not aware of pits/wumpus, therefore unsafe to use...
+        if 'autopilot' in result and False:
+            autopilot = result['autopilot']
+            if len(autopilot) == 0:
+                autopilot = False
+            else:
+                autopilot, _ = autopilot[0]
+
+        if autopilot:
+            #print('here {} {}'.format(*here))
+            goal = next((Location(x, y), o) for sign, [x, y, o, _] in result['goal'] if sign)
+            #print('goal {} {}'.format(*goal))
+            actions = paths[goal]
+            nextCell, _ = actions[1]
+            if nextCell not in self.world:
+                action = result['do'][0][1][0]
+                self.actions = []
+            else:
+                #for goal in actions:
+                    #print('p {} {}'.format(*goal))
+                actions = zip(actions, actions[1:])
+                actions = list(flatten(map(lambda x: self.decodeAction(*x), actions)))[::-1]
+                #for goal in actions:
+                    #print('s {}'.format(goal))
+                action = actions.pop(0)
+                self.actions = actions
+        else:
+            #print("READING")
+            action = result['do'][0][1][0]
+
+        #print(action)
         self.previousActions.append(action)
         logger.debug('=' * 20)
         return action
