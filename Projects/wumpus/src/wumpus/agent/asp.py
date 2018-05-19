@@ -228,7 +228,8 @@ class ASPAgent():
         knowledge = [
             fact(True, 'now', [self.position.x, self.position.y, self.orientation.toSymbol()]),
             fact(self.wumpusDead, 'wumpusDead'),
-            fact(Action.GRAB in self.previousActions, 'grabbed')
+            fact(Action.GRAB in self.previousActions, 'grabbed'),
+            fact(Action.SHOOT not in self.previousActions, 'haveArrow'),
         ]
 
         if self.bump != None:

@@ -6,6 +6,7 @@
 %  breeze(X,Y)  ...               breeze
 %  glitter(X,Y) ...               glitter
 %  wumpusDead   ... The wumpus is dead.
+%  haveArrow    ... We have an arrow that we may shoot.
 
 diff(X1,Y1,X2,Y2) :- X1 != X2, cell(X1,Y1), cell(X2,Y2).
 diff(X1,Y1,X2,Y2) :- Y1 != Y2, cell(X1,Y1), cell(X2,Y2).
@@ -36,12 +37,11 @@ neighbor(X1,Y1,X2,Y2,down ) :- cell(X1,Y1), cell(X2,Y2), X2 = X1, Y2 = Y1 - 1.
 
 anyNeighbor(X1,Y1,X2,Y2) :- neighbor(X1,Y1,X2,Y2,O), orientation(O).
 
-% Cells that are in front of the agent.
-% TODO: Deactivated for now. We will need it for the kill mode.
-%facing(X,Y) :- cell(X,Y), Z < Y, now(X,Z,up   ).
-%facing(X,Y) :- cell(X,Y), Y < Z, now(X,Z,left ).
-%facing(X,Y) :- cell(X,Y), Z < X, now(Z,Y,right).
-%facing(X,Y) :- cell(X,Y), X < Z, now(Z,Y,down ).
+% Cells that agree on one component.
+facing(X,Z,up,X,Y) :- cell(X,Y), Z < Y, cell(X,Z).
+facing(X,Z,down,X,Y) :- cell(X,Y), Y < Z, cell(X,Z).
+facing(Z,Y,right,X,Y) :- cell(X,Y), Z < X, cell(Z,Y).
+facing(Z,Y,left,X,Y) :- cell(X,Y), X < Z, cell(Z,Y).
 
 % Complete information about information. We only do this here and
 % not in Python since we might have assumed a size.
@@ -55,6 +55,9 @@ anyNeighbor(X1,Y1,X2,Y2) :- neighbor(X1,Y1,X2,Y2,O), orientation(O).
 %       the wumpus is in the same place as the gold.
 %do(shoot) :- wumpus(X,Y), facing(X,Y), currentMode(kill).
 
+shouldShoot :- currentMode(kill), canKillWumpus(X,Y,O), now(X,Y,O).
+do(shoot) :- shouldShoot.
+
 % Pick gold if there's some in the cell.
 shouldGrab :- now(X,Y,_), glitter(X,Y).
 do(grab) :- shouldGrab.
@@ -65,7 +68,6 @@ do(climb) :- shouldClimb.
 
 % DETECTION OF WUMPUS
 
-
 wumpus(X1,Y1) :- anyNeighbor(X1,Y1,X2,Y2), anyNeighbor(X1,Y1,X3,Y3), diff(X2,Y2,X3,Y3), anyNeighbor(X2,Y2,X4,Y4), anyNeighbor(X3,Y3,X4,Y4), diff(X1,Y1,X4,Y4), stench(X2,Y2), stench(X3,Y3), explored(X4,Y4), -wumpusDead.
 
 % Antipodal matching.
@@ -74,8 +76,13 @@ wumpus(X1,Y1) :- anyNeighbor(X1,Y1,X2,Y2), anyNeighbor(X1,Y1,X3,Y3), diff(X2,Y2,
 % Auxiliary flag to signal detection of wumpus.
 wumpusDetected :- cell(X,Y), wumpus(X,Y).
 
+canKillWumpus(XS,YS,OS) :- wumpus(XW,YW), -wumpusDead, safe(XS,YS), facing(XS,YS,OS,XW,YW), haveArrow.
+shouldKillWumpus :- canKillWumpus(_,_,_), wumpus(XW,YW), not possiblePit(XB,YB,XW,YW), cell(XB,YB).
+
+candidate(XS,YS,OS,C) :- pathCost(XS,YS,OS,C), canKillWumpus(XS,YS,OS), currentMode(kill).
+
 % If wumpus is not certainly detected, we must exclude other cells where it might be.
-possibleWumpus(X2,Y2) :- anyNeighbor(X1,Y1,X2,Y2), stench(X1,Y1), not wumpusDetected, -explored(X2,Y2).
+possibleWumpus(X2,Y2) :- anyNeighbor(X1,Y1,X2,Y2), stench(X1,Y1), not wumpusDetected, -explored(X2,Y2), -wumpusDead.
 
 % DETECTION OF PITS
 
@@ -126,14 +133,15 @@ foundGoal :- goal(_,_,_,_).
 
 goal(X,Y,O,C) v -goal(X,Y,O,C) :- candidate(X,Y,O,C).
 
-do(A) :- goal(X,Y,O,_), towards(X,Y,O,A), not shouldGrab, not shouldClimb.
+do(A) :- goal(X,Y,O,_), towards(X,Y,O,A), not shouldGrab, not shouldClimb, not shouldShoot.
 
 %autopilot :- foundGoal, not shouldGrab, not shouldClimb, currentMode(explore).
 
 % MODES
 
 currentMode(explore) :- canExplore, -grabbed.
-currentMode(escape) :- not currentMode(explore).
+currentMode(escape) :- not currentMode(explore), not currentMode(kill).
+currentMode(kill) :- not currentMode(explore), canKillWumpus(_,_,_), shouldKillWumpus.
 
 % CONSISTENCY
 
