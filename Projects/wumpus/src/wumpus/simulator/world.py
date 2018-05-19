@@ -136,7 +136,19 @@ class World():
             self.agentHasArrow = False
             if not self.wumpusAlive:
                 return
-            if self.wumpus == self.agentLocation.getAdjacent(self.agentOrientation, self.worldSize):
+
+            if (((self.agentOrientation == Orientation.RIGHT) and
+                 (self.agentLocation.x < self.wumpus.x) and
+                 (self.agentLocation.y == self.wumpus.y)) or
+                ((self.agentOrientation == Orientation.UP) and
+                 (self.agentLocation.x == self.wumpus.x) and
+                 (self.agentLocation.y < self.wumpus.y)) or
+                ((self.agentOrientation == Orientation.LEFT) and
+                 (self.agentLocation.x > self.wumpus.x) and
+                 (self.agentLocation.y == self.wumpus.y)) or
+                ((self.agentOrientation == Orientation.DOWN) and
+                 (self.agentLocation.x == self.wumpus.x) and
+                 (self.agentLocation.y > self.wumpus.y))):
                 self.wumpusAlive = False
                 self.percept = Percept(
                     self.percept.stench,
