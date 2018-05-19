@@ -43,19 +43,16 @@ facing(X,Z,down,X,Y) :- cell(X,Y), Y < Z, cell(X,Z).
 facing(Z,Y,right,X,Y) :- cell(X,Y), Z < X, cell(Z,Y).
 facing(Z,Y,left,X,Y) :- cell(X,Y), X < Z, cell(Z,Y).
 
+-facing(X1,Y1,O,X2,Y2) :- not facing(X1,Y1,O,X2,Y2), cell(X1,Y1), orientation(O), cell(X2,Y2).
+
 % Complete information about information. We only do this here and
 % not in Python since we might have assumed a size.
 -explored(X,Y) :- cell(X,Y), not explored(X,Y).
 
 % HIGH PRIORITY ACTIONS
 
-% When to shoot at the wumpus?
-% TODO: Shooting the wumpus is costly. We should only
-%       do so in case the wumpus blocks the way or
-%       the wumpus is in the same place as the gold.
-%do(shoot) :- wumpus(X,Y), facing(X,Y), currentMode(kill).
-
 shouldShoot :- currentMode(kill), canKillWumpus(X,Y,O), now(X,Y,O).
+shouldShoot :- currentMode(kill), canTryToKillWumpus(X,Y,O), now(X,Y,O).
 do(shoot) :- shouldShoot.
 
 % Pick gold if there's some in the cell.
@@ -71,7 +68,7 @@ do(climb) :- shouldClimb.
 wumpus(X1,Y1) :- anyNeighbor(X1,Y1,X2,Y2), anyNeighbor(X1,Y1,X3,Y3), diff(X2,Y2,X3,Y3), anyNeighbor(X2,Y2,X4,Y4), anyNeighbor(X3,Y3,X4,Y4), diff(X1,Y1,X4,Y4), stench(X2,Y2), stench(X3,Y3), explored(X4,Y4), -wumpusDead.
 
 % Antipodal matching.
-%wumpus(X2,Y2) :- neighbor(X1,Y1,X2,Y2,A), neighbor(X2,Y2,X3,Y3,A), stench(X1,Y1), stench(X3,Y3), diff(X1,Y1,X3,Y3), axis(A), -wumpusDead.
+wumpus(X2,Y2) :- neighbor(X1,Y1,X2,Y2,A), neighbor(X2,Y2,X3,Y3,A), stench(X1,Y1), stench(X3,Y3), diff(X1,Y1,X3,Y3), axis(A), -wumpusDead.
 
 % Auxiliary flag to signal detection of wumpus.
 wumpusDetected :- cell(X,Y), wumpus(X,Y).
@@ -79,10 +76,16 @@ wumpusDetected :- cell(X,Y), wumpus(X,Y).
 canKillWumpus(XS,YS,OS) :- wumpus(XW,YW), -wumpusDead, safe(XS,YS), facing(XS,YS,OS,XW,YW), haveArrow.
 shouldKillWumpus :- canKillWumpus(_,_,_), wumpus(XW,YW), not possiblePit(XB,YB,XW,YW), cell(XB,YB).
 
+canTryToKillWumpus(X,Y,O) :- possibleWumpus(XC,YC), safe(X,Y), facing(X,Y,O,XC,YC), not possiblePit(XB,YB,X,Y), cell(XB,YB), haveArrow.
+shouldTryToKillWumpus :- not shouldKillWumpus, canTryToKillWumpus(_,_,_).
+
 candidate(XS,YS,OS,C) :- pathCost(XS,YS,OS,C), canKillWumpus(XS,YS,OS), currentMode(kill).
+candidate(XS,YS,OS,C) :- pathCost(XS,YS,OS,C), canTryToKillWumpus(XS,YS,OS), currentMode(kill).
 
 % If wumpus is not certainly detected, we must exclude other cells where it might be.
-possibleWumpus(X2,Y2) :- anyNeighbor(X1,Y1,X2,Y2), stench(X1,Y1), not wumpusDetected, -explored(X2,Y2), -wumpusDead.
+possibleWumpus(X2,Y2) :- anyNeighbor(X1,Y1,X2,Y2), stench(X1,Y1), not wumpusDetected, -explored(X2,Y2), -wumpusDead, not shotAt(X2,Y2).
+
+shotAt(X,Y) :- shot(XS,YS,OS), facing(XS,YS,OS,X,Y).
 
 % DETECTION OF PITS
 
@@ -141,7 +144,8 @@ do(A) :- goal(X,Y,O,_), towards(X,Y,O,A), not shouldGrab, not shouldClimb, not s
 
 currentMode(explore) :- canExplore, -grabbed.
 currentMode(escape) :- not currentMode(explore), not currentMode(kill).
-currentMode(kill) :- not currentMode(explore), canKillWumpus(_,_,_), shouldKillWumpus.
+currentMode(kill) :- not currentMode(explore), shouldKillWumpus, -grabbed.
+currentMode(kill) :- not currentMode(explore), shouldTryToKillWumpus, -grabbed.
 
 % CONSISTENCY
 
@@ -202,4 +206,7 @@ bad(12) :- explored(X,Y), notExplored(X,Y).
 bad(13) :- cell(X,Y), -safe(X,Y), explored(X,Y).
 
 %14 We are in explore mode, have no triggers to climb or shoot, but still did not find a goal.
-bad(14) :- not foundGoal, not shouldGrab, not shouldClimb, mode(explore).
+bad(14) :- not foundGoal, not shouldGrab, not shouldClimb, currentMode(explore).
+
+%15 We are shooting even though we do not have the arrow anymore.
+bad(15) :- do(shoot), -haveArrow.

@@ -91,6 +91,7 @@ class ASPAgent():
     def __init__(self, init=None):
         self.dlv = dlv()
         self.actions = []
+        self.shot = None
 
         if init == None:
             # Assume some large world. Will get adjusted once we bump.
@@ -128,6 +129,12 @@ class ASPAgent():
 
     def process(self, percept):
         prevAct = self.previousAction()
+
+        if prevAct == Action.SHOOT:
+            if self.shot != None:
+                logger.debug('We appear to be shooting a second time.')
+                return None
+            self.shot = (self.position, self.orientation)
 
         # Infer size of the world.
         if percept.bump:
@@ -232,6 +239,9 @@ class ASPAgent():
 
         if self.bump != None:
             knowledge.append(fact(True, 'bump', [self.bump.x, self.bump.y]))
+
+        if self.shot != None:
+            knowledge.append(fact(True, 'shot', [self.shot[0].x, self.shot[0].y, self.shot[1].toSymbol()]))
 
         for l in self.world:
             stench, breeze, glitter = self.world[l]
