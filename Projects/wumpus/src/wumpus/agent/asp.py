@@ -1,4 +1,5 @@
 from functools  import reduce
+from itertools  import product
 from os.path    import dirname, join
 from os         import remove
 from subprocess import PIPE, STDOUT, run
@@ -62,7 +63,6 @@ def parse(a, interesting):
             else:
                 terms = list(map(int, terms))
 
-
         if predicate in result:
             result[predicate].append((not neg, terms))
         else:
@@ -105,21 +105,69 @@ class ASPAgent():
             self.previousActions = []
             self.wumpusDead = False
             self.bump = None
+
+            # We build a graph that respresents reachability (with cost) for all cells.
+            self.g = nx.DiGraph()
+            for o in Orientation:
+                self.g.add_node((self.position, o), label='{} {}'.format(self.position, o))
         else:
             logger.debug('We are cheating!')
             self.size = init.worldSize
-
             self.world = {}
+            self.g = nx.DiGraph()
+
+            r = range(1, self.size + 1)
+            for x, y in product(r, r):
+                l = Location(x, y)
+                breeze, stench, glitter = False, False, False
+                for n in l.neighbors(self.size):
+                    if n in init.pits:
+                        breeze = True
+                    if n == init.wumpus:
+                        stench = True
+                    if n == init.gold:
+                        glitter = True
+
+                self.world[l] = (breeze, stench, glitter)
+
+                for o in Orientation:
+                    a = l.getAdjacent(o, self.size)
+
+                    if a == None:
+                        continue
+
+                    self.g.add_node((a, o), location=a, orientation=o, label='{} {}'.format(a, o))
+
+                    self.g.add_edge(
+                        (l, o),
+                        (a, o),
+                        cost=1,# if noWumpusThere else 10,
+                        action=[Action.GOFORWARD],# if noWumpusThere else [Action.SHOOT, Action.GOFORWARD]
+                        label=str(Action.GOFORWARD)
+                    )
+
+                for action in {Action.TURNLEFT, Action.TURNRIGHT}:
+                    # Case 2a: We turn once.
+                    oa = o.turn(action)
+                    self.g.add_edge((l, o), (l, oa), cost=1, action=[action], label=str(action))
+
+                    # Case 2b: We turn twice.
+                    ob = oa.turn(action)
+                    self.g.add_edge((l, oa), (l, ob), cost=1, action=[action], label=str(action))
+
+                    # Case 2b: We turn twice.
+                    oc = ob.turn(action)
+                    self.g.add_edge((l, ob), (l, oc), cost=1, action=[action], label=str(action))
+
+                    # Case 2b: We turn twice.
+                    od = oc.turn(action)
+                    self.g.add_edge((l, oc), (l, od), cost=1, action=[action], label=str(action))
+
             self.position = Location(1, 1)
             self.orientation = Orientation.RIGHT
             self.previousActions = []
             self.wumpusDead = False
             self.bump = Location(self.size + 1, 1)
-
-        # We build a graph that respresents reachability (with cost) for all cells.
-        self.g = nx.DiGraph()
-        for o in Orientation:
-            self.g.add_node((self.position, o), label='{} {}'.format(self.position, o))
 
     def previousAction(self):
         return None if self.previousActions == [] else self.previousActions[-1]
