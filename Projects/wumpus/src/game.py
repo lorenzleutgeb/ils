@@ -13,8 +13,6 @@ MAX_MOVES = 1000
 
 def main():
     worldSize = 4
-    numTrials = 1
-    numTries = 1
     seedV = None
     worldFile = None
     agentName = 'proxy'
@@ -24,15 +22,11 @@ def main():
     debug = '-debug' in argv
 
     if debug:
-        logging.basicConfig(level=logging.DEBUG)
+        logging.basicConfig(level=logging.DEBUG, format='')
 
     for arg, val in zip(argv[1:], argv[2:]):
         if arg == "-size":
             worldSize = max(2, int(val))
-        elif arg == "-trials":
-            numTrials = int(val)
-        elif arg == "-tries":
-            numTries = int(val)
         elif arg == "-seed":
             seedV = bytes.fromhex(val)
         elif arg == "-world":
@@ -54,14 +48,12 @@ def main():
         generate(worldSize, seedV, base)
     else:
         if not porcelain:
-            print("seed := " + seedV)
+            print("World " + seedV)
 
         play(
             worldSize,
             worldFile,
             agentName,
-            numTrials,
-            numTries,
             porcelain
         )
 
@@ -80,71 +72,46 @@ def generate(worldSize, seedV, base):
     with open(fname, 'a') as f:
         f.write('optimum {}\n'.format(world.getScore()))
 
-def play(worldSize, worldFile, agentName, numTrials, numTries, porcelain):
-    # Run trials
+def play(worldSize, worldFile, agentName, porcelain):
     wumpusWorld: World = None
     agent = None
     percept: Percept = None
     action: Action = None
-    score = 0
-    trialScore = 0
-    totalScore = 0
-    averageScore = 0
     numMoves = 0
 
-    for trial in range(1, numTrials + 1):
-        if worldFile != None:
-            wumpusWorld = World.readFrom(worldFile)
-        else:
-            wumpusWorld = World(worldSize)
+    if worldFile != None:
+        wumpusWorld = World.readFrom(worldFile)
+    else:
+        wumpusWorld = World(worldSize)
 
-        wumpusWorld.writeTo('last-world.txt')
+    wumpusWorld.writeTo('last-world.txt')
 
-        if agentName == 'proxy':
-            agent = ProxyAgent()
-        elif agentName == 'perfect':
-            agent = PerfectAgent(wumpusWorld)
-        elif agentName == 'asp':
-            agent = ASPAgent()
-        elif agentName == 'asp-cheat':
-            agent = ASPAgent(wumpusWorld)
+    if agentName == 'proxy':
+        agent = ProxyAgent()
+    elif agentName == 'perfect':
+        agent = PerfectAgent(wumpusWorld)
+    elif agentName == 'asp':
+        agent = ASPAgent()
+    elif agentName == 'asp-cheat':
+        agent = ASPAgent(wumpusWorld)
 
-        trialScore = 0
-        for tries in range(1, numTries + 1):
-            #wumpusWorld.Initialize()
-            #agent.Initialize()
-            numMoves = 0
-            if not porcelain:
-                print(str(trial) + ":" + str(tries))
+    numMoves = 0
 
-            aborted = False
-            while (not(wumpusWorld.isGameOver())) and (numMoves < MAX_MOVES):
-                if not porcelain:
-                    wumpusWorld.printTo(stdout)
-                percept = wumpusWorld.percept
-                action = agent.process(percept)
-                if action == None:
-                    aborted = True
-                    break
-                wumpusWorld.execute(action)
-                numMoves += 1
-
-            score = -MAX_MOVES if aborted else wumpusWorld.getScore()
-
-            if porcelain:
-                print(score if not aborted else '!')
-            else:
-                trialScore = trialScore + score
-                print("Trial " + str(trial) + ", Try " + str(tries) + " complete: Score = " + str(score))
-
+    aborted = False
+    while (not(wumpusWorld.isGameOver())) and (numMoves < MAX_MOVES):
         if not porcelain:
-            averageScore = (trialScore) / (numTries)
-            print("Trial " + str(trial) + " complete: Average score for trial = " + str(averageScore))
-            totalScore = totalScore + trialScore
+            wumpusWorld.printTo(stdout)
+        percept = wumpusWorld.percept
+        action = agent.process(percept)
+        if action == None:
+            aborted = True
+            break
+        wumpusWorld.execute(action)
+        numMoves += 1
 
-    if not porcelain:
-        averageScore = (totalScore) / ((numTrials * numTries))
-        print("All trials completed: Average score for all trials = " + str(averageScore))
+    score = -MAX_MOVES if aborted else wumpusWorld.getScore()
+
+    print(score if not aborted else '!')
 
 if __name__ == "__main__":
     main()

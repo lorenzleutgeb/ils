@@ -430,5 +430,5 @@ class ASPAgent():
 
         #print(action)
         self.previousActions.append(action)
-        logger.debug('=' * 20)
+        logger.debug('═' * 80)
         return action
