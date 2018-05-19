@@ -113,6 +113,13 @@ class World():
                 self.agentAlive = not (fallsIntoPit or eatenByWumpus)
         elif action in {Action.TURNLEFT, Action.TURNRIGHT}:
             self.agentOrientation = self.agentOrientation.turn(action)
+            self.percept = Percept(
+                self.percept.stench,
+                self.percept.breeze,
+                self.percept.glitter,
+                False,
+                False
+            )
         elif action == Action.GRAB:
             if not self.agentHasGold and self.agentLocation == self.gold:
                 self.agentHasGold = True
