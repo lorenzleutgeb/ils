@@ -34,6 +34,17 @@ neighbor(X1,Y1,X2,Y2,down ) :- cell(X1,Y1), cell(X2,Y2), X2 = X1, Y2 = Y1 - 1.
 
 anyNeighbor(X1,Y1,X2,Y2) :- neighbor(X1,Y1,X2,Y2,O), orientation(O).
 
+twoNeighbors(X1,Y1,X2,Y2,X3,Y3) :- anyNeighbor(X1,Y1,X2,Y2), anyNeighbor(X1,Y1,X3,Y3), diff(X2,Y2,X3,Y3).
+
+corner(1,1).
+corner(X,1) :- cell(X,1), sizeKnown, size(X).
+corner(1,Y) :- cell(1,Y), sizeKnown, size(Y).
+corner(S,S) :- cell(S,S), sizeKnown, size(S).
+
+square(X1,Y1,X2,Y2,X3,Y3,X4,Y4) :- twoNeighbors(X1,Y1,X2,Y2,X3,Y3), twoNeighbors(X4,Y4,X2,Y2,X3,Y3), diff(X1,Y1,X4,Y4).
+
+triple(X1,Y1,X2,Y2,X3,Y3) :- neighbor(X1,Y1,X2,Y2,A), neighbor(X2,Y2,X3,Y3,A), diff(X1,Y1,X3,Y3), axis(A).
+
 % Cells that agree on one component.
 facing(X,Z,up,X,Y) :- cell(X,Y), Z < Y, cell(X,Z).
 facing(X,Z,down,X,Y) :- cell(X,Y), Y < Z, cell(X,Z).
@@ -66,10 +77,13 @@ do(A) :- goal(X,Y,O,_), towards(X,Y,O,A), not shouldGrab, not shouldClimb, not s
 
 % DETECTION OF WUMPUS
 
-wumpus(X1,Y1) :- anyNeighbor(X1,Y1,X2,Y2), anyNeighbor(X1,Y1,X3,Y3), diff(X2,Y2,X3,Y3), anyNeighbor(X2,Y2,X4,Y4), anyNeighbor(X3,Y3,X4,Y4), diff(X1,Y1,X4,Y4), stench(X2,Y2), stench(X3,Y3), explored(X4,Y4), -wumpusDead.
+wumpus(X1,Y1) :- square(X1,Y1,X2,Y2,X3,Y3,X4,Y4), stench(X2,Y2), stench(X3,Y3), explored(X4,Y4), -wumpusDead.
 
 % Antipodal matching.
-wumpus(X2,Y2) :- neighbor(X1,Y1,X2,Y2,A), neighbor(X2,Y2,X3,Y3,A), stench(X1,Y1), stench(X3,Y3), diff(X1,Y1,X3,Y3), axis(A), -wumpusDead.
+wumpus(X2,Y2) :- triple(X1,Y1,X2,Y2,X3,Y3), stench(X1,Y1), stench(X3,Y3), -wumpusDead.
+
+% Corner case.
+wumpus(XW,YW) :- stench(XC,YC), corner(XC,YC), twoNeighbors(XC,YC,XW,YW,XE,YE), explored(XE,YE), -wumpusDead.
 
 % Auxiliary flag to signal detection of wumpus.
 wumpusDetected :- cell(X,Y), wumpus(X,Y).
@@ -81,13 +95,13 @@ shotAt(X,Y) :- shot(XS,YS,OS), facing(XS,YS,OS,X,Y).
 % DETECTION OF PITS
 
 % Any explored cell certainly cannot be a pit, otherwise we would be dead by now.
-cannotBePit(X,Y) :- explored(X,Y).
+-pit(X,Y) :- explored(X,Y).
 
 % If we have explored a cell already and felt no brezee, then no neighbor can be a pit.
-cannotBePit(X2,Y2) :- -breeze(X1,Y1), anyNeighbor(X1,Y1,X2,Y2).
+-pit(X2,Y2) :- -breeze(X1,Y1), anyNeighbor(X1,Y1,X2,Y2).
 
 % A neighbor of a breeze is a possible pit if it can be.
-possiblePit(XB,YB,XP,YP) :- breeze(XB,YB), anyNeighbor(XB,YB,XP,YP), not cannotBePit(XP,YP).
+possiblePit(XB,YB,XP,YP) :- breeze(XB,YB), anyNeighbor(XB,YB,XP,YP), not -pit(XP,YP).
 
 % SAFETY OF CELLS
 
