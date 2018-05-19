@@ -17,9 +17,11 @@ from networkx.algorithms.shortest_paths.generic import shortest_path
 from ..common    import Action, Orientation, Location
 from ..simulator import World
 from ..util      import dlv
+from .mode       import Mode
 
 # For debugging:
-#logging.basicConfig(level=logging.DEBUG)
+logging.basicConfig(level=logging.DEBUG)
+PRINT_KNOWLEDGE=False
 
 logger = logging.getLogger('asp-agent')
 
@@ -98,6 +100,7 @@ class ASPAgent():
             self.orientation = Orientation.RIGHT
             self.previousActions = []
             self.wumpusDead = False
+            self.bump = None
         else:
             logger.debug('We are cheating!')
             self.size = init.worldSize
@@ -107,6 +110,7 @@ class ASPAgent():
             self.orientation = Orientation.RIGHT
             self.previousActions = []
             self.wumpusDead = False
+            self.bump = Location(self.size + 1, 1)
 
         # We build a graph that respresents reachability (with cost) for all cells.
         self.g = nx.DiGraph()
@@ -122,6 +126,21 @@ class ASPAgent():
         # Infer size of the world.
         if percept.bump:
             self.size = max(self.position.x, self.position.y)
+            self.bump = self.position.getAdjacent(self.orientation, self.size + 1)
+            # for i in range(1, self.size + 1):
+            #     for l in [Location(self.size + 1, i), Location(i, self.size + 1)]:
+            #         print("IAMHERE")
+            #         for k in self.world.keys():
+            #             if k == l:
+            #                 print('MATCH')
+            #             else:
+            #                 print('{} != {}'.format(k,l))
+            #         print(l)
+            #         if l in self.world:
+            #             print("IREMOVE")
+            #             del self.world[l]
+            #         else:
+            #             print(self.world)
             # TODO: Remove unnecessary nodes from self.g.
 
         # If we moved without bump, account for the move!
@@ -138,6 +157,7 @@ class ASPAgent():
         explored = self.position not in self.world
 
         self.world[self.position] = (percept.stench, percept.breeze, percept.glitter)
+        #print(list(map(str, self.world.keys())))
 
         # We need to add all neighboring nodes to the graph to reason about them.
         # Once we explore a new state, we need to add to the graph the possibility
@@ -204,21 +224,19 @@ class ASPAgent():
             fact(Action.GRAB in self.previousActions, 'grabbed')
         ]
 
-        if self.size < 100:
-            knowledge.append(fact(True, 'bumpedSize', [self.size]))
+        if self.bump != None:
+            knowledge.append(fact(True, 'bump', [self.bump.x, self.bump.y]))
 
         for l in self.world:
             stench, breeze, glitter = self.world[l]
             knowledge.append(fact(stench, 'stench', [l.x, l.y]))
             knowledge.append(fact(breeze, 'breeze', [l.x, l.y]))
             knowledge.append(fact(glitter, 'glitter', [l.x, l.y]))
-
-        for l, o in self.g:
-            knowledge.append(fact(l in self.world, 'explored', [l.x, l.y]))
+            knowledge.append(fact(True, 'explored', [l.x, l.y]))
 
         for s in paths:
             (x, y), o = s
-            knowledge.append(fact(True, 'pathCost', [x, y, o.toSymbol(), len(paths[s])]))
+            knowledge.append(fact(True, 'pathCost', [x, y, o.toSymbol(), len(paths[s]) - 1]))
             if len(paths[s]) < 2:
                 continue
             u = paths[s][0]
@@ -226,10 +244,11 @@ class ASPAgent():
             a = self.g.get_edge_data(u, v)['action']
             knowledge.append(fact(True, 'towards',  [x, y, o.toSymbol(), a[0].toSymbol()]))
 
-        for i, a in enumerate(self.previousActions):
-            knowledge.append("previousAction({},{}).".format(i, a.toSymbol()))
+        #for i, a in enumerate(self.previousActions):
+        #    knowledge.append("previousAction({},{}).".format(i, a.toSymbol()))
 
-        logger.debug('  '.join(knowledge))
+        if PRINT_KNOWLEDGE:
+            logger.debug('\n'.join(knowledge))
 
         # Plot the graph in case we explored something (debugging).
         if explored and False:
@@ -254,15 +273,24 @@ class ASPAgent():
             'candidate': (int, int, Orientation, int),
             'do': (Action,),
             'safe': (int, int),
+            'cell': (int, int),
+            'bump': (int, int),
             'bad': (int,),
-            'facing': (int, int),
+            'size': (int,),
+            #'facing': (int, int),
             'explored': (int, int),
-            'danger': (int, int),
+            #'danger': (int, int),
             'gold': (int, int),
             'grabbed': (),
-            'currentMode': (int,),
+            'canExplore': (),
+            'toExplore': (int,int),
+            'currentMode': (Mode,),
             'wumpus': (int,int),
             'stench': (int,int),
+            'possiblePit': (int,int,int,int),
+            'pit': (int,int),
+            'notExplored': (int,int),
+            'breeze': (int,int),
         }
 
         # 2. Run solver.
@@ -271,6 +299,7 @@ class ASPAgent():
             [
                 self.dlv,
                 '-silent',
+                #'-det',
                 '-filter=' + ','.join(interesting),
                 join(d, 'constants.asp'),
                 kfname,
@@ -321,7 +350,6 @@ class ASPAgent():
             return None
 
         action = result['do'][0][1][0]
-        logger.debug(action)
         self.previousActions.append(action)
-        logger.debug('\n\n' + '=' * 20 + '\n\n')
+        logger.debug('=' * 20)
         return action

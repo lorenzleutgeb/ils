@@ -51,8 +51,8 @@ class Location():
         if type(other) != Location:
             raise ValueError('Why are you giving me this? ' + str(other))
 
-        if type(other) == tuple and len(other) == 2:
-            return self.x == other[0] and self.y == other[1]
+        # if type(other) == tuple and len(other) == 2:
+        #     return self.x == other[0] and self.y == other[1]
 
         if type(other) != Location:
             return False
