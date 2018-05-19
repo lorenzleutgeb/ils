@@ -2,6 +2,7 @@ from sys import argv, exit, stdout
 from random import seed
 from os import urandom
 from os.path import join
+import logging
 #import binascii import unhexlify, hexlify
 
 from wumpus.common import *
@@ -20,6 +21,10 @@ def main():
     generationMode = False
     base = None
     porcelain = '-porcelain' in argv
+    debug = '-debug' in argv
+
+    if debug:
+        logging.basicConfig(level=logging.DEBUG)
 
     for arg, val in zip(argv[1:], argv[2:]):
         if arg == "-size":

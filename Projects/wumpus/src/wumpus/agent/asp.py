@@ -20,8 +20,6 @@ from ..simulator import World
 from ..util      import dlv
 from .mode       import Mode
 
-# For debugging:
-#logging.basicConfig(level=logging.DEBUG)
 PRINT_KNOWLEDGE=False
 
 logger = logging.getLogger('asp-agent')
