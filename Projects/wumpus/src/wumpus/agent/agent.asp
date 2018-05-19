@@ -8,12 +8,6 @@
 %  wumpusDead   ... The wumpus is dead.
 %  haveArrow    ... We have an arrow that we may shoot.
 
-diff(X1,Y1,X2,Y2) :- X1 != X2, cell(X1,Y1), cell(X2,Y2).
-diff(X1,Y1,X2,Y2) :- Y1 != Y2, cell(X1,Y1), cell(X2,Y2).
-
-axis(up).
-axis(right).
-
 % WORLD SIZE DETECTION
 
 exploredSize(X) :- explored(X,_).
@@ -28,6 +22,9 @@ size(S) :- bump(X,Sm), Sm > X, S = Sm - 1.
 
 % Span the space of cells.
 cell(X,Y) :- #int(X), #int(Y), Y > 0, X > 0, Y <= S, X <= S, size(S).
+
+diff(X1,Y1,X2,Y2) :- X1 != X2, cell(X1,Y1), cell(X2,Y2).
+diff(X1,Y1,X2,Y2) :- Y1 != Y2, cell(X1,Y1), cell(X2,Y2).
 
 % Neighboring cells along the horizontal and vertical axis.
 neighbor(X1,Y1,X2,Y2,right) :- cell(X1,Y1), cell(X2,Y2), X2 = X1 + 1, Y2 = Y1.
@@ -49,19 +46,23 @@ facing(Z,Y,left,X,Y) :- cell(X,Y), X < Z, cell(Z,Y).
 % not in Python since we might have assumed a size.
 -explored(X,Y) :- cell(X,Y), not explored(X,Y).
 
-% HIGH PRIORITY ACTIONS
+% DO
 
-shouldShoot :- currentMode(kill), canKillWumpus(X,Y,O), now(X,Y,O).
-shouldShoot :- currentMode(kill), canTryToKillWumpus(X,Y,O), now(X,Y,O).
+shouldShoot :- currentMode(kill), now(X,Y,O), canKillWumpus(X,Y,O).
+shouldShoot :- currentMode(kill), now(X,Y,O), canTryToKillWumpus(X,Y,O).
 do(shoot) :- shouldShoot.
 
-% Pick gold if there's some in the cell.
+% Pick gold if there's some in the cell, independently of the current mode.
 shouldGrab :- now(X,Y,_), glitter(X,Y).
 do(grab) :- shouldGrab.
 
 % Climb if gold is picked and back to initial cell.
 shouldClimb :- now(1,1,_), currentMode(escape).
 do(climb) :- shouldClimb.
+
+% Generally we will be turning and go forward towards a goal. Exceptions are when we
+% want to take high priority actions like grabbing, climbing or shooting.
+do(A) :- goal(X,Y,O,_), towards(X,Y,O,A), not shouldGrab, not shouldClimb, not shouldShoot.
 
 % DETECTION OF WUMPUS
 
@@ -73,18 +74,8 @@ wumpus(X2,Y2) :- neighbor(X1,Y1,X2,Y2,A), neighbor(X2,Y2,X3,Y3,A), stench(X1,Y1)
 % Auxiliary flag to signal detection of wumpus.
 wumpusDetected :- cell(X,Y), wumpus(X,Y).
 
-canKillWumpus(XS,YS,OS) :- wumpus(XW,YW), -wumpusDead, safe(XS,YS), facing(XS,YS,OS,XW,YW), haveArrow.
-shouldKillWumpus :- canKillWumpus(_,_,_), wumpus(XW,YW), not possiblePit(XB,YB,XW,YW), cell(XB,YB).
-
-canTryToKillWumpus(X,Y,O) :- possibleWumpus(XC,YC), safe(X,Y), facing(X,Y,O,XC,YC), not possiblePit(XB,YB,X,Y), cell(XB,YB), haveArrow.
-shouldTryToKillWumpus :- not shouldKillWumpus, canTryToKillWumpus(_,_,_).
-
-candidate(XS,YS,OS,C) :- pathCost(XS,YS,OS,C), canKillWumpus(XS,YS,OS), currentMode(kill).
-candidate(XS,YS,OS,C) :- pathCost(XS,YS,OS,C), canTryToKillWumpus(XS,YS,OS), currentMode(kill).
-
 % If wumpus is not certainly detected, we must exclude other cells where it might be.
 possibleWumpus(X2,Y2) :- anyNeighbor(X1,Y1,X2,Y2), stench(X1,Y1), not wumpusDetected, -explored(X2,Y2), -wumpusDead, not shotAt(X2,Y2).
-
 shotAt(X,Y) :- shot(XS,YS,OS), facing(XS,YS,OS,X,Y).
 
 % DETECTION OF PITS
@@ -108,6 +99,8 @@ safe(X,Y) :- explored(X,Y).
 
 safe(X,Y) :- cell(X,Y), not -safe(X,Y).
 
+% EXPLORE MODE
+
 reachable(X,Y) :- pathCost(X,Y,_,_).
 
 toExplore(X,Y) :- reachable(X,Y), safe(X,Y), -explored(X,Y).
@@ -118,10 +111,23 @@ canExplore :- toExplore(_,_).
 % Interesting candidates are those cells that we have not yet explored
 % and we know that they are safe.
 candidate(X,Y,O,C) :- pathCost(X,Y,O,C), orientation(O), currentMode(explore), toExplore(X,Y).
+
+% ESCAPE MODE
+
 candidate(1,1,O,C) :- pathCost(1,1,O,C), orientation(O), currentMode(escape).
 
-%goal(X,Y,O,C) :- candidate(X,Y,O,C), 1 = #count{Xc,Yc,Oc,Cc: candidate(Xc,Yc,Oc,Cc)}.
-%strange(X,Y) :- candidate(X,Y,O,C), 1 = #count{Xc,Yc,Oc,Cc: candidate(Xc,Yc,Oc,Cc)}.
+% KILL MODE
+
+canKillWumpus(XS,YS,OS) :- wumpus(XW,YW), -wumpusDead, safe(XS,YS), facing(XS,YS,OS,XW,YW), haveArrow.
+shouldKillWumpus :- canKillWumpus(_,_,_), wumpus(XW,YW), not possiblePit(XB,YB,XW,YW), cell(XB,YB).
+
+canTryToKillWumpus(X,Y,O) :- possibleWumpus(XC,YC), safe(X,Y), facing(X,Y,O,XC,YC), not possiblePit(XB,YB,X,Y), cell(XB,YB), haveArrow.
+shouldTryToKillWumpus :- not shouldKillWumpus, canTryToKillWumpus(_,_,_).
+
+candidate(XS,YS,OS,C) :- pathCost(XS,YS,OS,C), canKillWumpus(XS,YS,OS), currentMode(kill).
+candidate(XS,YS,OS,C) :- pathCost(XS,YS,OS,C), canTryToKillWumpus(XS,YS,OS), currentMode(kill).
+
+% OPTIMIZATION FOR GOAL
 
 % Minimize cost of goals:
 :~ candidate(_,_,_,C1), candidate(X,Y,O,C2), C2 > C1, goal(X,Y,O,C2).
@@ -132,15 +138,13 @@ candidate(1,1,O,C) :- pathCost(1,1,O,C), orientation(O), currentMode(escape).
 :- goal(X,Y1,_,C), goal(X,Y2,_,C), Y1 < Y2.
 :- goal(X,Y,O1,C), goal(X,Y,O2,C), O1 < O2.
 
-foundGoal :- goal(_,_,_,_).
-
 goal(X,Y,O,C) v -goal(X,Y,O,C) :- candidate(X,Y,O,C).
 
-do(A) :- goal(X,Y,O,_), towards(X,Y,O,A), not shouldGrab, not shouldClimb, not shouldShoot.
+% AUTOPILOT
 
 %autopilot :- foundGoal, not shouldGrab, not shouldClimb, currentMode(explore).
 
-% MODES
+% MODE SELECTOR
 
 currentMode(explore) :- canExplore, -grabbed.
 currentMode(escape) :- not currentMode(explore), not currentMode(kill).
@@ -155,11 +159,6 @@ wouldBump :- now(1,_,left ).
 wouldBump :- now(_,S,up   ), size(S).
 wouldBump :- now(S,_,right), size(S).
 bad(0) :- do(goforward), wouldBump.
-
-%1 Cannot pick up something that's already been picked!
-% TODO: how to remove gold from knowledge once it's been collected?
-%       SOLUTION: at next call, add -gold(X,Y) to KB.
-bad(1) :- gold(X,Y), now(X,Y,_), goldPicked.
 
 %2 Don't shoot if the wumpus is already dead!
 bad(2) :- do(shoot), wumpusDead.
@@ -187,10 +186,6 @@ bad(8) :- wumpus(X1,Y), wumpus(X2,Y), X1 != X2.
 bad(8) :- wumpus(X,Y1), wumpus(X,Y2), Y1 != Y2.
 bad(8) :- wumpus(X1,Y1), wumpus(X2,Y2), X1 != X2, Y1 != Y2.
 
-%9 A pit must be a possible pit.
-%pitHasBreeze(X,Y) :- pit(X,Y), breeze(XB,YB), possiblePit(XB,YB,X,Y).
-%bad(9) :- pit(X,Y), not pitHasBreeze(X,Y).
-
 %10 There is a cell outside of the world. Whut?
 bad(10) :- cell(X,_), X > S, size(S).
 bad(10) :- cell(_,Y), Y > S, size(S).
@@ -206,6 +201,7 @@ bad(12) :- explored(X,Y), notExplored(X,Y).
 bad(13) :- cell(X,Y), -safe(X,Y), explored(X,Y).
 
 %14 We are in explore mode, have no triggers to climb or shoot, but still did not find a goal.
+foundGoal :- goal(_,_,_,_).
 bad(14) :- not foundGoal, not shouldGrab, not shouldClimb, currentMode(explore).
 
 %15 We are shooting even though we do not have the arrow anymore.
