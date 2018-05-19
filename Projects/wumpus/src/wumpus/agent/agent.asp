@@ -8,6 +8,9 @@
 %  wumpusDead   ... The wumpus is dead.
 %  haveArrow    ... We have an arrow that we may shoot.
 
+% We designate two orthogonal orientations as axes.
+axis(0..1).
+
 % WORLD SIZE DETECTION
 
 exploredSize(X) :- explored(X,_).
@@ -32,7 +35,7 @@ neighbor(X1,Y1,X2,Y2,up   ) :- cell(X1,Y1), cell(X2,Y2), X2 = X1, Y2 = Y1 + 1.
 neighbor(X1,Y1,X2,Y2,left ) :- cell(X1,Y1), cell(X2,Y2), X2 = X1 - 1, Y2 = Y1.
 neighbor(X1,Y1,X2,Y2,down ) :- cell(X1,Y1), cell(X2,Y2), X2 = X1, Y2 = Y1 - 1.
 
-anyNeighbor(X1,Y1,X2,Y2) :- neighbor(X1,Y1,X2,Y2,O), orientation(O).
+anyNeighbor(X1,Y1,X2,Y2) :- neighbor(X1,Y1,X2,Y2,O), isOrientation(O).
 
 twoNeighbors(X1,Y1,X2,Y2,X3,Y3) :- anyNeighbor(X1,Y1,X2,Y2), anyNeighbor(X1,Y1,X3,Y3), diff(X2,Y2,X3,Y3).
 
@@ -51,7 +54,7 @@ facing(X,Z,down,X,Y) :- cell(X,Y), Y < Z, cell(X,Z).
 facing(Z,Y,right,X,Y) :- cell(X,Y), Z < X, cell(Z,Y).
 facing(Z,Y,left,X,Y) :- cell(X,Y), X < Z, cell(Z,Y).
 
--facing(X1,Y1,O,X2,Y2) :- not facing(X1,Y1,O,X2,Y2), cell(X1,Y1), orientation(O), cell(X2,Y2).
+-facing(X1,Y1,O,X2,Y2) :- not facing(X1,Y1,O,X2,Y2), cell(X1,Y1), isOrientation(O), cell(X2,Y2).
 
 % Complete information about information. We only do this here and
 % not in Python since we might have assumed a size.
@@ -59,8 +62,8 @@ facing(Z,Y,left,X,Y) :- cell(X,Y), X < Z, cell(Z,Y).
 
 % DO
 
-shouldShoot :- currentMode(kill), now(X,Y,O), canKillWumpus(X,Y,O).
-shouldShoot :- currentMode(kill), now(X,Y,O), canTryToKillWumpus(X,Y,O).
+shouldShoot :- mode(kill), now(X,Y,O), canKill(X,Y,O).
+shouldShoot :- mode(kill), now(X,Y,O), canTryKill(X,Y,O).
 do(shoot) :- shouldShoot.
 
 % Pick gold if there's some in the cell, independently of the current mode.
@@ -68,7 +71,7 @@ shouldGrab :- now(X,Y,_), glitter(X,Y).
 do(grab) :- shouldGrab.
 
 % Climb if gold is picked and back to initial cell.
-shouldClimb :- now(1,1,_), currentMode(escape).
+shouldClimb :- now(1,1,_), mode(escape).
 do(climb) :- shouldClimb.
 
 % Generally we will be turning and go forward towards a goal. Exceptions are when we
@@ -124,22 +127,22 @@ canExplore :- toExplore(_,_).
 
 % Interesting candidates are those cells that we have not yet explored
 % and we know that they are safe.
-candidate(X,Y,O,C) :- pathCost(X,Y,O,C), orientation(O), currentMode(explore), toExplore(X,Y).
+candidate(X,Y,O,C) :- pathCost(X,Y,O,C), isOrientation(O), mode(explore), toExplore(X,Y).
 
 % ESCAPE MODE
 
-candidate(1,1,O,C) :- pathCost(1,1,O,C), orientation(O), currentMode(escape).
+candidate(1,1,O,C) :- pathCost(1,1,O,C), isOrientation(O), mode(escape).
 
 % KILL MODE
 
-canKillWumpus(XS,YS,OS) :- wumpus(XW,YW), -wumpusDead, safe(XS,YS), facing(XS,YS,OS,XW,YW), haveArrow.
-shouldKillWumpus :- canKillWumpus(_,_,_), wumpus(XW,YW), not possiblePit(XB,YB,XW,YW), cell(XB,YB).
+canKill(XS,YS,OS) :- wumpus(XW,YW), -wumpusDead, safe(XS,YS), facing(XS,YS,OS,XW,YW), haveArrow.
+shouldKill :- canKill(_,_,_), wumpus(XW,YW), not possiblePit(XB,YB,XW,YW), cell(XB,YB).
 
-canTryToKillWumpus(X,Y,O) :- possibleWumpus(XC,YC), safe(X,Y), facing(X,Y,O,XC,YC), not possiblePit(XB,YB,X,Y), cell(XB,YB), haveArrow.
-shouldTryToKillWumpus :- not shouldKillWumpus, canTryToKillWumpus(_,_,_).
+canTryKill(X,Y,O) :- possibleWumpus(XC,YC), safe(X,Y), facing(X,Y,O,XC,YC), not possiblePit(XB,YB,X,Y), cell(XB,YB), haveArrow.
+shouldTryKill :- not shouldKill, canTryKill(_,_,_).
 
-candidate(XS,YS,OS,C) :- pathCost(XS,YS,OS,C), canKillWumpus(XS,YS,OS), currentMode(kill).
-candidate(XS,YS,OS,C) :- pathCost(XS,YS,OS,C), canTryToKillWumpus(XS,YS,OS), currentMode(kill).
+candidate(XS,YS,OS,C) :- pathCost(XS,YS,OS,C), canKill(XS,YS,OS), mode(kill).
+candidate(XS,YS,OS,C) :- pathCost(XS,YS,OS,C), canTryKill(XS,YS,OS), mode(kill).
 
 % OPTIMIZATION FOR GOAL
 
@@ -156,14 +159,14 @@ goal(X,Y,O,C) v -goal(X,Y,O,C) :- candidate(X,Y,O,C).
 
 % AUTOPILOT
 
-%autopilot :- foundGoal, not shouldGrab, not shouldClimb, currentMode(explore).
+%autopilot :- foundGoal, not shouldGrab, not shouldClimb, mode(explore).
 
 % MODE SELECTOR
 
-currentMode(explore) :- canExplore, -grabbed.
-currentMode(escape) :- not currentMode(explore), not currentMode(kill).
-currentMode(kill) :- not currentMode(explore), shouldKillWumpus, -grabbed.
-currentMode(kill) :- not currentMode(explore), shouldTryToKillWumpus, -grabbed.
+mode(explore) :- canExplore, -grabbed.
+mode(escape) :- not mode(explore), not mode(kill).
+mode(kill) :- not mode(explore), shouldKill, -grabbed.
+mode(kill) :- not mode(explore), shouldTryKill, -grabbed.
 
 % CONSISTENCY
 
@@ -182,17 +185,17 @@ bad(3) :- now(X,Y,_), now(X,Z,_), Y != Z.
 bad(3) :- now(X,Y,_), now(Z,Y,_), X != Z.
 
 %4 We cannot be in more than one mode.
-bad(4) :- currentMode(X), currentMode(Y), X != Y.
+bad(4) :- mode(X), mode(Y), X != Y.
 
 %5 We must be in one mode.
-inSomeMode :- mode(M), currentMode(M).
+inSomeMode :- isMode(M), mode(M).
 bad(5) :- not inSomeMode.
 
 %6 We cannot do two things.
 bad(6) :- do(A1), do(A2), A1 != A2.
 
 %7 We must do something.
-doingSomething :- action(A), do(A).
+doingSomething :- isAction(A), do(A).
 bad(7) :- not doingSomething.
 
 %8 Wumpus detection must be accurate. There is only one wumpus.
@@ -216,7 +219,7 @@ bad(13) :- cell(X,Y), -safe(X,Y), explored(X,Y).
 
 %14 We are in explore mode, have no triggers to climb or shoot, but still did not find a goal.
 foundGoal :- goal(_,_,_,_).
-bad(14) :- not foundGoal, not shouldGrab, not shouldClimb, currentMode(explore).
+bad(14) :- not foundGoal, not shouldGrab, not shouldClimb, mode(explore).
 
 %15 We are shooting even though we do not have the arrow anymore.
 bad(15) :- do(shoot), -haveArrow.
