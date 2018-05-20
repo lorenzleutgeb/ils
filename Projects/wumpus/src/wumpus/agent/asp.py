@@ -11,17 +11,19 @@ import networkx as nx
 
 from networkx.algorithms.shortest_paths.generic import shortest_path
 
-# The following two imports are only necessary for plotting,
-# if you want them pip install -r plotting-requirements.txt
-#import matplotlib.pyplot as plt
-#from networkx.drawing.nx_agraph import write_dot
-
 from ..common    import Action, Orientation, Location
 from ..simulator import World
 from ..util      import dlv
 from .mode       import Mode
 
 PRINT_KNOWLEDGE=False
+PLOT=False
+
+if PLOT:
+    # The following two imports are only necessary for plotting,
+    # if you want them pip install -r plotting-requirements.txt
+    import matplotlib.pyplot as plt
+    from networkx.drawing.nx_agraph import write_dot
 
 logger = logging.getLogger('asp-agent')
 
@@ -49,6 +51,8 @@ def parse(a, interesting):
         a = a[1:-1]
     a = a.split(', ')
     result = {}
+    for predicate in interesting:
+        result[predicate] = {}
     for e in a:
         neg = e.startswith('-')
         lpar = e.find('(')
@@ -59,14 +63,11 @@ def parse(a, interesting):
             predicate = e[neg:lpar]
             terms = e[lpar + 1:-1].split(',')
             if predicate in interesting:
-                terms = list(map(lambda x: x[0](int(x[1])), zip(interesting[predicate], terms)))
+                terms = tuple(map(lambda x: x[0](int(x[1])), zip(interesting[predicate], terms)))
             else:
-                terms = list(map(int, terms))
+                terms = tuple(map(int, terms))
 
-        if predicate in result:
-            result[predicate].append((not neg, terms))
-        else:
-            result[predicate] = [(not neg, terms)]
+        result[predicate][terms] = (not neg)
     return result
 
 def pretty(x, interesting):
@@ -80,9 +81,7 @@ def pretty(x, interesting):
         if predicate not in x:
             result += '∅'
         else:
-            result += '{' + ', '.join([
-                '\033[3' + str(1 + sign) + 'm(' + ','.join(map(str, terms))  + ')\033[0m' for sign, terms in x[predicate]
-            ]) + '}'
+            result += '{' + ', '.join(map(lambda y: '\033[3' + str(1 + y[1]) + 'm(' + ','.join(map(str, y[0]))  + ')\033[0m', x[predicate].items())) + '}'
         result += '\n'
 
     return result
@@ -109,7 +108,7 @@ class ASPAgent():
             # We build a graph that respresents reachability (with cost) for all cells.
             self.g = nx.DiGraph()
             for o in Orientation:
-                self.g.add_node((self.position, o), label='{} {}'.format(self.position, o))
+                self.g.add_node((self.position, o), label='{} {}'.format(self.position, o), location=self.position, orientation=o)
         else:
             logger.debug('We are cheating!')
             self.size = init.worldSize
@@ -136,7 +135,7 @@ class ASPAgent():
                     if a == None:
                         continue
 
-                    self.g.add_node((a, o), location=a, orientation=o, label='{} {}'.format(a, o))
+                    self.g.add_node((a, o), location=a, orientation=o, safe=True, label='{} {}'.format(a, o))
 
                     self.g.add_edge(
                         (l, o),
@@ -315,7 +314,7 @@ class ASPAgent():
             logger.debug('\n'.join(knowledge))
 
         # Plot the graph in case we explored something (debugging).
-        if explored and False:
+        if explored and PLOT:
             # Here is some code to plot the graph for debuging. Use it in
             # combination with labels.
             pos = nx.spring_layout(self.g, scale=3, k=0.05, iterations=20)
@@ -325,7 +324,6 @@ class ASPAgent():
             nx.draw_networkx_edge_labels(self.g, pos, edge_labels=edge_labels)
             plt.draw()
             plt.show()
-
             write_dot(self.g, 'g-{}.gv'.format(len(self.previousActions)))
 
         kfd, kfname = mkstemp()
@@ -333,13 +331,23 @@ class ASPAgent():
         with open(kfd, 'w') as f: f.write('\n'.join(knowledge))
 
         interesting = {
-            'goal': (int, int, Orientation, int),
+            # Required to return the desired action to the game.
             'do': (Action,),
+
+            # The next three are needed to implement the autopilot.
+            'autopilot': (),
+            'goal': (int, int, Orientation, int),
             'safe': (int, int),
+        }
+
+        # For debugging, you may add other predicates here.
+        interesting.update({
             'bad': (int,),
             'currentMode': (Mode,),
-            'autopilot': (),
-        }
+            'possiblePit': (int, int, int, int),
+            'possibleWumpus': (int, int),
+            'wumpus': (int, int),
+        })
 
         # 2. Run solver.
         d = dirname(__file__)
@@ -347,7 +355,6 @@ class ASPAgent():
             [
                 self.dlv,
                 '-silent',
-                #'-det',
                 '-filter=' + ','.join(interesting),
                 join(d, 'constants.asp'),
                 kfname,
@@ -384,51 +391,48 @@ class ASPAgent():
         result = result[0]
         logger.debug(pretty(result, interesting))
 
-        if 'bad' in result:
-            for sign, terms in result['bad']:
-                prefix = '%' + str(terms[0]) + ' '
+        bads = result['bad'].items()
+        if len(bads) > 0:
+            for (x,), sign in bads:
+                prefix = '%{} '.format(x)
                 with open(join(d, 'agent.asp'), 'r') as f:
                     found = False
                     for ln in f:
                         if ln.startswith(prefix):
                             found = True
-                            logger.debug('\033[31mCONSISTENCY ' + str(terms[0]) + ': ' + ln[len(prefix):] + '\033[0m')
+                            logger.debug('\033[31mCONSISTENCY ' + str(x) + ': ' + ln[len(prefix):].strip() + '\033[0m')
                     if not found:
-                        logger.debug('No comment describing bad({}). Add a line starting with \'%{} \' followed by a description.'.format(terms[0], terms[0]))
+                        logger.debug('No comment describing bad({}). Add a line starting with \'%{} \' followed by a description.'.format(x, x))
             return None
 
-        autopilot = False
-        # TODO: Autopilot is not aware of pits/wumpus, therefore unsafe to use...
-        if 'autopilot' in result and False:
-            autopilot = result['autopilot']
-            if len(autopilot) == 0:
+        autopilot = result['autopilot'][()]
+        if autopilot:
+            goal = next((Location(x, y), o) for (x, y, o, _), sign in result['goal'].items() if sign)
+
+            for (x, y), safe in result['safe'].items():
+                for o in Orientation:
+                    n = (Location(x, y), o)
+                    if n not in self.g:
+                        continue
+                    self.g.nodes[n]['safe'] = safe
+
+            safeOnly = lambda u, v, d: 1 if result['safe'][(u[0].x, u[0].y)] else None
+            path = shortest_path(self.g, (self.position, self.orientation), goal, weight=safeOnly)
+
+            nextCell, _ = path[1]
+            # Next step will be exploration, do not turn on autopilot.
+            if nextCell not in self.world:
                 autopilot = False
             else:
-                autopilot, _ = autopilot[0]
-
-        if autopilot:
-            #print('here {} {}'.format(*here))
-            goal = next((Location(x, y), o) for sign, [x, y, o, _] in result['goal'] if sign)
-            #print('goal {} {}'.format(*goal))
-            actions = paths[goal]
-            nextCell, _ = actions[1]
-            if nextCell not in self.world:
-                action = result['do'][0][1][0]
-                self.actions = []
-            else:
-                #for goal in actions:
-                    #print('p {} {}'.format(*goal))
-                actions = zip(actions, actions[1:])
+                actions = zip(path, path[1:])
                 actions = list(flatten(map(lambda x: self.decodeAction(*x), actions)))[::-1]
-                #for goal in actions:
-                    #print('s {}'.format(goal))
                 action = actions.pop(0)
                 self.actions = actions
-        else:
-            #print("READING")
-            action = result['do'][0][1][0]
 
-        #print(action)
+        if not autopilot:
+            self.actions = []
+            action = next(a for a, sign in result['do'].items() if sign)[0]
+
         self.previousActions.append(action)
         logger.debug('═' * 80)
         return action

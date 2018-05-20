@@ -159,7 +159,9 @@ goal(X,Y,O,C) v -goal(X,Y,O,C) :- candidate(X,Y,O,C).
 
 % AUTOPILOT
 
-%autopilot :- foundGoal, not shouldGrab, not shouldClimb, mode(explore).
+-autopilot :- not autopilot.
+autopilot :- foundGoal, not shouldGrab, not shouldClimb, mode(explore).
+autopilot :- foundGoal, not shouldGrab, not shouldClimb, mode(escape).
 
 % MODE SELECTOR
 
