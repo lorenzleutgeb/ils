@@ -178,7 +178,7 @@ canExplore :- toExplore(_,_).
 
 % Interesting candidates are those cells that we have not yet explored
 % and we know that they are safe.
-candidate(X,Y,C) :- h(X,Y,C), mode(explore), toExplore(X,Y).
+candidate(1,X,Y,C) :- h(X,Y,C), mode(explore), toExplore(X,Y).
 
 % ESCAPE MODE
 
@@ -206,23 +206,23 @@ shouldAim :- succAim(_).
 
 do(A) :- succAim(A).
 
-candidate(XS,YS,C) :- h(XS,YS,C), canKill(XS,YS,OS), mode(kill).
-candidate(XS,YS,C) :- h(XS,YS,C), canTryKill(XS,YS,OS), mode(kill).
+candidate(1,XS,YS,C) :- h(XS,YS,C), attack(XS,YS,OS), mode(kill).
 
 % OPTIMIZATION FOR GOAL
 
-goal(X,Y,C) v -goal(X,Y,C) :- candidate(X,Y,C).
-:~ candidate(_,_,C1), candidate(X,Y,C2), C2 > C1, goal(X,Y,C2). [32:1]
-:- candidate(X1,_,C), candidate(X2,_,C), X2 > X1, goal(X2,Y,C).
-:- candidate(X,Y1,C), candidate(X,Y2,C), Y2 > Y1, goal(X,Y2,C).
+level(1).
+level(2).
+next(X,Y,C) :- choice(2,X,Y,C).
+goal(X,Y,C) :- choice(1,X,Y,C).
+
+choice(L,X,Y,C) v -choice(L,X,Y,C) :- candidate(L,X,Y,C), level(L).
+:~ candidate(L,_,_,C1), candidate(L,X,Y,C2), C2 > C1, choice(L,X,Y,C2), level(L). [1:1]
+:- candidate(L,X1,_,C), candidate(L,X2,_,C), X2 > X1, choice(L,X2,Y,C), level(L).
+:- candidate(L,X,Y1,C), candidate(L,X,Y2,C), Y2 > Y1, choice(L,X,Y2,C), level(L).
 
 % OPTIMIZATION FOR NEXT
 
-ncandidate(X,Y,C) :- now(XN,YN,_), cost(X,Y,O,XG,YG,C), anyNeighbor(XN,YN,X,Y), safe(X,Y), isOrientation(O), goal(XG,YG,_).
-next(X,Y,C) v -next(X,Y,C) :- ncandidate(X,Y,C).
-:~ ncandidate(_,_,C1), ncandidate(X,Y,C2), C2 > C1, next(X,Y,C2). [1:1]
-:- ncandidate(X1,_,C), ncandidate(X2,_,C), X2 > X1, next(X2,Y,C).
-:- ncandidate(X,Y1,C), ncandidate(X,Y2,C), Y2 > Y1, next(X,Y2,C).
+candidate(2,X,Y,C) :- now(XN,YN,_), cost(X,Y,O,XG,YG,C), anyNeighbor(XN,YN,X,Y), safe(X,Y), isOrientation(O), goal(XG,YG,_).
 
 % AUTOPILOT
 
