@@ -28,7 +28,10 @@ basic = {
 }
 
 output = {
-    'do'
+    'do',
+    'goal',
+    'safe',
+    'autopilot'
 }
 
 def stripall(xs):
@@ -122,7 +125,7 @@ for lno, ln in enumerate(stdin):
         lsqp, rsqp = ln.find('['), ln.find(']')
         if lsqp >= 0 and rsqp > lsqp:
             wdef = ln[lsqp:rsqp]
-            print(wdef)
+            #print(wdef)
 
     ln = ln.replace(':~', ':-')
     hasHead = ':-' in ln

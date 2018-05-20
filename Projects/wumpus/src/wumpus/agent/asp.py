@@ -27,8 +27,29 @@ if PLOT:
 
 logger = logging.getLogger('asp-agent')
 
-def flatten(xs):
-    return reduce(lambda x, y: x + [y] if type(y) != list else y + x, xs, [])
+INTERESTING = {
+    # Required to return the desired action to the game.
+    'do': (Action,),
+
+    # The next three are needed to implement the autopilot.
+    'autopilot': (),
+    'goal': (int, int, int),
+    'safe': (int, int),
+
+    # For debugging, you may add other predicates here.
+    'bad': (int,),
+    'risk': (Orientation,),
+    'mode': (Mode,),
+    'possiblePit': (int, int, int, int),
+    'strange': (int, int, int, int, int, int),
+    'possibleWumpus': (int, int),
+    'wumpus': (int, int),
+    'reachable': (int, int),
+    'explored': (int, int),
+    'candidate': (int, int, int),
+    'next': (int, int, int),
+    'ncandidate': (int, int, int),
+}
 
 def atom(sign, predicate, terms=[]):
     result = ''
@@ -86,6 +107,21 @@ def pretty(x, interesting):
 
     return result
 
+def manhattan(a, b):
+    (l1, o1), (l2, o2) = a, b
+
+    # Compute difference between two orientations:
+    od = abs(int(o1) - int(o2))
+    if od == 3:
+        od = 1
+
+    return od + taxicab(l1, l2)
+
+def taxicab(a, b):
+    if len(a) != len(b):
+        return None
+    return reduce(lambda s, x: s + abs(x[0] - x[1]), zip(a, b), 0)
+
 class ASPAgent():
     def __init__(self, init=None):
         self.dlv = dlv()
@@ -108,7 +144,7 @@ class ASPAgent():
             # We build a graph that respresents reachability (with cost) for all cells.
             self.g = nx.DiGraph()
             for o in Orientation:
-                self.g.add_node((self.position, o), label='{} {}'.format(self.position, o), location=self.position, orientation=o)
+                self.g.add_node((self.position, o))
         else:
             logger.debug('We are cheating!')
             self.size = init.worldSize
@@ -135,32 +171,13 @@ class ASPAgent():
                     if a == None:
                         continue
 
-                    self.g.add_node((a, o), location=a, orientation=o, safe=True, label='{} {}'.format(a, o))
-
-                    self.g.add_edge(
-                        (l, o),
-                        (a, o),
-                        cost=1,# if noWumpusThere else 10,
-                        action=[Action.GOFORWARD],# if noWumpusThere else [Action.SHOOT, Action.GOFORWARD]
-                        label=str(Action.GOFORWARD)
-                    )
+                    self.g.add_edge((l, o), (a, o), action=Action.GOFORWARD)
 
                 for action in {Action.TURNLEFT, Action.TURNRIGHT}:
-                    # Case 2a: We turn once.
-                    oa = o.turn(action)
-                    self.g.add_edge((l, o), (l, oa), cost=1, action=[action], label=str(action))
-
-                    # Case 2b: We turn twice.
-                    ob = oa.turn(action)
-                    self.g.add_edge((l, oa), (l, ob), cost=1, action=[action], label=str(action))
-
-                    # Case 2b: We turn twice.
-                    oc = ob.turn(action)
-                    self.g.add_edge((l, ob), (l, oc), cost=1, action=[action], label=str(action))
-
-                    # Case 2b: We turn twice.
-                    od = oc.turn(action)
-                    self.g.add_edge((l, oc), (l, od), cost=1, action=[action], label=str(action))
+                    oa = o
+                    for i in range(3):
+                        oa = o.turn(action)
+                        self.g.add_edge((l, o), (l, oa), action=action)
 
             self.position = Location(1, 1)
             self.orientation = Orientation.RIGHT
@@ -189,7 +206,6 @@ class ASPAgent():
             if self.bump != None:
                 logger.debug('We appear to be bumping a second time.')
             self.bump = self.position.getAdjacent(self.orientation, self.size + 1)
-            # TODO: Remove unnecessary nodes from self.g.
 
         # If we moved without bump, account for the move!
         elif prevAct == Action.GOFORWARD:
@@ -216,66 +232,23 @@ class ASPAgent():
             logger.debug('Autopilot is active!')
             return action
 
-        #print(list(map(str, self.world.keys())))
-
         # We need to add all neighboring nodes to the graph to reason about them.
         # Once we explore a new state, we need to add to the graph the possibility
         # to turn here.
         if explored:
             for o in Orientation:
                 a = self.position.getAdjacent(o, self.size)
-
                 if a == None:
                     continue
 
-                self.g.add_node((a, o), location=a, orientation=o, label='{} {}'.format(a, o))
+                self.g.add_edge((self.position, o), (a, o), action=Action.GOFORWARD)
 
-                self.g.add_edge(
-                    (self.position, o),
-                    (a, o),
-                    cost=1,# if noWumpusThere else 10,
-                    action=[Action.GOFORWARD],# if noWumpusThere else [Action.SHOOT, Action.GOFORWARD]
-                    label=str(Action.GOFORWARD)
-                )
-
-            for action in {Action.TURNLEFT, Action.TURNRIGHT}:
-                # Case 2a: We turn once.
-                oa = o.turn(action)
-                self.g.add_edge((self.position, o), (self.position, oa), cost=1, action=[action], label=str(action))
-
-                # Case 2b: We turn twice.
-                ob = oa.turn(action)
-                self.g.add_edge((self.position, oa), (self.position, ob), cost=1, action=[action], label=str(action))
-
-                # Case 2b: We turn twice.
-                oc = ob.turn(action)
-                self.g.add_edge((self.position, ob), (self.position, oc), cost=1, action=[action], label=str(action))
-
-                # Case 2b: We turn twice.
-                od = oc.turn(action)
-                self.g.add_edge((self.position, oc), (self.position, od), cost=1, action=[action], label=str(action))
-
-        paths = {}
-        for n in self.g:
-            l, o = n
-            #if l in self.world:
-            #    continue
-            try:
-                p = shortest_path(self.g, (self.position, self.orientation), n)#, 'cost'))
-                # TODO: For now, just use path length as cost. This
-                # WILL cause some trouble later on FOR SURE.
-                paths[n] = p
-            except nx.exception.NetworkXNoPath:
-                logger.warning('There is no path to {}'.format(l))
-                continue
-
-        # 1. Add the knowledge that we obtain as percepts to
-        #    our model/state of the world. We should
-        #    a. not move to dangerous cells (might die).
-        #    b. not shoot the arrow if we aren't sure where
-        #       the Wumpus is.
-        #    c. Once we have the gold, return to where we
-        #       started from (easy: reverse the path).
+                for action in {Action.TURNLEFT, Action.TURNRIGHT}:
+                    prev = o
+                    for i in range(4):
+                        current = prev.turn(action)
+                        self.g.add_edge((self.position, prev), (self.position, current), action=action)
+                        prev = current
 
         knowledge = [
             fact(True, 'now', [self.position.x, self.position.y, self.orientation.toSymbol()]),
@@ -297,19 +270,6 @@ class ASPAgent():
             knowledge.append(fact(glitter, 'glitter', [l.x, l.y]))
             knowledge.append(fact(True, 'explored', [l.x, l.y]))
 
-        for s in paths:
-            (x, y), o = s
-            knowledge.append(fact(True, 'pathCost', [x, y, o.toSymbol(), len(paths[s]) - 1]))
-            if len(paths[s]) < 2:
-                continue
-            u = paths[s][0]
-            v = paths[s][1]
-            a = self.g.get_edge_data(u, v)['action']
-            knowledge.append(fact(True, 'towards',  [x, y, o.toSymbol(), a[0].toSymbol()]))
-
-        #for i, a in enumerate(self.previousActions):
-        #    knowledge.append("previousAction({},{}).".format(i, a.toSymbol()))
-
         if PRINT_KNOWLEDGE:
             logger.debug('\n'.join(knowledge))
 
@@ -327,35 +287,13 @@ class ASPAgent():
             write_dot(self.g, 'g-{}.gv'.format(len(self.previousActions)))
 
         kfd, kfname = mkstemp()
-
         with open(kfd, 'w') as f: f.write('\n'.join(knowledge))
-
-        interesting = {
-            # Required to return the desired action to the game.
-            'do': (Action,),
-
-            # The next three are needed to implement the autopilot.
-            'autopilot': (),
-            'goal': (int, int, Orientation, int),
-            'safe': (int, int),
-        }
-
-        # For debugging, you may add other predicates here.
-        interesting.update({
-            'bad': (int,),
-            'currentMode': (Mode,),
-            'possiblePit': (int, int, int, int),
-            'possibleWumpus': (int, int),
-            'wumpus': (int, int),
-        })
-
-        # 2. Run solver.
         d = dirname(__file__)
         proc = run(
             [
                 self.dlv,
                 '-silent',
-                '-filter=' + ','.join(interesting),
+                '-filter=' + ','.join(INTERESTING),
                 join(d, 'constants.asp'),
                 kfname,
                 join(d, 'agent.asp'),
@@ -364,9 +302,7 @@ class ASPAgent():
             stdout=PIPE,
             encoding='utf-8'
         )
-
         remove(kfname)
-
         result = proc.stdout
 
         if len(result) == 0:
@@ -383,13 +319,13 @@ class ASPAgent():
             return None
 
         result = result.strip().split('\n')
-        result = list(map(lambda x: parse(x, interesting), result))
+        result = list(map(lambda x: parse(x, INTERESTING), result))
 
         if len(result) > 1:
             logger.warning('ASP program returned multiple answer sets. Only considering the first!')
 
         result = result[0]
-        logger.debug(pretty(result, interesting))
+        logger.debug(pretty(result, INTERESTING))
 
         bads = result['bad'].items()
         if len(bads) > 0:
@@ -407,8 +343,7 @@ class ASPAgent():
 
         autopilot = result['autopilot'][()]
         if autopilot:
-            goal = next((Location(x, y), o) for (x, y, o, _), sign in result['goal'].items() if sign)
-
+            # First, extract safety information and update action graph.
             for (x, y), safe in result['safe'].items():
                 for o in Orientation:
                     n = (Location(x, y), o)
@@ -416,18 +351,31 @@ class ASPAgent():
                         continue
                     self.g.nodes[n]['safe'] = safe
 
-            safeOnly = lambda u, v, d: 1 if result['safe'][(u[0].x, u[0].y)] else None
-            path = shortest_path(self.g, (self.position, self.orientation), goal, weight=safeOnly)
+            # Then extract goal and compute shortest path.
+            goal = next(Location(x, y) for (x, y, _), sign in result['goal'].items() if sign)
 
-            nextCell, _ = path[1]
-            # Next step will be exploration, do not turn on autopilot.
-            if nextCell not in self.world:
+            safeOnly = lambda u, v, d: 1 if result['safe'][(u[0].x, u[0].y)] else None
+            shortestPath = None
+            for o in Orientation:
+                try:
+                    path = shortest_path(self.g, (self.position, self.orientation), (goal, o), weight=safeOnly)
+                except nx.NetworkXNoPath:
+                    continue
+                if shortestPath == None or len(shortestPath) > len(path):
+                    shortestPath = path
+
+            if shortestPath == None:
                 autopilot = False
             else:
-                actions = zip(path, path[1:])
-                actions = list(flatten(map(lambda x: self.decodeAction(*x), actions)))[::-1]
-                action = actions.pop(0)
-                self.actions = actions
+                nextCell, _ = shortestPath[1]
+                # Next step will be exploration, do not turn on autopilot.
+                if nextCell not in self.world:
+                    autopilot = False
+                else:
+                    actions = zip(path, shortestPath[1:])
+                    actions = list(map(lambda x: self.decodeAction(*x), actions))
+                    action = actions.pop(0)
+                    self.actions = actions
 
         if not autopilot:
             self.actions = []

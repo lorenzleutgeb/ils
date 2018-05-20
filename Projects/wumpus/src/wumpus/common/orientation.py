@@ -36,6 +36,18 @@ class Orientation(Enum):
         else:
             return '?'
 
+    def __int__(self):
+        if self == Orientation.RIGHT:
+            return 0
+        elif self == Orientation.UP:
+            return 1
+        elif self == Orientation.LEFT:
+            return 2
+        elif self == Orientation.DOWN:
+            return 3
+        else:
+            return None
+
     def toSymbol(self):
         if self == Orientation.RIGHT:
             return 'right'#'R'

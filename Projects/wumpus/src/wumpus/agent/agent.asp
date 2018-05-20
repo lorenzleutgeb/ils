@@ -9,7 +9,8 @@
 %  haveArrow    ... We have an arrow that we may shoot.
 
 % We designate two orthogonal orientations as axes.
-axis(0..1).
+axis(right).
+axis(up).
 
 % WORLD SIZE DETECTION
 
@@ -28,6 +29,45 @@ cell(X,Y) :- #int(X), #int(Y), Y > 0, X > 0, Y <= S, X <= S, size(S).
 
 diff(X1,Y1,X2,Y2) :- X1 != X2, cell(X1,Y1), cell(X2,Y2).
 diff(X1,Y1,X2,Y2) :- Y1 != Y2, cell(X1,Y1), cell(X2,Y2).
+
+state(X,Y,O) :- cell(X,Y), isOrientation(O).
+
+distAlong(X1,Y1,X2,Y2,right,D) :- D = X2 - X1, X1 <= X2, cell(X1,Y1), cell(X2,Y2).
+distAlong(X1,Y1,X2,Y2,up,D) :- D = Y2 - Y1, Y1 <= Y2, cell(X1,Y1), cell(X2,Y2).
+distAlong(X2,Y2,X1,Y1,A,D) :- distAlong(X1,Y1,X2,Y2,A,D), axis(A).
+
+manhattan(X1,Y1,X2,Y2,M) :- distAlong(X1,Y1,X2,Y2,right,D1), distAlong(X1,Y1,X2,Y2,up,D2), M = D1 + D2.
+
+%sameRotCost(O1,O2,C) :- O1 <= O2, C = O2 - O1, C < 3, isOrientation(O1), isOrientation(O2).
+%sameRotCost(0,3,1).
+%sameRotCost(O2,O1,C) :- rotCost(O1,O2,C).
+
+mirror(left,right).
+mirror(up,down).
+
+%outRotCost(X,Y,O,X,Y,O,0)      :- isOrientation(O), cell(X,Y).
+%outRotCost(X1,Y1,O,X2,Y2,O,0) :- facing(X1,Y1,O1,X2,Y2), diff(X1,Y1,X2,Y2).
+%outRotCost(X1,Y1,O1,X2,Y2,O2,1) :- -facing(X1,Y1,O1,X2,Y2), diff(X1,Y1,X2,Y2), rotate(O1,_,O2), facing(X1,Y1,O2,X2,Y2).
+%outRotCost(X1,Y1,O1,X2,Y2,O2,2) :- -facing(X1,Y1,O1,X2,Y2), diff(X1,Y1,X2,Y2), not rotCost(X1,Y1,O1,X2,Y2,1).
+
+%rotCost(X1,Y1,O1,X2,Y2,O2,C) :- sameRotCost()
+
+cost(X1,Y1,O1,X2,Y2,M) :- state(X1,Y1,O1), cell(X2,Y2), manhattan(X1,Y1,X2,Y2,M).
+%cost(X1,Y1,O1,X2,Y2,C) :- state(X1,Y1,O1), cell(X2,Y2), manhattan(X1,Y1,X2,Y2,M), rotCost(X1,Y1,O1,X2,Y2,R), C = M + R.
+
+h(X2,Y2,D) :- now(X1,Y1,O1), cost(X1,Y1,O1,X2,Y2,D).
+
+rotate(up,turnleft,left).
+rotate(up,turnright,right).
+rotate(down,turnleft,right).
+rotate(down,turnright,left).
+rotate(left,turnleft,down).
+rotate(left,turnright,up).
+rotate(right,turnleft,up).
+rotate(right,turnright,down).
+
+risk(O) :- now(X,Y,O), neighbor(X,Y,XN,YN,O), -safe(XN,YN).
+-risk(O) :- not risk(O), isOrientation(O).
 
 % Neighboring cells along the horizontal and vertical axis.
 neighbor(X1,Y1,X2,Y2,right) :- cell(X1,Y1), cell(X2,Y2), X2 = X1 + 1, Y2 = Y1.
@@ -76,7 +116,18 @@ do(climb) :- shouldClimb.
 
 % Generally we will be turning and go forward towards a goal. Exceptions are when we
 % want to take high priority actions like grabbing, climbing or shooting.
-do(A) :- goal(X,Y,O,_), towards(X,Y,O,A), not shouldGrab, not shouldClimb, not shouldShoot.
+
+canFace(A) :- now(X1,Y1,O1), next(X2,Y2,_), facing(X1,Y1,O2,X2,Y2), O1 != O2, rotate(O1,A,O2).
+-cannotFace :- isAction(A), next(X,Y,_), canFace(A).
+cannotFace :- not -cannotFace.
+
+towards(goforward) :- now(X1,Y1,O1), next(X2,Y2,_), facing(X1,Y1,O1,X2,Y2).
+towards(A) :- not towards(goforward), canFace(A).
+
+% TODO: Can we turn in a better way?
+towards(turnleft) :- not towards(goforward), cannotFace.
+
+do(A) :- next(X,Y,_), towards(A), not shouldGrab, not shouldClimb, not shouldShoot, not shouldAim.
 
 % DETECTION OF WUMPUS
 
@@ -118,7 +169,7 @@ safe(X,Y) :- cell(X,Y), not -safe(X,Y).
 
 % EXPLORE MODE
 
-reachable(X,Y) :- pathCost(X,Y,_,_).
+reachable(X,Y) :- explored(XE,YE), anyNeighbor(X,Y,XE,YE).
 
 toExplore(X,Y) :- reachable(X,Y), safe(X,Y), -explored(X,Y).
 
@@ -127,11 +178,11 @@ canExplore :- toExplore(_,_).
 
 % Interesting candidates are those cells that we have not yet explored
 % and we know that they are safe.
-candidate(X,Y,O,C) :- pathCost(X,Y,O,C), isOrientation(O), mode(explore), toExplore(X,Y).
+candidate(X,Y,C) :- h(X,Y,C), mode(explore), toExplore(X,Y).
 
 % ESCAPE MODE
 
-candidate(1,1,O,C) :- pathCost(1,1,O,C), isOrientation(O), mode(escape).
+goal(1,1,C) :- h(1,1,C), mode(escape).
 
 % KILL MODE
 
@@ -141,21 +192,37 @@ shouldKill :- canKill(_,_,_), wumpus(XW,YW), not possiblePit(XB,YB,XW,YW), cell(
 canTryKill(X,Y,O) :- possibleWumpus(XC,YC), safe(X,Y), facing(X,Y,O,XC,YC), not possiblePit(XB,YB,X,Y), cell(XB,YB), haveArrow.
 shouldTryKill :- not shouldKill, canTryKill(_,_,_).
 
-candidate(XS,YS,OS,C) :- pathCost(XS,YS,OS,C), canKill(XS,YS,OS), mode(kill).
-candidate(XS,YS,OS,C) :- pathCost(XS,YS,OS,C), canTryKill(XS,YS,OS), mode(kill).
+aim(OS) :- canKill(XS,YS,OS), now(XS,YS,O), O != OS, not canKill(XS,YS,O).
+aim(OS) :- canTryKill(XS,YS,OS), now(XS,YS,O), O != OS, not canTryKill(XS,YS,O).
+
+canAim(A) :- aim(O2), now(_,_,O1), rotate(O1,A,O2).
+-cannotAim :- canAim(A).
+cannotAim :- not -cannotAim.
+
+succAim(A) :- canAim(A), mode(kill).
+succAim(turnleft) :- aim(_), cannotAim, mode(kill).
+
+shouldAim :- succAim(_).
+
+do(A) :- succAim(A).
+
+candidate(XS,YS,C) :- h(XS,YS,C), canKill(XS,YS,OS), mode(kill).
+candidate(XS,YS,C) :- h(XS,YS,C), canTryKill(XS,YS,OS), mode(kill).
 
 % OPTIMIZATION FOR GOAL
 
-% Minimize cost of goals:
-:~ candidate(_,_,_,C1), candidate(X,Y,O,C2), C2 > C1, goal(X,Y,O,C2).
+goal(X,Y,C) v -goal(X,Y,C) :- candidate(X,Y,C).
+:~ candidate(_,_,C1), candidate(X,Y,C2), C2 > C1, goal(X,Y,C2). [32:1]
+:- candidate(X1,_,C), candidate(X2,_,C), X2 > X1, goal(X2,Y,C).
+:- candidate(X,Y1,C), candidate(X,Y2,C), Y2 > Y1, goal(X,Y2,C).
 
-% Tie breaking:
-:- goal(_,_,_,C1), goal(_,_,_,C2), C2 > C1.
-:- goal(X1,_,_,C), goal(X2,_,_,C), X1 < X2.
-:- goal(X,Y1,_,C), goal(X,Y2,_,C), Y1 < Y2.
-:- goal(X,Y,O1,C), goal(X,Y,O2,C), O1 < O2.
+% OPTIMIZATION FOR NEXT
 
-goal(X,Y,O,C) v -goal(X,Y,O,C) :- candidate(X,Y,O,C).
+ncandidate(X,Y,C) :- now(XN,YN,_), cost(X,Y,O,XG,YG,C), anyNeighbor(XN,YN,X,Y), safe(X,Y), isOrientation(O), goal(XG,YG,_).
+next(X,Y,C) v -next(X,Y,C) :- ncandidate(X,Y,C).
+:~ ncandidate(_,_,C1), ncandidate(X,Y,C2), C2 > C1, next(X,Y,C2). [1:1]
+:- ncandidate(X1,_,C), ncandidate(X2,_,C), X2 > X1, next(X2,Y,C).
+:- ncandidate(X,Y1,C), ncandidate(X,Y2,C), Y2 > Y1, next(X,Y2,C).
 
 % AUTOPILOT
 
@@ -167,8 +234,8 @@ autopilot :- foundGoal, not shouldGrab, not shouldClimb, mode(escape).
 
 mode(explore) :- canExplore, -grabbed.
 mode(escape) :- not mode(explore), not mode(kill).
-mode(kill) :- not mode(explore), shouldKill, -grabbed.
-mode(kill) :- not mode(explore), shouldTryKill, -grabbed.
+mode(kill) :- not mode(explore), shouldKill, not shouldGrab, -grabbed.
+mode(kill) :- not mode(explore), shouldTryKill, not shouldGrab, -grabbed.
 
 % CONSISTENCY
 
@@ -220,8 +287,14 @@ bad(12) :- explored(X,Y), notExplored(X,Y).
 bad(13) :- cell(X,Y), -safe(X,Y), explored(X,Y).
 
 %14 We are in explore mode, have no triggers to climb or shoot, but still did not find a goal.
-foundGoal :- goal(_,_,_,_).
+foundGoal :- goal(_,_,_).
 bad(14) :- not foundGoal, not shouldGrab, not shouldClimb, mode(explore).
 
 %15 We are shooting even though we do not have the arrow anymore.
 bad(15) :- do(shoot), -haveArrow.
+
+%16 Cost function must be decisive.
+bad(16) :- cost(X,Y,O,X2,Y2,C1), cost(X,Y,O,X2,Y2,C2), C1 != C2.
+
+%17 Rotation cost must be decisive.
+bad(17) :- rotCost(X1,Y1,O1,X2,Y2,C1), rotCost(X1,Y1,O1,X2,Y2,C2), C1 != C2.

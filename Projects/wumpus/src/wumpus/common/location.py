@@ -37,6 +37,9 @@ class Location():
     def __str__(self):
         return '({}, {})'.format(self.x, self.y)
 
+    def __len__(self):
+        return 2
+
     def __getitem__(self, index):
         if index == 0:
             return self.x
