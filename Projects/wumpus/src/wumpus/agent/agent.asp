@@ -102,8 +102,7 @@ facing(Z,Y,left,X,Y) :- cell(X,Y), X < Z, cell(Z,Y).
 
 % DO
 
-shouldShoot :- mode(kill), now(X,Y,O), canKill(X,Y,O).
-shouldShoot :- mode(kill), now(X,Y,O), canTryKill(X,Y,O).
+shouldShoot :- mode(kill), now(X,Y,O), attack(X,Y,O).
 do(shoot) :- shouldShoot.
 
 % Pick gold if there's some in the cell, independently of the current mode.
@@ -186,14 +185,21 @@ goal(1,1,C) :- h(1,1,C), mode(escape).
 
 % KILL MODE
 
-canKill(XS,YS,OS) :- wumpus(XW,YW), -wumpusDead, safe(XS,YS), facing(XS,YS,OS,XW,YW), haveArrow.
-shouldKill :- canKill(_,_,_), wumpus(XW,YW), not possiblePit(XB,YB,XW,YW), cell(XB,YB).
+dontShoot :- possibleWumpus(X,Y), possiblePit(_,_,X,Y).
+dontShoot :- wumpus(X,Y), possiblePit(_,_,X,Y).
+dontShoot :- not haveArrow.
+dontShoot :- wumpusDead.
 
-canTryKill(X,Y,O) :- possibleWumpus(XC,YC), safe(X,Y), facing(X,Y,O,XC,YC), not possiblePit(XB,YB,X,Y), cell(XB,YB), haveArrow.
-shouldTryKill :- not shouldKill, canTryKill(_,_,_).
+canKill(XS,YS,OS) :- wumpus(XW,YW), safe(XS,YS), facing(XS,YS,OS,XW,YW).
+shouldKill :- canKill(_,_,_), not dontShoot.
 
-aim(OS) :- canKill(XS,YS,OS), now(XS,YS,O), O != OS, not canKill(XS,YS,O).
-aim(OS) :- canTryKill(XS,YS,OS), now(XS,YS,O), O != OS, not canTryKill(XS,YS,O).
+canTryKill(X,Y,O) :- possibleWumpus(XC,YC), safe(X,Y), facing(X,Y,O,XC,YC).
+shouldTryKill :- not shouldKill, canTryKill(_,_,_), not dontShoot.
+
+attack(X,Y,O) :- shouldTryKill, canTryKill(X,Y,O).
+attack(X,Y,O) :- shouldKill, canKill(X,Y,O).
+
+aim(OS) :- attack(XS,YS,OS), now(XS,YS,O), O != OS, not attack(XS,YS,O).
 
 canAim(A) :- aim(O2), now(_,_,O1), rotate(O1,A,O2).
 -cannotAim :- canAim(A).
