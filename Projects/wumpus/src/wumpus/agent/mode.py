@@ -4,6 +4,7 @@ class Mode(Enum):
     EXPLORE = 0
     ESCAPE  = 1
     KILL    = 2
+    GRAB    = 3
 
     def __str__(self):
         if self == Mode.EXPLORE:
@@ -12,6 +13,8 @@ class Mode(Enum):
             return 'escape'
         elif self == Mode.KILL:
             return 'kill'
+        elif self == Mode.GRAB:
+            return 'grab'
         else:
             return '?'
 
@@ -22,5 +25,7 @@ class Mode(Enum):
             return 'escape'
         elif self == Mode.KILL:
             return 'kill'
+        elif self == Mode.GRAB:
+            return 'grab'
         else:
             return '?'

@@ -1,16 +1,31 @@
-    #maxint = 1000.
+# Hunt the Wumpus
 
-Knowledge:
-now(X,Y,O)   ... The agent is at position X, Y and oriented in direction O,
-stench(X,Y)  ... The agent has perceived a stench at position X, Y.
-breeze(X,Y)  ...               breeze
-glitter(X,Y) ...               glitter
-wumpusDead   ... The wumpus is dead.
-haveArrow    ... We have an arrow that we may shoot.
+This is an implementation of an agent that plays "Hunt the Wumpus".
+
+Input should be given as follows:
+
+| Predicate  | Terms   | Semantics |
+|------------|---------|-----------|
+| now        | (X,Y,O) | The agent is currently at position X, Y and oriented in direction O |
+| stench     | (X,Y)   | The agent has perceived a stench at position X, Y. |
+| breeze     | (X,Y)   | The agent has perceived a breeze at position X, Y. |
+| glitter    | (X,Y)   | The agent has perceived a glitter at position X, Y. |
+| wumpusDead | ()      | The wumpus is dead. |
+| haveArrow  | ()      | The agent has an arrow (which it may shoot). |
+| explored   | (X,Y)   | The agent has been (or is at) position X, Y. |
+| bump       | (X,Y)   | The agent has bumped against a wall when it attempted to move to X, Y. |
+| grabbed    | ()      | The agent has at some point attempted to grab the gold. |
+| shot       | (X,Y,O) | The agent has shot its arrow at X, Y in orientation O. |
+
+    #maxint = 1000.
 
 ## Constants
 
-NOTE: Should correspond to wumpus.common.Orientation
+We use constants to encode concrete orientations, actions and modes, and one
+corresponding predicate to all of them respectively.
+
+According to `wumpus.common.Orientation` we define orientations.
+
     #const right = 0.
     #const up    = 1.
     #const left  = 2.
@@ -18,7 +33,8 @@ NOTE: Should correspond to wumpus.common.Orientation
 
     isOrientation(0..3).
 
-NOTE: Should correspond to wumpus.common.Action
+According to `wumpus.common.Action` we define actions.
+
     #const goforward = 0.
     #const turnleft  = 1.
     #const turnright = 2.
@@ -28,81 +44,106 @@ NOTE: Should correspond to wumpus.common.Action
 
     isAction(0..5).
 
-NOTE: Should correspond to wumpus.agent.Mode
+According to `wumpus.agent.Mode` we define modes.
+
     #const explore = 0.
     #const escape  = 1.
     #const kill    = 2.
 
-    isMode(0..2).
+    isMode(0..3).
 
-## Basics
+Additionally we designate two orthogonal orientations as axes.
 
-We designate two orthogonal orientations as axes.
     axis(right).
     axis(up).
 
-## World Size Detection
+Being able to mirror orientations/turns will come in handy.
 
-    exploredSize(X) :- explored(X,_).
-    exploredSize(Y) :- explored(_,Y).
+    mirror(left,right).
+    mirror(up,down).
+    mirror(O2,O1) :- mirror(O1,O2).
+
+## World Size
+
+If the agent never bumped against a wall, it has no information
+about the size of the world.
 
     sizeKnown :- bump(_,_).
+
+We will therefore derive the size of the world from something
+already known.
+
+    exploredSize(X) :- explored(X,Y).
+    exploredSize(Y) :- explored(X,Y).
+
+Since any cell we already explored certainly is
+part of the world, we can use this information and guess that
+the world is "just a little" bigger than we already know.
+
     size(S) :- not sizeKnown, Sm = #max{Se: exploredSize(Se)}, S = Sm + 1.
+
+Of course, if the agent bumped, the size can be directly inferred.
+
     size(S) :- bump(Sm,Y), Sm > Y, S = Sm - 1.
     size(S) :- bump(X,Sm), Sm > X, S = Sm - 1.
 
 ## Cells, Neighbors, Facing And Bumps
 
 Span the space of cells.
+
     cell(X,Y) :- #int(X), #int(Y), Y > 0, X > 0, Y <= S, X <= S, size(S).
+
+Two cells are different if any of the components (X, Y) are unequal.
 
     diff(X1,Y1,X2,Y2) :- X1 != X2, cell(X1,Y1), cell(X2,Y2).
     diff(X1,Y1,X2,Y2) :- Y1 != Y2, cell(X1,Y1), cell(X2,Y2).
 
-    state(X,Y,O) :- cell(X,Y), isOrientation(O).
+TODO: At some point we used states... Necessary?
+
+    %state(X,Y,O) :- cell(X,Y), isOrientation(O).
+
+### Distances and Costs
+
+We define distance along axes
 
     distAlong(X1,Y1,X2,Y2,right,D) :- D = X2 - X1, X1 <= X2, cell(X1,Y1), cell(X2,Y2).
     distAlong(X1,Y1,X2,Y2,up,D) :- D = Y2 - Y1, Y1 <= Y2, cell(X1,Y1), cell(X2,Y2).
     distAlong(X2,Y2,X1,Y1,A,D) :- distAlong(X1,Y1,X2,Y2,A,D), axis(A).
 
+And using that, manhattan/taxicab distance is a charm.
+
     manhattan(X1,Y1,X2,Y2,M) :- distAlong(X1,Y1,X2,Y2,right,D1), distAlong(X1,Y1,X2,Y2,up,D2), M = D1 + D2.
 
-sameRotCost(O1,O2,C) :- O1 <= O2, C = O2 - O1, C < 3, isOrientation(O1), isOrientation(O2).
-sameRotCost(0,3,1).
-sameRotCost(O2,O1,C) :- rotCost(O1,O2,C).
+TODO: Some buggy code for including rotation into the cost function...
 
-    mirror(left,right).
-    mirror(up,down).
+    %sameRotCost(O1,O2,C) :- O1 <= O2, C = O2 - O1, C < 3, isOrientation(O1), isOrientation(O2).
+    %sameRotCost(0,3,1).
+    %sameRotCost(O2,O1,C) :- rotCost(O1,O2,C).
+    %outRotCost(X,Y,O,X,Y,O,0)      :- isOrientation(O), cell(X,Y).
+    %outRotCost(X1,Y1,O,X2,Y2,O,0) :- facing(X1,Y1,O1,X2,Y2), diff(X1,Y1,X2,Y2).
+    %outRotCost(X1,Y1,O1,X2,Y2,O2,1) :- -facing(X1,Y1,O1,X2,Y2), diff(X1,Y1,X2,Y2), rotate(O1,A,O2), facing(X1,Y1,O2,X2,Y2).
+    %outRotCost(X1,Y1,O1,X2,Y2,O2,2) :- -facing(X1,Y1,O1,X2,Y2), diff(X1,Y1,X2,Y2), not rotCost(X1,Y1,O1,X2,Y2,1).
+    %rotCost(X1,Y1,O1,X2,Y2,O2,C) :- sameRotCost()
+    %cost(X1,Y1,O1,X2,Y2,C) :- state(X1,Y1,O1), cell(X2,Y2), manhattan(X1,Y1,X2,Y2,M), rotCost(X1,Y1,O1,X2,Y2,R), C = M + R.
 
-outRotCost(X,Y,O,X,Y,O,0)      :- isOrientation(O), cell(X,Y).
-outRotCost(X1,Y1,O,X2,Y2,O,0) :- facing(X1,Y1,O1,X2,Y2), diff(X1,Y1,X2,Y2).
-outRotCost(X1,Y1,O1,X2,Y2,O2,1) :- -facing(X1,Y1,O1,X2,Y2), diff(X1,Y1,X2,Y2), rotate(O1,_,O2), facing(X1,Y1,O2,X2,Y2).
-outRotCost(X1,Y1,O1,X2,Y2,O2,2) :- -facing(X1,Y1,O1,X2,Y2), diff(X1,Y1,X2,Y2), not rotCost(X1,Y1,O1,X2,Y2,1).
+We use the Manhattan distance as cost function.
 
-rotCost(X1,Y1,O1,X2,Y2,O2,C) :- sameRotCost()
-
-    cost(X1,Y1,O1,X2,Y2,M) :- state(X1,Y1,O1), cell(X2,Y2), manhattan(X1,Y1,X2,Y2,M).
-cost(X1,Y1,O1,X2,Y2,C) :- state(X1,Y1,O1), cell(X2,Y2), manhattan(X1,Y1,X2,Y2,M), rotCost(X1,Y1,O1,X2,Y2,R), C = M + R.
-
-    h(X2,Y2,D) :- now(X1,Y1,O1), cost(X1,Y1,O1,X2,Y2,D).
+    cost(X1,Y1,O1,X2,Y2,M) :- reachable(X1,Y1), isOrientation(O1), reachable(X2,Y2), manhattan(X1,Y1,X2,Y2,M).
 
     rotate(up,turnleft,left).
-    rotate(up,turnright,right).
-    rotate(down,turnleft,right).
-    rotate(down,turnright,left).
     rotate(left,turnleft,down).
-    rotate(left,turnright,up).
+    rotate(down,turnleft,right).
     rotate(right,turnleft,up).
-    rotate(right,turnright,down).
 
-    risk(O) :- now(X,Y,O), neighbor(X,Y,XN,YN,O), -safe(XN,YN).
-    -risk(O) :- not risk(O), isOrientation(O).
+    rotate(up,turnright,right).
+    rotate(down,turnright,left).
+    rotate(left,turnright,up).
+    rotate(right,turnright,down).
 
 Neighboring cells along the horizontal and vertical axis.
     neighbor(X1,Y1,X2,Y2,right) :- cell(X1,Y1), cell(X2,Y2), X2 = X1 + 1, Y2 = Y1.
     neighbor(X1,Y1,X2,Y2,up   ) :- cell(X1,Y1), cell(X2,Y2), X2 = X1, Y2 = Y1 + 1.
-    neighbor(X1,Y1,X2,Y2,left ) :- cell(X1,Y1), cell(X2,Y2), X2 = X1 - 1, Y2 = Y1.
-    neighbor(X1,Y1,X2,Y2,down ) :- cell(X1,Y1), cell(X2,Y2), X2 = X1, Y2 = Y1 - 1.
+    neighbor(X1,Y1,X2,Y2,O2   ) :- neighbor(X2,Y2,X1,Y1,O1), mirror(O1,O2).
 
     anyNeighbor(X1,Y1,X2,Y2) :- neighbor(X1,Y1,X2,Y2,O), isOrientation(O).
 
@@ -118,12 +159,10 @@ Neighboring cells along the horizontal and vertical axis.
     triple(X1,Y1,X2,Y2,X3,Y3) :- neighbor(X1,Y1,X2,Y2,A), neighbor(X2,Y2,X3,Y3,A), diff(X1,Y1,X3,Y3), axis(A).
 
 Cells that agree on one component.
-    facing(X,Z,up,X,Y) :- cell(X,Y), Z < Y, cell(X,Z).
-    facing(X,Z,down,X,Y) :- cell(X,Y), Y < Z, cell(X,Z).
-    facing(Z,Y,right,X,Y) :- cell(X,Y), Z < X, cell(Z,Y).
-    facing(Z,Y,left,X,Y) :- cell(X,Y), X < Z, cell(Z,Y).
 
-    -facing(X1,Y1,O,X2,Y2) :- not facing(X1,Y1,O,X2,Y2), cell(X1,Y1), isOrientation(O), cell(X2,Y2).
+    facing(X,Z,up,X,Y) :- cell(X,Y), Z < Y, cell(X,Z).
+    facing(Z,Y,right,X,Y) :- cell(X,Y), Z < X, cell(Z,Y).
+    facing(X2,Y2,O2,X1,Y1) :- facing(X1,Y1,O1,X2,Y2), mirror(O1,O2).
 
 Complete information about information. We only do this here and
 not in Python since we might have assumed a size.
@@ -135,24 +174,24 @@ not in Python since we might have assumed a size.
     do(grab) :- shouldGrab.
     do(climb) :- shouldClimb.
     do(A) :- succAim(A).
-    do(A) :- next(X,Y,_), towards(A), not shouldGrab, not shouldClimb, not shouldShoot, not shouldAim.
+    do(A) :- next(X,Y), towards(A), not shouldGrab, not shouldClimb, not shouldShoot, not shouldAim.
 
     shouldShoot :- mode(kill), now(X,Y,O), attack(X,Y,O).
 
 Pick gold if there's some in the cell, independently of the current mode.
-    shouldGrab :- now(X,Y,_), glitter(X,Y).
+    shouldGrab :- now(X,Y,O), glitter(X,Y).
 
 Climb if gold is picked and back to initial cell.
-    shouldClimb :- now(1,1,_), mode(escape).
+    shouldClimb :- now(1,1,O), mode(escape).
 
 Generally we will be turning and go forward towards a goal. Exceptions are when we
 want to take high priority actions like grabbing, climbing or shooting.
 
-    canFace(A) :- now(X1,Y1,O1), next(X2,Y2,_), facing(X1,Y1,O2,X2,Y2), O1 != O2, rotate(O1,A,O2).
-    -cannotFace :- isAction(A), next(X,Y,_), canFace(A).
+    canFace(A) :- now(X1,Y1,O1), next(X2,Y2), facing(X1,Y1,O2,X2,Y2), O1 != O2, rotate(O1,A,O2).
+    -cannotFace :- isAction(A), next(X,Y), canFace(A).
     cannotFace :- not -cannotFace.
 
-    towards(goforward) :- now(X1,Y1,O1), next(X2,Y2,_), facing(X1,Y1,O1,X2,Y2).
+    towards(goforward) :- now(X1,Y1,O1), next(X2,Y2), facing(X1,Y1,O1,X2,Y2).
     towards(A) :- not towards(goforward), canFace(A).
 
 TODO: Can we turn in a better way?
@@ -194,18 +233,17 @@ Any cell where the wumpus is is not safe.
     -safe(X1,Y1) :- possibleWumpus(X1,Y1).
     -safe(X2,Y2) :- possiblePit(X1,Y1,X2,Y2).
 
-    safe(X,Y) :- cell(X,Y), not -safe(X,Y).
+    safe(X,Y) :- reachable(X,Y), not -safe(X,Y).
 
 ## Explore Mode
 
     reachable(X,Y) :- explored(XE,YE), anyNeighbor(X,Y,XE,YE).
-
-    toExplore(X,Y) :- reachable(X,Y), safe(X,Y), -explored(X,Y).
+    reachable(X,Y) :- explored(X,Y).
 
 Auxiliary flag to signal whether we can still explore further.
-    canExplore :- toExplore(_,_).
 
-## Escape Mode
+    canExplore(X,Y) :- reachable(X,Y), safe(X,Y), -explored(X,Y).
+    shouldExplore :- canExplore(X,Y).
 
 ## Kill Mode
 
@@ -213,6 +251,7 @@ Auxiliary flag to signal whether we can still explore further.
     dontShoot :- wumpus(X,Y), possiblePit(_,_,X,Y).
     dontShoot :- not haveArrow.
     dontShoot :- wumpusDead.
+    dontShoot :- grabbed.
 
     canKill(XS,YS,OS) :- wumpus(XW,YW), safe(XS,YS), facing(XS,YS,OS,XW,YW).
     shouldKill :- canKill(_,_,_), not dontShoot.
@@ -222,6 +261,7 @@ Auxiliary flag to signal whether we can still explore further.
 
     attack(X,Y,O) :- shouldTryKill, canTryKill(X,Y,O).
     attack(X,Y,O) :- shouldKill, canKill(X,Y,O).
+    shouldAttack :- attack(X,Y,O).
 
     aim(OS) :- attack(XS,YS,OS), now(XS,YS,O), O != OS, not attack(XS,YS,O).
 
@@ -230,30 +270,31 @@ Auxiliary flag to signal whether we can still explore further.
     cannotAim :- not -cannotAim.
 
     succAim(A) :- canAim(A), mode(kill).
-    succAim(turnleft) :- aim(_), cannotAim, mode(kill).
+    succAim(turnleft) :- aim(O), cannotAim, mode(kill).
 
-    shouldAim :- succAim(_).
-
-Interesting candidates are those cells that we have not yet explored
-and we know that they are safe.
-    candidate(1,X,Y,C) :- h(X,Y,C), mode(explore), toExplore(X,Y).
-    candidate(1,XS,YS,C) :- h(XS,YS,C), attack(XS,YS,OS), mode(kill).
-    candidate(2,X,Y,C) :- now(XN,YN,_), cost(X,Y,O,XG,YG,C), anyNeighbor(XN,YN,X,Y), safe(X,Y), isOrientation(O), goal(XG,YG,_).
+    shouldAim :- succAim(A).
 
 ## Optimization For Goal
 
+    h(X2,Y2,C) :- now(X1,Y1,O1), cost(X1,Y1,O1,X2,Y2,C).
+
+Interesting candidates are those cells that we have not yet explored
+and we know that they are safe.
+
+    candidate(1,X,Y,C) :- h(X,Y,C), mode(explore), canExplore(X,Y).
+    candidate(1,X,Y,C) :- h(X,Y,C), mode(kill), attack(X,Y,O).
+    candidate(1,1,1,C) :- h(1,1,C), mode(escape).
+    candidate(2,X,Y,C) :- now(XN,YN,ON), anyNeighbor(XN,YN,X,Y), safe(X,Y), cost(X,Y,O,XG,YG,C), isOrientation(O), goal(XG,YG).
+
     level(1).
     level(2).
-    next(X,Y,C) :- choice(2,X,Y,C).
-    goal(X,Y,C) :- choice(1,X,Y,C).
-    goal(1,1,C) :- h(1,1,C), mode(escape).
+    next(X,Y) :- choice(2,X,Y,C).
+    goal(X,Y) :- choice(1,X,Y,C).
 
     choice(L,X,Y,C) v -choice(L,X,Y,C) :- candidate(L,X,Y,C), level(L).
-    :~ candidate(L,_,_,C1), candidate(L,X,Y,C2), C2 > C1, choice(L,X,Y,C2), level(L). [1:1]
-    :- candidate(L,X1,_,C), candidate(L,X2,_,C), X2 > X1, choice(L,X2,Y,C), level(L).
-    :- candidate(L,X,Y1,C), candidate(L,X,Y2,C), Y2 > Y1, choice(L,X,Y2,C), level(L).
-
-## Optimization For Next
+    :~ candidate(L,X1,Y1,C1), candidate(L,X2,Y2,C2), C2 > C1, choice(L,X2,Y2,C2), level(L).
+    :- candidate(L,X1,Y1,C1), candidate(L,X1,Y2,C1), Y2 > Y1, choice(L,X1,Y2,C1), level(L).
+    :- candidate(L,X1,Y1,C1), candidate(L,X2,Y2,C1), X2 > X1, choice(L,X2,Y2,C1), level(L).
 
 ## Autopilot
 
@@ -263,10 +304,10 @@ and we know that they are safe.
 
 ## Mode Selector
 
-    mode(explore) :- canExplore, -grabbed.
-    mode(escape) :- not mode(explore), not mode(kill).
-    mode(kill) :- not mode(explore), shouldKill, not shouldGrab, -grabbed.
-    mode(kill) :- not mode(explore), shouldTryKill, not shouldGrab, -grabbed.
+    mode(grab) :- shouldGrab.
+    mode(explore) :-  not mode(grab), shouldExplore.
+    mode(kill) :- not mode(grab), not mode(explore), shouldAttack.
+    mode(escape) :- not mode(grab), not mode(explore), not mode(kill).
 
 ## Consistency
 
@@ -276,7 +317,7 @@ and we know that they are safe.
     wouldBump :- now(S,_,right), size(S).
     inSomeMode :- isMode(M), mode(M).
     doingSomething :- isAction(A), do(A).
-    foundGoal :- goal(_,_,_).
+    foundGoal :- goal(_,_).
     breezeHasPossiblePit(XB,YB) :- breeze(XB,YB), possiblePit(XB,YB,XP,YP).
 
 0 We should not go forward, since that would be our second time to bump.
@@ -307,8 +348,8 @@ and we know that they are safe.
     bad(8) :- wumpus(X1,Y1), wumpus(X2,Y2), X1 != X2, Y1 != Y2.
 
 10 There is a cell outside of the world. Whut?
-    bad(10) :- cell(X,_), X > S, size(S).
-    bad(10) :- cell(_,Y), Y > S, size(S).
+    bad(10) :- cell(X,Y), X > S, size(S).
+    bad(10) :- cell(X,Y), Y > S, size(S).
 
 11 A breeze must have at least one possiblePit.
     bad(11) :- breeze(XB,YB), not breezeHasPossiblePit(XB,YB).
