@@ -91,6 +91,10 @@ def parse(a, interesting):
         result[predicate][terms] = (not neg)
     return result
 
+def unlit(fname):
+    with open(fname, 'r') as f:
+        return [ln[4:-1] if ln.startswith('    ') else '%' + ln[:-1] for ln in f]
+
 def pretty(x, interesting):
     result = '\n'
     width = max(map(len, interesting))
@@ -127,6 +131,7 @@ class ASPAgent():
         self.dlv = dlv()
         self.actions = []
         self.shot = None
+        self.prog = unlit(join(dirname(__file__), 'agent.md'))
 
         if init == None:
             # Assume some large world. Will get adjusted once we bump.
@@ -287,16 +292,16 @@ class ASPAgent():
             write_dot(self.g, 'g-{}.gv'.format(len(self.previousActions)))
 
         kfd, kfname = mkstemp()
-        with open(kfd, 'w') as f: f.write('\n'.join(knowledge))
-        d = dirname(__file__)
+        with open(kfd, 'w') as f:
+            f.write('\n'.join(self.prog))
+            f.write('\n'.join(knowledge))
+
         proc = run(
             [
                 self.dlv,
                 '-silent',
                 '-filter=' + ','.join(INTERESTING),
-                join(d, 'constants.asp'),
                 kfname,
-                join(d, 'agent.asp'),
             ],
             stderr=STDOUT,
             stdout=PIPE,
