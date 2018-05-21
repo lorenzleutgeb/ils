@@ -170,11 +170,16 @@ not in Python since we might have assumed a size.
 
 ## Do
 
+    priority :- shouldShoot.
+    priority :- shouldClimb.
+    priority :- shouldGrab.
+    priority :- shouldAim.
+
     do(shoot) :- shouldShoot.
     do(grab) :- shouldGrab.
     do(climb) :- shouldClimb.
     do(A) :- succAim(A).
-    do(A) :- next(X,Y), towards(A), not shouldGrab, not shouldClimb, not shouldShoot, not shouldAim.
+    do(A) :- next(X,Y), towards(A), not priority.
 
     shouldShoot :- mode(kill), now(X,Y,O), attack(X,Y,O).
 
@@ -242,8 +247,8 @@ Any cell where the wumpus is is not safe.
 
 Auxiliary flag to signal whether we can still explore further.
 
-    canExplore(X,Y) :- reachable(X,Y), safe(X,Y), -explored(X,Y).
-    shouldExplore :- canExplore(X,Y).
+    frontier(X,Y) :- reachable(X,Y), safe(X,Y), -explored(X,Y).
+    shouldExplore :- frontier(X,Y).
 
 ## Kill Mode
 
@@ -281,15 +286,23 @@ Auxiliary flag to signal whether we can still explore further.
 Interesting candidates are those cells that we have not yet explored
 and we know that they are safe.
 
-    candidate(1,X,Y,C) :- h(X,Y,C), mode(explore), canExplore(X,Y).
+    candidate(1,X,Y,C) :- h(X,Y,C), mode(explore), frontier(X,Y).
     candidate(1,X,Y,C) :- h(X,Y,C), mode(kill), attack(X,Y,O).
     candidate(1,1,1,C) :- h(1,1,C), mode(escape).
-    candidate(2,X,Y,C) :- now(XN,YN,ON), anyNeighbor(XN,YN,X,Y), safe(X,Y), cost(X,Y,O,XG,YG,C), isOrientation(O), goal(XG,YG).
+    candidate(2,X,Y,C) :- not easyGoal, now(XN,YN,ON), anyNeighbor(XN,YN,X,Y), safe(X,Y), cost(X,Y,O,XG,YG,C), isOrientation(O), goal(XG,YG).
+    candidate(2,X,Y,C) :- easyGoal, choice(1,X,Y,C).
 
     level(1).
     level(2).
     next(X,Y) :- choice(2,X,Y,C).
     goal(X,Y) :- choice(1,X,Y,C).
+
+    easyGoal :- now(XN,YN,ON), anyNeighbor(XN,YN,XG,YG), goal(XG,YG).
+
+    foundNext :- next(X,Y).
+    :- goal(X,Y), not foundNext.
+    foundGoal :- goal(X,Y).
+    :- not foundGoal, not priority.
 
     choice(L,X,Y,C) v -choice(L,X,Y,C) :- candidate(L,X,Y,C), level(L).
     :~ candidate(L,X1,Y1,C1), candidate(L,X2,Y2,C2), C2 > C1, choice(L,X2,Y2,C2), level(L).
@@ -299,8 +312,8 @@ and we know that they are safe.
 ## Autopilot
 
     -autopilot :- not autopilot.
-    autopilot :- foundGoal, not shouldGrab, not shouldClimb, mode(explore).
-    autopilot :- foundGoal, not shouldGrab, not shouldClimb, mode(escape).
+    autopilot :- not priority, mode(explore).
+    autopilot :- not priority, mode(escape).
 
 ## Mode Selector
 
@@ -317,7 +330,6 @@ and we know that they are safe.
     wouldBump :- now(S,_,right), size(S).
     inSomeMode :- isMode(M), mode(M).
     doingSomething :- isAction(A), do(A).
-    foundGoal :- goal(_,_).
     breezeHasPossiblePit(XB,YB) :- breeze(XB,YB), possiblePit(XB,YB,XP,YP).
 
 0 We should not go forward, since that would be our second time to bump.
