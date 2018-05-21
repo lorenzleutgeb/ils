@@ -128,7 +128,7 @@ TODO: Some buggy code for including rotation into the cost function...
 
 We use the Manhattan distance as cost function.
 
-    cost(X1,Y1,O1,X2,Y2,M) :- reachable(X1,Y1), isOrientation(O1), reachable(X2,Y2), manhattan(X1,Y1,X2,Y2,M).
+    cost(X1,Y1,O1,X2,Y2,M) :- reachable(X1,Y1), isOrientation(O1), reachable(X2,Y2), M = #min{Mm: manhattan(X1,Y1,X2,Y2,Mm)}.
 
     rotate(up,turnleft,left).
     rotate(left,turnleft,down).
@@ -221,22 +221,29 @@ If wumpus is not certainly detected, we must exclude other cells where it might 
 
 ## Detection Of Pits
 
+A neighbor of a breeze is a possible pit if it can be.
+
+    possiblePit(XB,YB,XP,YP) :- breeze(XB,YB), anyNeighbor(XB,YB,XP,YP), not -pit(XP,YP).
+
 Any explored cell certainly cannot be a pit, otherwise we would be dead by now.
+
     -pit(X,Y) :- explored(X,Y).
 
 If we have explored a cell already and felt no brezee, then no neighbor can be a pit.
+
     -pit(X2,Y2) :- -breeze(X1,Y1), anyNeighbor(X1,Y1,X2,Y2).
 
-A neighbor of a breeze is a possible pit if it can be.
-    possiblePit(XB,YB,XP,YP) :- breeze(XB,YB), anyNeighbor(XB,YB,XP,YP), not -pit(XP,YP).
+Finally, we assume that there are pits where there might be possible pits.
+
+    pit(X,Y) :- possiblePit(XB,YB,X,Y).
 
 ## Safety Of Cells
 
 Any cell where the wumpus is is not safe.
     safe(X,Y) :- explored(X,Y).
-    -safe(X1,Y1) :- wumpus(X1,Y1).
-    -safe(X1,Y1) :- possibleWumpus(X1,Y1).
-    -safe(X2,Y2) :- possiblePit(X1,Y1,X2,Y2).
+    -safe(X,Y) :- wumpus(X,Y).
+    -safe(X,Y) :- possibleWumpus(X,Y).
+    -safe(X,Y) :- pit(X,Y).
 
     safe(X,Y) :- reachable(X,Y), not -safe(X,Y).
 
@@ -252,8 +259,8 @@ Auxiliary flag to signal whether we can still explore further.
 
 ## Kill Mode
 
-    dontShoot :- possibleWumpus(X,Y), possiblePit(_,_,X,Y).
-    dontShoot :- wumpus(X,Y), possiblePit(_,_,X,Y).
+    dontShoot :- possibleWumpus(X,Y), pit(X,Y).
+    dontShoot :- wumpus(X,Y), pit(X,Y).
     dontShoot :- not haveArrow.
     dontShoot :- wumpusDead.
     dontShoot :- grabbed.
@@ -318,8 +325,8 @@ and we know that they are safe.
 ## Mode Selector
 
     mode(grab) :- shouldGrab.
-    mode(explore) :-  not mode(grab), shouldExplore.
-    mode(kill) :- not mode(grab), not mode(explore), shouldAttack.
+    mode(explore) :-  not mode(grab), shouldExplore, -grabbed.
+    mode(kill) :- not mode(grab), not mode(explore), shouldAttack, -grabbed.
     mode(escape) :- not mode(grab), not mode(explore), not mode(kill).
 
 ## Consistency
