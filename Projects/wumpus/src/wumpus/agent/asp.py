@@ -12,6 +12,7 @@ import networkx as nx
 
 from networkx.algorithms.shortest_paths.generic import shortest_path
 
+from ..asp       import unlite
 from ..common    import Action, Orientation, Location, paint
 from ..simulator import World
 from ..util      import dlv
@@ -133,10 +134,6 @@ def parse(a, interesting):
         result[predicate][terms] = (not neg)
     return result
 
-def unlit(fname):
-    with open(fname, 'r') as f:
-        return [ln[4:-1] if ln.startswith('    ') else '%' + ln[:-1] for ln in f]
-
 def pretty(x, interesting, size, painters):
     width = max(map(len, interesting))
     selection = list([k for k in interesting.keys() if k not in GRAPHICAL])
@@ -177,7 +174,9 @@ class ASPAgent():
         self.dlv = dlv()
         self.actions = []
         self.shot = None
-        self.prog = unlit(join(dirname(__file__), 'agent.md'))
+
+        _, self.prog = mkstemp()
+        unlite(join(dirname(__file__), 'agent.md'), self.prog)
 
         with open('agent', 'w') as f: f.truncate()
 
@@ -327,23 +326,20 @@ class ASPAgent():
             plt.show()
             write_dot(self.g, 'g-{}.gv'.format(len(self.previousActions)))
 
-        kfd, kfname = mkstemp()
-        with open(kfd, 'w') as f:
-            f.write('\n'.join(self.prog))
-            f.write('\n'.join(knowledge))
-
         proc = run(
             [
                 self.dlv,
                 '-silent',
                 '-filter=' + ','.join(INTERESTING),
-                kfname,
+                self.prog,
+                '--'
             ],
             stderr=STDOUT,
             stdout=PIPE,
+            input='\n'.join(knowledge),
             encoding='utf-8'
         )
-        remove(kfname)
+
         result = proc.stdout
 
         if len(result) == 0:
@@ -372,12 +368,13 @@ class ASPAgent():
             for (x,), sign in bads:
                 prefix = '%{} '.format(x)
                 found = False
-                for ln in self.prog:
-                    if ln.startswith(prefix):
-                        found = True
-                        logger.debug('\033[31mCONSISTENCY ' + str(x) + ': ' + ln[len(prefix):].strip() + '\033[0m')
-                if not found:
-                    logger.debug('No comment describing bad({}). Add a line starting with \'%{} \' followed by a description.'.format(x, x))
+                with open(self.prog) as f:
+                    for ln in f:
+                        if ln.startswith(prefix):
+                            found = True
+                            logger.debug('\033[31mCONSISTENCY ' + str(x) + ': ' + ln[len(prefix):].strip() + '\033[0m')
+                    if not found:
+                        logger.debug('No comment describing bad({}). Add a line starting with \'%{} \' followed by a description.'.format(x, x))
             return None
 
         for (pred, _) in INTERESTING.items():
