@@ -1,3 +1,4 @@
+from inspect    import getfullargspec
 from functools  import reduce
 from itertools  import product
 from os.path    import dirname, join
@@ -11,7 +12,7 @@ import networkx as nx
 
 from networkx.algorithms.shortest_paths.generic import shortest_path
 
-from ..common    import Action, Orientation, Location
+from ..common    import Action, Orientation, Location, paint
 from ..simulator import World
 from ..util      import dlv
 from .mode       import Mode
@@ -33,23 +34,48 @@ INTERESTING = {
 
     # The next three are needed to implement the autopilot.
     'autopilot': (),
-    'goal': (int, int, int),
-    'safe': (int, int),
+    'goal': (Location,),
+    'safe': (Location,),
+
+    'bad': (int,),
+    'size': (int,),
 
     # For debugging, you may add other predicates here.
-    'bad': (int,),
-    'risk': (Orientation,),
+    'now': (Location,Orientation),
     'mode': (Mode,),
-    'possiblePit': (int, int, int, int),
-    'strange': (int, int, int, int, int, int),
-    'possibleWumpus': (int, int),
-    'wumpus': (int, int),
-    'reachable': (int, int),
-    'explored': (int, int),
-    'candidate': (int, int, int),
-    'next': (int, int, int),
-    'ncandidate': (int, int, int),
+    'possibleWumpus': (Location,),
+    'h': (Location,int),
+    'wumpus': (Location,),
+    'frontier': (Location,),
+    'next': (Location,),
+    'pit': (Location,),
 }
+
+GRAPHICAL = {
+    'explored', 'pit', 'safe', 'next', 'goal', 'wumpus', 'h', 'now', 'frontier', 'size', 'bad', 'possibleWumpus', 'autopilot'
+}
+
+def tofun(xs):
+    def f(y):
+        fy = [x[0][1] for x in xs.items() if x[1] and y == x[0][0]]
+        if len(fy) > 1:
+            raise ValueError("Not a function since {} yields results {}!".format(y, fy))
+        elif len(fy) == 0:
+            return None
+        else:
+            return fy[0]
+    return f
+
+def tobfun(xs):
+    def f(y):
+        fy = [x[1] for x in xs.items() if y == x[0][0]]
+        if len(fy) > 1:
+            raise ValueError("Not a function since {} yields results {}!".format(y, fy))
+        elif len(fy) == 0:
+            return None
+        else:
+            return fy[0]
+    return f
 
 def atom(sign, predicate, terms=[]):
     result = ''
@@ -84,7 +110,23 @@ def parse(a, interesting):
             predicate = e[neg:lpar]
             terms = e[lpar + 1:-1].split(',')
             if predicate in interesting:
-                terms = tuple(map(lambda x: x[0](int(x[1])), zip(interesting[predicate], terms)))
+                terms = list(map(int, terms))
+                mapped = []
+                i = 0
+                for f in interesting[predicate]:
+                    if i == len(terms):
+                        break
+                    if f == None or f == int:
+                        n = 1
+                        mapped.append(terms[i])
+                    else:
+                        spec = getfullargspec(f)
+                        n = len(spec.args)
+                        if n > 1 and spec.args[0] == 'self':
+                            n -= 1
+                        mapped.append(f(*terms[i:i+n]))
+                    i += n
+                terms = tuple(mapped)
             else:
                 terms = tuple(map(int, terms))
 
@@ -95,21 +137,21 @@ def unlit(fname):
     with open(fname, 'r') as f:
         return [ln[4:-1] if ln.startswith('    ') else '%' + ln[:-1] for ln in f]
 
-def pretty(x, interesting):
-    result = '\n'
+def pretty(x, interesting, size, painters):
     width = max(map(len, interesting))
-    selection = list(interesting.keys())
+    selection = list([k for k in interesting.keys() if k not in GRAPHICAL])
     selection.sort()
+    notes = []
     for predicate in selection:
-        result += predicate.ljust(width) + ' = '
+        result = predicate.ljust(width) + ' = '
 
         if predicate not in x:
             result += '∅'
         else:
             result += '{' + ', '.join(map(lambda y: '\033[3' + str(1 + y[1]) + 'm(' + ','.join(map(str, y[0]))  + ')\033[0m', x[predicate].items())) + '}'
-        result += '\n'
+        notes.append(result)
 
-    return result
+    paint(size, painters, 'agent', notes)
 
 def manhattan(a, b):
     (l1, o1), (l2, o2) = a, b
@@ -126,12 +168,18 @@ def taxicab(a, b):
         return None
     return reduce(lambda s, x: s + abs(x[0] - x[1]), zip(a, b), 0)
 
+def ntos(n):
+    (x, y), o = n
+    return "(({}, {}), {})".format(x, y, o)
+
 class ASPAgent():
     def __init__(self, init=None):
         self.dlv = dlv()
         self.actions = []
         self.shot = None
         self.prog = unlit(join(dirname(__file__), 'agent.md'))
+
+        with open('agent', 'w') as f: f.truncate()
 
         if init == None:
             # Assume some large world. Will get adjusted once we bump.
@@ -193,17 +241,8 @@ class ASPAgent():
     def previousAction(self):
         return None if self.previousActions == [] else self.previousActions[-1]
 
-    def decodeAction(self, u, v):
-        return self.g.get_edge_data(u, v)['action']
-
     def process(self, percept):
         prevAct = self.previousAction()
-
-        if prevAct == Action.SHOOT:
-            if self.shot != None:
-                logger.debug('We appear to be shooting a second time.')
-                return None
-            self.shot = (self.position, self.orientation)
 
         # Infer size of the world.
         if percept.bump:
@@ -211,17 +250,17 @@ class ASPAgent():
             if self.bump != None:
                 logger.debug('We appear to be bumping a second time.')
             self.bump = self.position.getAdjacent(self.orientation, self.size + 1)
-
-        # If we moved without bump, account for the move!
         elif prevAct == Action.GOFORWARD:
             self.position = self.position.getAdjacent(self.orientation, self.size)
-
-        # If we turned, account for turning!
-        if prevAct in {Action.TURNLEFT, Action.TURNRIGHT}:
+        elif prevAct in {Action.TURNLEFT, Action.TURNRIGHT}:
             self.orientation = self.orientation.turn(prevAct)
-
-        if percept.scream:
-            self.wumpusDead = True
+        elif prevAct == Action.SHOOT:
+            if self.shot != None:
+                logger.debug('We appear to be shooting a second time.')
+                return None
+            self.shot = (self.position, self.orientation)
+            if percept.scream:
+                self.wumpusDead = True
 
         here = (self.position, self.orientation)
 
@@ -229,7 +268,8 @@ class ASPAgent():
 
         self.world[self.position] = (percept.stench, percept.breeze, percept.glitter)
 
-        if explored:
+        # Since we do not set explored to true in case of a bump, this is checked explicitly.
+        if explored or percept.bump:
             self.actions = []
         elif self.actions != []:
             action = self.actions.pop(0)
@@ -249,11 +289,7 @@ class ASPAgent():
                 self.g.add_edge((self.position, o), (a, o), action=Action.GOFORWARD)
 
                 for action in {Action.TURNLEFT, Action.TURNRIGHT}:
-                    prev = o
-                    for i in range(4):
-                        current = prev.turn(action)
-                        self.g.add_edge((self.position, prev), (self.position, current), action=action)
-                        prev = current
+                    self.g.add_edge((self.position, o), (self.position, o.turn(action)), action=action)
 
         knowledge = [
             fact(True, 'now', [self.position.x, self.position.y, self.orientation.toSymbol()]),
@@ -330,44 +366,69 @@ class ASPAgent():
             logger.warning('ASP program returned multiple answer sets. Only considering the first!')
 
         result = result[0]
-        logger.debug(pretty(result, INTERESTING))
 
         bads = result['bad'].items()
         if len(bads) > 0:
             for (x,), sign in bads:
                 prefix = '%{} '.format(x)
-                with open(join(d, 'agent.asp'), 'r') as f:
-                    found = False
-                    for ln in f:
-                        if ln.startswith(prefix):
-                            found = True
-                            logger.debug('\033[31mCONSISTENCY ' + str(x) + ': ' + ln[len(prefix):].strip() + '\033[0m')
-                    if not found:
-                        logger.debug('No comment describing bad({}). Add a line starting with \'%{} \' followed by a description.'.format(x, x))
+                found = False
+                for ln in self.prog:
+                    if ln.startswith(prefix):
+                        found = True
+                        logger.debug('\033[31mCONSISTENCY ' + str(x) + ': ' + ln[len(prefix):].strip() + '\033[0m')
+                if not found:
+                    logger.debug('No comment describing bad({}). Add a line starting with \'%{} \' followed by a description.'.format(x, x))
             return None
 
-        autopilot = result['autopilot'][()]
+        for (pred, _) in INTERESTING.items():
+            if pred not in result:
+                result[pred] = {}
+
+        size = next(l for (l,), sign in result['size'].items() if sign)
+
+        pretty(result, INTERESTING, size, [
+            (tofun(result['now']),),
+            (tobfun(result['frontier']), 'F'),
+            (tobfun(result['safe']), 'S'),
+            (tobfun(result['pit']), 'P'),
+            (tobfun(result['next']), 'N'),
+            (tobfun(result['goal']), 'G'),
+            (tobfun(result['wumpus']), 'W'),
+            (tofun(result['h']),),
+        ])
+
+        # TODO: Autopilot is buggy and therefore disabled. Fix it!
+        autopilot = result['autopilot'][()] and False
         if autopilot:
             # First, extract safety information and update action graph.
-            for (x, y), safe in result['safe'].items():
+            for l, safe in result['safe'].items():
                 for o in Orientation:
-                    n = (Location(x, y), o)
+                    n = (l, o)
                     if n not in self.g:
                         continue
                     self.g.nodes[n]['safe'] = safe
 
             # Then extract goal and compute shortest path.
-            goal = next(Location(x, y) for (x, y, _), sign in result['goal'].items() if sign)
+            goal = next(l for (l,), sign in result['goal'].items() if sign)
 
-            safeOnly = lambda u, v, d: 1 if result['safe'][(u[0].x, u[0].y)] else None
+            for n in self.g:
+                self.g.nodes[n]['label'] = ntos(n)
+
+            def safeOnly(u, v, d):
+                if self.g.get_edge_data(u, v) == None:
+                    print(ntos(u) + " " + ntos(v) + " has no edge attributes")
+                    return None
+                return 1 if result['safe'][(v[0],)] else None
+
             shortestPath = None
             for o in Orientation:
                 try:
                     path = shortest_path(self.g, (self.position, self.orientation), (goal, o), weight=safeOnly)
+                    if shortestPath == None or len(shortestPath) > len(path):
+                        shortestPath = path
                 except nx.NetworkXNoPath:
+                    #print('{} to {} is impossible!'.format(ntos((self.position, self.orientation)), ntos((goal, o))))
                     continue
-                if shortestPath == None or len(shortestPath) > len(path):
-                    shortestPath = path
 
             if shortestPath == None:
                 autopilot = False
@@ -377,8 +438,11 @@ class ASPAgent():
                 if nextCell not in self.world:
                     autopilot = False
                 else:
-                    actions = zip(path, shortestPath[1:])
-                    actions = list(map(lambda x: self.decodeAction(*x), actions))
+                    actions = []
+                    for i in range(len(shortestPath) - 1):
+                        u = shortestPath[i]
+                        v = shortestPath[i + 1]
+                        actions.append(self.g[u][v]['action'])
                     action = actions.pop(0)
                     self.actions = actions
 
@@ -387,5 +451,4 @@ class ASPAgent():
             action = next(a for a, sign in result['do'].items() if sign)[0]
 
         self.previousActions.append(action)
-        logger.debug('═' * 80)
         return action

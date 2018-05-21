@@ -1,4 +1,4 @@
-from sys import argv, exit, stdout
+from sys import argv, exit
 from random import seed
 from os import urandom
 from os.path import join
@@ -99,8 +99,7 @@ def play(worldSize, worldFile, agentName, porcelain):
 
     aborted = False
     while (not(wumpusWorld.isGameOver())) and (numMoves < MAX_MOVES):
-        if not porcelain:
-            wumpusWorld.printTo(stdout)
+        wumpusWorld.printTo()
         percept = wumpusWorld.percept
         action = agent.process(percept)
         if action == None:

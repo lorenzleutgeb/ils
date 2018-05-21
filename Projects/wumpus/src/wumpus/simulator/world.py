@@ -4,7 +4,7 @@ from ..common import *
 
 PIT_PROBABILITY = 0.2
 
-emoji = True
+emoji = False
 
 GDSPC = '═' * (2 if emoji else 1) * 3
 GSPC = '─' * (2 if emoji else 1) * 3
@@ -18,6 +18,8 @@ ARROW = '🏹' if emoji else 'A'
 
 class World():
     def __init__(self, size=4, wumpus=None, gold=None, pits=None):
+        with open('world', 'w') as f: f.truncate()
+
         self.agentLocation = Location(1,1)
         self.agentOrientation = Orientation.RIGHT
         self.agentAlive = True
@@ -195,99 +197,20 @@ class World():
 
         return score
 
-    def printTo(self, ps):
-        # Print top line
-        ps.write("\n" + SPC + "  ╔")
-        for x in range(1, self.worldSize):
-            ps.write(GDSPC + "╤")
-        ps.write(GDSPC + "╗\n")
-        # Print each row, starting at top
-        for y in list(range(1, self.worldSize + 1))[::-1]:
-            # Print wumpus/gold/pit line
-            ps.write(SPC + "  ║")
-            for x in range(1, self.worldSize + 1):
-                if self.wumpus.isAt(x, y):
-                    if self.wumpusAlive:
-                        ps.write(WUMPUS)
-                    else:
-                        ps.write(WUMPUS_DEAD)
-                else:
-                    ps.write(SPC)
-                if (not self.agentHasGold) and (self.gold.isAt(x, y)):
-                    ps.write(GOLD)
-                else:
-                    ps.write(SPC)
-                isPit = False
-                for pit in self.pits:
-                    if pit.isAt(x, y):
-                        isPit = True
-                        break
-                if isPit:
-                    ps.write(PIT)
-                else:
-                    ps.write(SPC)
-                if x < self.worldSize:
-                    ps.write("│")
-                else:
-                    ps.write("║")
-                    if y == self.worldSize:
-                        ps.write("  Agent has "+ARROW+": " + ('\033[32mYes\033[0m' if self.agentHasArrow else '\033[31mNo\033[0m'))
-                    if y == self.worldSize - 1:
-                        ps.write("  Score:      " + SPC + str(self.getScore()))
-            ps.write("\n" + SPC + str(y) + " ║")
-            # Print agent line
-            for x in range(1, self.worldSize + 1):
-                if self.agentAlive and (self.agentLocation.isAt(x, y)):
-                    ps.write(" " + AGENT + str(self.agentOrientation) + SPC)
-                else:
-                    ps.write("  " + SPC + SPC)
-
-                if x < self.worldSize:
-                    ps.write("│")
-                else:
-                    ps.write("║")
-
-            ps.write("\n" + SPC + "  ║")
-            for x in range(1, self.worldSize + 1):
-                if self.agentAlive and (self.agentLocation.isAt(x, y)):
-                    ps.write(" " + SPC + ' ' + SPC)
-                else:
-                    ps.write("  " + SPC + SPC)
-
-                if x < self.worldSize:
-                    ps.write("│")
-                else:
-                    ps.write("║")
-                    if y == self.worldSize:
-                        ps.write("  Agent has "+GOLD+": " + ('\033[32mYes\033[0m' if self.agentHasGold else '\033[31mNo\033[0m'))
-            ps.write("\n" + SPC)
-        # /*
-        # # Print empty next line
-        # ps.write("|"
-        # for (x = 1 x <= worldSize x++)
-        # {
-        #     ps.write("   |"
-        # }
-        # ps.write(endl
-        # */
-            if y == 1:
-                continue
-            # Print boundary line
-            ps.write("  ╟")
-            for x in range(1, self.worldSize):
-                ps.write(GSPC + "┼")
-            ps.write(GSPC + "╢\n")
-
-        # Print bottom line
-        ps.write("  ╚")
-        for x in range(1, self.worldSize):
-            ps.write(GDSPC + "╧")
-        ps.write(GDSPC + "╝\n")
-
-        ps.write("  " + SPC + " ")
-        for x in range(1, self.worldSize):
-            ps.write(SPC + str(x) + SPC + SPC)
-        ps.write(SPC + str(self.worldSize) + "\n\n")
+    def printTo(self):
+        notes = [
+            "  Agent has "+ARROW+": " + ('\033[32mYes\033[0m' if self.agentHasArrow else '\033[31mNo\033[0m'),
+            "  Agent has "+GOLD+": " + ('\033[32mYes\033[0m' if self.agentHasGold else '\033[31mNo\033[0m'),
+            "  Score:      " + SPC + str(self.getScore())
+        ]
+        def projAgent(l):
+            return str(self.agentOrientation) if l == self.agentLocation else None
+        paint(self.worldSize, [
+            (self.wumpus, 'W' if self.wumpusAlive else 'w'),
+            (self.pits, 'P'),
+            (projAgent,),
+            (self.gold, 'G' if not self.agentHasGold else 'g'),
+        ], 'world', notes)
 
     def writeTo(self, fname):
         with open(fname, 'w') as f:
