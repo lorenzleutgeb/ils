@@ -35,7 +35,7 @@
 
   \begin{frame}{Task}
     \begin{enumerate}
-      \item Implement an agent that can play the \alert{Wumpus} game
+      \item Implement an agent that plays the \alert{Wumpus} game
       \item Implement a strategy to complete generated dungeons
       \item Find an optimal strategy, i.e. maximise score
     \end{enumerate}
@@ -51,29 +51,68 @@
 
   \begin{center}
   \begin{tabular}{lll}
-    {\bfseries Tool/Library} & {\bfseries Version} & {\bfseries Purpose} \\
-    %ANTLR & 4.7.1 & Parser Generator \\
-    %Java & 10 & Runtime \\
-    %SAT4J & 2.3.5 & Solver Components \\
-    %Guava & & Utilities and Data Structures \\
-    %JCommander & & Commandline Parsing \\
-    %JUnit & 5.1 & Testing \\
-    %LOG4J & & Logging \\
-    %Gradle & 4.6 & Dependency and Build Management \\
+    \textbf{Tool/Library} & \textbf{Version} & \textbf{Purpose} \\
     Python & 3.6 & Runtime \\
-    PyTest & ? & Benchmarking \\
-    DLV & ? & Planner? \\ 
+    PyTest & 3.0 & Benchmarking \\
+    DLV & Dec 2012 & ASP Solver \\
+    networkX & ? & Graph management \\
     ? & ? & Dependency management \\
   \end{tabular}
   \end{center}
   \end{frame}
 
-  
+  \section{Agent architecture}
+
+  \begin{frame}{Hybrid Agent}
+      \begin{tabular}{lll}
+        \textbf{Component} & \textbf{Task} & \textbf{Language} \\
+        Perceptor & Retrieves what is perceived in current location & Python \\
+        Long-term Memory & Stores information about what has been discovered and done & Python \\
+        Action Graph & Searches for optimal actions to be taken & Python \\
+        Working Memory & Stores information needed to decide next action & Python \\
+        Planner & Infers new knowledge and decides next action & ASP \\ 
+      \end{tabular}
+  \end{frame}
+
+  \begin{frame}{Execution loop}
+    % TODO: diagram?
+    % At each time step, ASP solver called after perception has been caught.
+  \end{frame}
+
+  \begin{frame}{Action graph}
+    
+  \end{frame}
+
+  \begin{frame}{ASP Encoding}
+    \begin{center}
+      \begin{tabular}{ll}
+        \textbf{Predicate} & \textbf{Meaning} \\
+        now/3 & position and orientation of the agent \\
+        stench/2 & stench has been found in here \\
+        wumpusDead/0 & a scream has been perceived \\
+        grabbed/0 & glitter perceived, gold has been grabbed \\
+      \end{tabular}
+    \end{center}
+  \end{frame}
+
+  \begin{frame}{Heuristics}
+    % TODO.
+  \end{frame}
+
   \section{Evaluation}
 
-  \begin{frame}
-    \frametitle{The Test Suite}
-    Powered by \alert{PyTest}.
+  \begin{frame}{Perfect agent}
+    Performance of the agent compared against a \alert{perfect} agent.
+    \begin{itemize}
+      \item \alert{Omniscience}, i.e. total knowledge of the world 
+      \item Optimal solution as shortest path over the action graph
+      \item Score of this agent taken as reference for a dungeon
+    \end{itemize}
+  \end{frame}
+
+  \begin{frame}{The Test Suite}
+    %Powered by \alert{PyTest}.
+
   \end{frame}
 
   \section{Conclusion}
