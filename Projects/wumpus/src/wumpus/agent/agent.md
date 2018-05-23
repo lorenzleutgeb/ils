@@ -147,6 +147,23 @@ Two cells are different if any of the components  X, Y are unequal.
 
 ### Distances and Costs
 
+The two predicates `outgoing` and `incoming` will help us to
+keep the space for which we have to compute costs small.
+
+	neighborhood              X2 Y2
+		now         X1 Y1       _
+		anyNeighbor X1 Y1 X2 Y2
+		safe              X2 Y2
+
+	outgoing             X Y
+		neighborhood X Y
+
+	outgoing     X Y
+		now  X Y _
+
+	incoming     X Y
+		safe X Y
+
 We define distance along axes
 
 	distAlong        X1 Y1 X2 Y2 right D
@@ -161,29 +178,80 @@ We define distance along axes
 
 And using that, manhattan/taxicab distance is a charm.
 
-	manhattan         X1 Y1 X2 Y2             M
-		distAlong X1 Y1 X2 Y2 right D1
-		distAlong X1 Y1 X2 Y2 up    D2
-		+                           D1 D2 M
+	manhattan            X1 Y1 X2 Y2             M
+		outgoing     X1 Y1
+		distAlong    X1 Y1 X2 Y2 right D1
+		distAlong    X1 Y1 X2 Y2 up    D2
+		+                              D1 D2 M
+
+	pathTurnCost          X Y O X Y 0
+		outgoing  X Y
+		isOrientation     O
+
+	pathTurnCost          X1 Y1 O1 X2 Y2 0
+		isOrientation       O1
+		facing        X1 Y1 _ X2 Y2
+		diff          X1 Y1   X2 Y2
+
+	pathTurnCost             X1 Y1 O1 X2 Y2 1
+		outgoing         X1 Y1
+		isOrientation          O1
+		incoming                  X2 Y2
+		not pathTurnCost X1 Y1 O1 X2 Y2 0
+
+	departureTurnCost        X1 Y1 O1 X2 Y2    C
+		outgoing     X1 Y1
+		isOrientation          O1
+		incoming                  X2 Y2
+		#min                               C Cm
+			reach    X1 Y1    X2 Y2 O2
+			turnCost       O1       O2   Cm
+
+	rotCost                   X1 Y1 O1 X2 Y2       C
+		outgoing          X1 Y1
+		isOrientation           O1
+		incoming                   X2 Y2
+		pathTurnCost      X1 Y1 O1 X2 Y2 Cp
+		departureTurnCost X1 Y1 O1 X2 Y2    Cd
+		+                                Cp Cd C
 
 We use the Manhattan distance as cost function.
 
-	cost                      X1 Y1 O1 X2 Y2 M
-		reachable         X1 Y1
+	cost                      X1 Y1 O1 X2 Y2 C
+		outgoing          X1 Y1
 		isOrientation           O1
-		reachable                  X2 Y2
-		#min                             M Mm
-			manhattan X1 Y1    X2 Y2   Mm
+		incoming                   X2 Y2
+		rotCost           X1 Y1 O1 X2 Y2 Cr
+		manhattan         X1 Y1    X2 Y2    Cm
+		+                                Cr Cm C
 
-	rotate up    left  turnleft
-	rotate left  down  turnleft
-	rotate down  right turnleft
-	rotate right up    turnleft
+The turn predicate associates two orientations with the action
+that must be taken in order to turn from the first orientation
+to the second (if possible).
 
-	rotate up    right turnright
-	rotate down  left  turnright
-	rotate left  up    turnright
-	rotate right down  turnright
+	turn up    left  turnleft
+	turn left  down  turnleft
+	turn down  right turnleft
+	turn right up    turnleft
+
+	turn up    right turnright
+	turn down  left  turnright
+	turn left  up    turnright
+	turn right down  turnright
+
+	turnCost              O O 0
+		isOrientation O
+
+	turnCost                  O1 O2 1
+		    isOrientation O1
+		    isOrientation     O2
+		    !=            O1 O2
+		not mirror        O1 O2
+
+	turnCost               O1 O2 2
+		isOrientation  O1
+		isOrientation     O2
+		mirror         O1 O2
 
 Neighboring cells along the horizontal and vertical axis.
 
@@ -236,6 +304,26 @@ Cells that agree on one component.
 	facing         X2 Y2    O2 X1 Y1
 		facing X1 Y1 O1    X2 Y2
 		mirror       O1 O2
+
+	reach        X1 Y1 X2 Y2 right
+		cell X1 Y1
+		cell       X2 Y2
+		<    X1    X2
+
+	reach        X1 Y1 X2 Y2 up
+		cell X1 Y1
+		cell       X2 Y2
+		<       Y1    Y2
+
+	reach        X1 Y1 X2 Y2 left
+		cell X1 Y1
+		cell       X2 Y2
+		>    X1    X2
+
+	reach        X1 Y1 X2 Y2 down
+		cell X1 Y1
+		cell       X2 Y2
+		>       Y1    Y2
 
 Complete information about information. We only do this here and
 not in Python since we might have assumed a size.
@@ -299,7 +387,7 @@ want to take high priority actions like grabbing, climbing or shooting.
 		now    X1 Y1 O1
 		next               X2 Y2
 		!=           O1 O2
-		rotate       O1 O2       A
+		turn         O1 O2       A
 
 	-cannotFace
 		isAction A
@@ -489,7 +577,7 @@ Auxiliary flag to signal whether we can still explore further.
 		    now    XS YS O
 
 	canAim                A
-		rotate  O1 O2 A
+		turn    O1 O2 A
 		aim        O2
 		now _ _ O1
 
@@ -535,12 +623,15 @@ and we know that they are safe.
 		mode escape
 
 	candidate 2                     X Y         C
-		    now         XN YN _
-		    anyNeighbor XN YN   X Y
-		    safe                X Y
-		    isOrientation           O
-		    cost                X Y O XG YG C
-		    goal                      XG YG
+		now         XN YN ON
+		anyNeighbor XN YN   X Y
+		safe                X Y
+		goal                      XG YG
+		cost                X Y O XG YG C2
+		reach       XN YN X Y O
+		+ C1 C2 C
+		+ Cr 1 C1
+		departureTurnCost XN YN ON X Y Cr
 		not easyGoal
 
 	candidate      2 X Y C
@@ -565,17 +656,17 @@ and we know that they are safe.
 		next _ _
 
 TODO: Inconsistent?
-	%-
-	%	    foundGoal
-	%	not foundNext
+	-
+		    foundGoal
+		not foundNext
 
 	foundGoal
 		goal _ _
 
 TODO: Inconsistent?
-	%-
-	%	not foundGoal
-	%	not priority
+	-
+		not foundGoal
+		not priority
 
 	choice L X Y C | -choice L X Y C
 		level     L
@@ -587,22 +678,6 @@ TODO: Inconsistent?
 		candidate L          X2 Y2 C2
 		choice    L          X2 Y2 C2
 		<=                C1       C2
-
-TODO: Inconsistent?
-	%-
-	%	level     L
-	%	candidate L X1 Y1       C1
-	%	candidate L       X1 Y2 C1
-	%	choice    L X1       Y2 C1
-	%	<=             Y1    Y2
-
-TODO: Inconsistent?
-	%-
-	%	level     L
-	%	candidate L X1 Y1       C1
-	%	candidate L       X2 Y2 C1
-	%	choice    L       X2 Y2 C1
-	%	<=          X1    X2
 
 ## Autopilot
 
@@ -784,35 +859,3 @@ TODO: Inconsistent?
 		rotCost X1 Y1 O1 X2 Y2 C1
 		rotCost X1 Y1 O1 X2 Y2    C2
 		!=                     C1 C2
-
-TODO: Some buggy code for including rotation into the cost function...
-
-	%sameRotCost O1 O2 C
-	%	O1 <= O2, C = O2 - O1, C < 3, isOrientation O1
-	%	isOrientation O2
-	%sameRotCost 0 3 1
-	%sameRotCost O2 O1 C
-	%	rotCost O1 O2 C
-	%outRotCost X Y O X Y O 0
-	%	isOrientation O
-	%	cell X Y
-	%outRotCost X1 Y1 O X2 Y2 O 0
-	%	facing X1 Y1 O1 X2 Y2
-	%	diff X1 Y1 X2 Y2
-	%outRotCost X1 Y1 O1 X2 Y2 O2 1
-	%	-facing X1 Y1 O1 X2 Y2
-	%	diff X1 Y1 X2 Y2
-	%	rotate O1 O2 A
-	%	facing X1 Y1 O2 X2 Y2
-	%outRotCost X1 Y1 O1 X2 Y2 O2 2
-	%	-facing X1 Y1 O1 X2 Y2
-	%	diff X1 Y1 X2 Y2
-	%	not rotCost X1 Y1 O1 X2 Y2 1
-	%rotCost X1 Y1 O1 X2 Y2 O2 C
-	%	sameRotCost
-	%cost X1 Y1 O1 X2 Y2 C
-	%	state X1 Y1 O1
-	%	cell X2 Y2
-	%	manhattan X1 Y1 X2 Y2 M
-	%	rotCost X1 Y1 O1 X2 Y2 R
-	%	C = M + R.

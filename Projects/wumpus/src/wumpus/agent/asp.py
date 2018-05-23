@@ -50,10 +50,16 @@ INTERESTING = {
     'frontier': (Location,),
     'next': (Location,),
     'pit': (Location,),
+    #'candidate': (int,Location,int),
+    #'turnCost': (int,int,int),
+    #'mirror': (int,int),
+    #'rotCost': (Location,Orientation,Location,int),
+    'departureTurnCost': (int,int,int,int,int,int),
+    'pathTurnCost': (int,int,int,int,int,int),
 }
 
 GRAPHICAL = {
-    'explored', 'pit', 'safe', 'next', 'goal', 'wumpus', 'h', 'now', 'frontier', 'size', 'bad', 'possibleWumpus', 'autopilot'
+    'explored', 'pit', 'safe', 'wumpus', 'h', 'now', 'frontier', 'size', 'bad', 'possibleWumpus', 'autopilot'
 }
 
 def tofun(xs):
@@ -177,6 +183,7 @@ class ASPAgent():
 
         _, self.prog = mkstemp()
         unlite(join(dirname(__file__), 'agent.md'), self.prog)
+        unlite(join(dirname(__file__), 'agent.md'), 'agent.asp')
 
         with open('agent', 'w') as f: f.truncate()
 
@@ -363,6 +370,19 @@ class ASPAgent():
 
         result = result[0]
 
+        size = next(l for (l,), sign in result['size'].items() if sign)
+
+        pretty(result, INTERESTING, size, [
+            (tofun(result['now']),),
+            (tobfun(result['frontier']), 'F'),
+            (tobfun(result['safe']), 'S'),
+            (tobfun(result['pit']), 'P'),
+            (tobfun(result['next']), 'N'),
+            (tobfun(result['goal']), 'G'),
+            (tobfun(result['wumpus']), 'W'),
+            (tofun(result['h']),),
+        ])
+
         bads = result['bad'].items()
         if len(bads) > 0:
             for (x,), sign in bads:
@@ -380,19 +400,6 @@ class ASPAgent():
         for (pred, _) in INTERESTING.items():
             if pred not in result:
                 result[pred] = {}
-
-        size = next(l for (l,), sign in result['size'].items() if sign)
-
-        pretty(result, INTERESTING, size, [
-            (tofun(result['now']),),
-            (tobfun(result['frontier']), 'F'),
-            (tobfun(result['safe']), 'S'),
-            (tobfun(result['pit']), 'P'),
-            (tobfun(result['next']), 'N'),
-            (tobfun(result['goal']), 'G'),
-            (tobfun(result['wumpus']), 'W'),
-            (tofun(result['h']),),
-        ])
 
         # TODO: Autopilot is buggy and therefore disabled. Fix it!
         autopilot = result['autopilot'][()] and False
