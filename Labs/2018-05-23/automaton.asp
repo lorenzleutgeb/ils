@@ -1,11 +1,36 @@
 #show merge/2.
 
-% Basic criterion.
-distinguish(S1,S2) :- accept(S1), state(S2), not accept(S2).
-distinguish(S1,S2) :- delta(S1,A,Sx), delta(S2,A,Sy), Sx != Sy.
+% symbol/1, state/1, accept/1, delta/3
 
-% Recursive criterion.
-%-distinguish(S1,S3) :- state(S1), state(S2), state(S3), S1 < S2, S2 < S3, not distinguish(S1,S2), not distinguish(S2,S3).
-%-distinguish(S1,S2) :- state(S1), state(S2), not distinguish(S1,S2).
+% Condition 1
+distinguish(Q1, Q2) :-
+	    accept(Q1),
+	    state (Q2),
+	not accept(Q2).
 
-merge(S1,S2) :- state(S1), state(S2), S1 < S2, not distinguish(S1,S2).
+% Condition 2
+distinguish(Q1, Q2) :-
+	delta(Q1, A, Sx),
+	delta(Q2, A, Sy),
+	distinguish(Sx, Sy),
+	Q1 != Q2.
+
+% Symmetry
+distinguish(Q1, Q2) :-
+	distinguish(Q2, Q1).
+
+% Closedness
+-distinguish(Q1, Q2) :-
+	    state(Q1),
+	    state(Q2),
+	not distinguish(Q1, Q2).
+
+% Transitivity
+-distinguish(Q1, Q3) :-
+	-distinguish(Q1, Q2),
+	-distinguish(Q2, Q3).
+
+merge(Q1, Q2) :-
+	state(Q2),
+	Q1 = #min{Q3: -distinguish(Q3, Q2)},
+	Q1 != Q2.
