@@ -44,7 +44,7 @@ def main():
 
     if bench != None:
         benchmark(bench, agentName)
-    if base != None:
+    elif base != None:
         generate(worldSize, seedV, base)
     else:
         logging.basicConfig(level=logging.DEBUG, format='')
@@ -53,8 +53,7 @@ def main():
         if worldFile != None:
             world = World.readFrom(worldFile)
         else:
-            if not porcelain:
-                print("World " + seedV)
+            print("World " + seedV)
             world = World(worldSize)
 
         play(
