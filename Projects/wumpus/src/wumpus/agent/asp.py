@@ -1,4 +1,3 @@
-from inspect    import getfullargspec
 from functools  import reduce
 from itertools  import product
 from os.path    import dirname, join
@@ -12,7 +11,7 @@ import networkx as nx
 
 from networkx.algorithms.shortest_paths.generic import shortest_path
 
-from ..asp       import unlite
+from ..asp       import unlite, fact, atom, AnswerSet
 from ..common    import Action, Orientation, Location, paint
 from ..simulator import World
 from ..util      import dlv
@@ -29,7 +28,7 @@ if PLOT:
 
 logger = logging.getLogger('asp-agent')
 
-INTERESTING = {
+plain = {
     # Required to return the desired action to the game.
     'do': (Action,),
 
@@ -38,139 +37,46 @@ INTERESTING = {
     'goal': (Location,),
     'safe': (Location,),
 
+    # For diagnosing de facto inconsistencies.
     'bad': (int,),
+
+    # This one is needed for painting.
     'size': (int,),
+}
 
+interesting = {
     # For debugging, you may add other predicates here.
-    'now': (Location,Orientation),
+    # Note that painters are added below.
     'mode': (Mode,),
-    'possibleWumpus': (Location,),
-    'h': (Location,int),
-    'wumpus': (Location,),
-    'frontier': (Location,),
-    'next': (Location,),
-    'pit': (Location,),
-    #'candidate': (int,Location,int),
-    #'turnCost': (int,int,int),
-    #'mirror': (int,int),
-    #'rotCost': (Location,Orientation,Location,int),
-    'departureTurnCost': (int,int,int,int,int,int),
-    'pathTurnCost': (int,int,int,int,int,int),
 }
 
-GRAPHICAL = {
-    'explored', 'pit', 'safe', 'wumpus', 'h', 'now', 'frontier', 'size', 'bad', 'possibleWumpus', 'autopilot'
-}
+painted = (
+    {
+        'now': Orientation,
+        'h':   int,
+    },
+    {
+        'frontier': 'F',
+        'safe':     'S',
+        'pit':      'P',
+        'next':     'N',
+        'goal':     'G',
+        'wumpus':   'W',
+    }
+)
 
-def tofun(xs):
-    def f(y):
-        fy = [x[0][1] for x in xs.items() if x[1] and y == x[0][0]]
-        if len(fy) > 1:
-            raise ValueError("Not a function since {} yields results {}!".format(y, fy))
-        elif len(fy) == 0:
-            return None
-        else:
-            return fy[0]
-    return f
+extract = dict(plain)
+extract.update(interesting)
 
-def tobfun(xs):
-    def f(y):
-        fy = [x[1] for x in xs.items() if y == x[0][0]]
-        if len(fy) > 1:
-            raise ValueError("Not a function since {} yields results {}!".format(y, fy))
-        elif len(fy) == 0:
-            return None
-        else:
-            return fy[0]
-    return f
+extract.update(dict([
+    (predicate, (Location,target)) for predicate, target in painted[0].items()
+]))
 
-def atom(sign, predicate, terms=[]):
-    result = ''
-    if sign == None:
-        result += 'not '
-    elif sign == False:
-        result += '-'
-    elif sign != True:
-        raise ValueError('Sign must be None or boolean!')
-    result += predicate
-    if len(terms ) == 0:
-        return result
-    return result + '(' + ','.join(map(str, terms)) + ')'
+extract.update(dict([
+    (predicate, (Location,)) for predicate in painted[1].keys()
+]))
 
-def fact(sign, predicate, terms=[]):
-    return '' if sign == None else atom(sign, predicate, terms) + '.'
-
-def parse(a, interesting):
-    if a.startswith('{') and a.endswith('}'):
-        a = a[1:-1]
-    a = a.split(', ')
-    result = {}
-    for predicate in interesting:
-        result[predicate] = {}
-    for e in a:
-        neg = e.startswith('-')
-        lpar = e.find('(')
-        if lpar < 0:
-            terms = ()
-            predicate = e[neg:]
-        else:
-            predicate = e[neg:lpar]
-            terms = e[lpar + 1:-1].split(',')
-            if predicate in interesting:
-                terms = list(map(int, terms))
-                mapped = []
-                i = 0
-                for f in interesting[predicate]:
-                    if i == len(terms):
-                        break
-                    if f == None or f == int:
-                        n = 1
-                        mapped.append(terms[i])
-                    else:
-                        spec = getfullargspec(f)
-                        n = len(spec.args)
-                        if n > 1 and spec.args[0] == 'self':
-                            n -= 1
-                        mapped.append(f(*terms[i:i+n]))
-                    i += n
-                terms = tuple(mapped)
-            else:
-                terms = tuple(map(int, terms))
-
-        result[predicate][terms] = (not neg)
-    return result
-
-def pretty(x, interesting, size, painters):
-    width = max(map(len, interesting))
-    selection = list([k for k in interesting.keys() if k not in GRAPHICAL])
-    selection.sort()
-    notes = []
-    for predicate in selection:
-        result = predicate.ljust(width) + ' = '
-
-        if predicate not in x:
-            result += '∅'
-        else:
-            result += '{' + ', '.join(map(lambda y: '\033[3' + str(1 + y[1]) + 'm(' + ','.join(map(str, y[0]))  + ')\033[0m', x[predicate].items())) + '}'
-        notes.append(result)
-
-    paint(size, painters, 'agent', notes)
-
-def manhattan(a, b):
-    (l1, o1), (l2, o2) = a, b
-
-    # Compute difference between two orientations:
-    od = abs(int(o1) - int(o2))
-    if od == 3:
-        od = 1
-
-    return od + taxicab(l1, l2)
-
-def taxicab(a, b):
-    if len(a) != len(b):
-        return None
-    return reduce(lambda s, x: s + abs(x[0] - x[1]), zip(a, b), 0)
-
+# TODO: Remove once the autopilot works.
 def ntos(n):
     (x, y), o = n
     return "(({}, {}), {})".format(x, y, o)
@@ -337,7 +243,7 @@ class ASPAgent():
             [
                 self.dlv,
                 '-silent',
-                '-filter=' + ','.join(INTERESTING),
+                '-filter=' + ','.join(extract.keys()),
                 self.prog,
                 '--'
             ],
@@ -363,7 +269,7 @@ class ASPAgent():
             return None
 
         result = result.strip().split('\n')
-        result = list(map(lambda x: parse(x, INTERESTING), result))
+        result = list(map(lambda x: AnswerSet.parse(x, extract), result))
 
         if len(result) > 1:
             logger.warning('ASP program returned multiple answer sets. Only considering the first!')
@@ -372,16 +278,13 @@ class ASPAgent():
 
         size = next(l for (l,), sign in result['size'].items() if sign)
 
-        pretty(result, INTERESTING, size, [
-            (tofun(result['now']),),
-            (tobfun(result['frontier']), 'F'),
-            (tobfun(result['safe']), 'S'),
-            (tobfun(result['pit']), 'P'),
-            (tobfun(result['next']), 'N'),
-            (tobfun(result['goal']), 'G'),
-            (tobfun(result['wumpus']), 'W'),
-            (tofun(result['h']),),
-        ])
+        paint(
+            size,
+            [(result.tofun(pred),) for pred, _ in painted[0].items()] +
+            [(result.tobfun(pred), symbol) for pred, symbol in painted[1].items()],
+            'agent',
+            result.pretty(interesting.keys())
+        )
 
         bads = result['bad'].items()
         if len(bads) > 0:
@@ -396,10 +299,6 @@ class ASPAgent():
                     if not found:
                         logger.debug('No comment describing bad({}). Add a line starting with \'%{} \' followed by a description.'.format(x, x))
             return None
-
-        for (pred, _) in INTERESTING.items():
-            if pred not in result:
-                result[pred] = {}
 
         # TODO: Autopilot is buggy and therefore disabled. Fix it!
         autopilot = result['autopilot'][()] and False

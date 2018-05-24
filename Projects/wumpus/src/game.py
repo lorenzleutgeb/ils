@@ -1,11 +1,11 @@
-from sys import argv, exit
-from random import seed
-from os import urandom
+from sys     import argv, exit
+from random  import seed
+from os      import urandom
 from os.path import join
-from glob import glob
-from time import time
+from glob    import glob
+from time    import time
+
 import logging
-#import binascii import unhexlify, hexlify
 
 from wumpus.common import *
 from wumpus.simulator import World
