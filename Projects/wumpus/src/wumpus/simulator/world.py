@@ -16,8 +16,10 @@ WUMPUS_DEAD = '✨' if emoji else 'x'
 AGENT = '🤖' if emoji else 'A'
 ARROW = '🏹' if emoji else 'A'
 
+MAX_ACTIONS = 1000
+
 class World():
-    def __init__(self, size=4, wumpus=None, gold=None, pits=None):
+    def __init__(self, size=4, wumpus=None, gold=None, pits=None, optimum=None):
         with open('world', 'w') as f: f.truncate()
 
         self.agentLocation = Location(1,1)
@@ -29,6 +31,7 @@ class World():
         self.wumpusAlive = True
         self.pits = []
         self.gold = None
+        self.optimum = optimum
         self.wumpus = None
         self.numActions = 0
         self.percept = None
@@ -75,7 +78,7 @@ class World():
 
     @classmethod
     def readFrom(cls, fname):
-        size, wumpus, gold, pits = 4, None, None, []
+        size, wumpus, gold, optimum, pits = 4, None, None, None, []
         with open(fname, 'r') as f:
             for ln in f:
                 ln = ln.strip()
@@ -90,13 +93,15 @@ class World():
                     gold = Location(int(ln[1]), int(ln[2]))
                 elif ln[0] == 'pit':
                     pits.append(Location(int(ln[1]), int(ln[2])))
+                elif ln[0] == 'optimum':
+                    optimum = int(ln[1])
 
         # World must contain wumpus and gold!
         if wumpus == None or gold == None:
             return None
 
         return cls(
-            size=size, wumpus=wumpus, gold=gold, pits=pits
+            size=size, wumpus=wumpus, gold=gold, pits=pits, optimum=optimum
         )
 
     def execute(self, action: Action):
@@ -176,8 +181,10 @@ class World():
                 self.agentInCave = False
                 self.percept = Percept(False, False, False, False, False)
 
+        return not self.isGameOver()
+
     def isGameOver(self):
-        return not self.agentInCave or not self.agentAlive
+        return not self.agentInCave or not self.agentAlive or self.numActions >= MAX_ACTIONS
 
     def getScore(self):
         # -1 for each action

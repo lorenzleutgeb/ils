@@ -2,14 +2,14 @@ from sys import argv, exit
 from random import seed
 from os import urandom
 from os.path import join
+from glob import glob
+from time import time
 import logging
 #import binascii import unhexlify, hexlify
 
 from wumpus.common import *
 from wumpus.simulator import World
 from wumpus.agent import *
-
-MAX_MOVES = 1000
 
 def main():
     worldSize = 4
@@ -18,11 +18,7 @@ def main():
     agentName = 'proxy'
     generationMode = False
     base = None
-    porcelain = '-porcelain' in argv
-    debug = '-debug' in argv
-
-    if debug:
-        logging.basicConfig(level=logging.DEBUG, format='')
+    bench = None
 
     for arg, val in zip(argv[1:], argv[2:]):
         if arg == "-size":
@@ -35,6 +31,8 @@ def main():
             agentName = val
         elif arg == '-generate':
             base = val
+        elif arg == '-benchmark':
+            bench = val
 
     if seedV != None:
         seed(seedV)
@@ -44,17 +42,24 @@ def main():
 
     seedV = seedV.hex()
 
+    if bench != None:
+        benchmark(bench, agentName)
     if base != None:
         generate(worldSize, seedV, base)
     else:
-        if not porcelain:
-            print("World " + seedV)
+        logging.basicConfig(level=logging.DEBUG, format='')
+
+        world = None
+        if worldFile != None:
+            world = World.readFrom(worldFile)
+        else:
+            if not porcelain:
+                print("World " + seedV)
+            world = World(worldSize)
 
         play(
-            worldSize,
-            worldFile,
-            agentName,
-            porcelain
+            world,
+            agentName
         )
 
 def generate(worldSize, seedV, base):
@@ -72,45 +77,45 @@ def generate(worldSize, seedV, base):
     with open(fname, 'a') as f:
         f.write('optimum {}\n'.format(world.getScore()))
 
-def play(worldSize, worldFile, agentName, porcelain):
-    wumpusWorld: World = None
-    agent = None
-    percept: Percept = None
-    action: Action = None
-    numMoves = 0
-
-    if worldFile != None:
-        wumpusWorld = World.readFrom(worldFile)
-    else:
-        wumpusWorld = World(worldSize)
-
-    wumpusWorld.writeTo('last-world.txt')
-
+def instantiate(agentName):
     if agentName == 'proxy':
-        agent = ProxyAgent()
+        return ProxyAgent()
     elif agentName == 'perfect':
-        agent = PerfectAgent(wumpusWorld)
+        return PerfectAgent(wumpusWorld)
     elif agentName == 'asp':
-        agent = ASPAgent()
+        return ASPAgent()
     elif agentName == 'asp-cheat':
-        agent = ASPAgent(wumpusWorld)
+        return ASPAgent(wumpusWorld)
 
-    numMoves = 0
+def play(world, agentName):
+    world.writeTo('last-world.txt')
+    agent = instantiate(agentName)
 
-    aborted = False
-    while (not(wumpusWorld.isGameOver())) and (numMoves < MAX_MOVES):
-        wumpusWorld.printTo()
-        percept = wumpusWorld.percept
+    while True:
+        world.printTo()
+
+        percept = world.percept
         action = agent.process(percept)
+
         if action == None:
-            aborted = True
-            break
-        wumpusWorld.execute(action)
-        numMoves += 1
+            return None
 
-    score = -MAX_MOVES if aborted else wumpusWorld.getScore()
+        if not world.execute(action):
+            return world.getScore()
 
-    print(score if not aborted else '!')
+def benchmark(bglob, agentName):
+    for instance in glob(bglob):
+        wumpusWorld = World.readFrom(instance)
+        optimum = '{:5}'.format(wumpusWorld.optimum) if wumpusWorld.optimum else '  ?  '
+        start = time()
+        result = play(
+            wumpusWorld,
+            agentName
+        )
+        end = time()
+        result = '!' if result is None else '{:5}'.format(result)
+        elapsed = '{:7.4f}'.format(end - start)
+        print('\t'.join([instance, optimum, result, elapsed]))
 
 if __name__ == "__main__":
     main()
