@@ -1,6 +1,6 @@
-from enum import Enum
+from enum import IntEnum
 
-class Action(Enum):
+class Action(IntEnum):
     GOFORWARD = 0
     TURNLEFT  = 1
     TURNRIGHT = 2
@@ -47,3 +47,19 @@ class Action(Enum):
             return Action.TURNLEFT
         else:
             return self
+
+    def __int__(self):
+        if self == Action.GOFORWARD:
+            return 0
+        elif self == Action.TURNLEFT:
+            return 1
+        elif self == Action.TURNRIGHT:
+            return 2
+        elif self == Action.GRAB:
+            return 3
+        elif self == Action.SHOOT:
+            return 4
+        elif self == Action.CLIMB:
+            return 5
+        else:
+            return None

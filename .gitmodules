@@ -1,0 +1,3 @@
+[submodule "Projects/wumpus/wsu"]
+	path = Projects/wumpus/src/wsu
+	url = git@gitlab.inf.unibz.it:ILS/wumpus-world-simulator.git
