@@ -4,4 +4,4 @@
     - cd Projects/wumpus/src
     - pip3 install -r requirements.txt
   script:
-    - ./benchmark.sh '*'
+    - python3 -agent asp -benchmark 'suite/world-*.txt'
