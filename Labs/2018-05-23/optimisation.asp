@@ -15,6 +15,8 @@ location(unl).
 :- choice(X,Y,Z), choice(X,W,Z), Y != W.
 % Each person can select at most two locations.
 :- choice(X, Y, _), choice(X, Z, _), choice(X, U, _), Y != Z, Y != U, Z != U.
+% Same location for different choices of a person are ruled out.
+:- choice(X,Y,1), choice(X,Y,2).
 
 :- 4 #count { person(X) : assign(X,tud) }.
 :- 5 #count { person(X) : assign(X,fub) }.
