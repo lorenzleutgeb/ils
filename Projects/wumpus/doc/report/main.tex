@@ -1,5 +1,39 @@
 \documentclass{llncs}
 
+% A. Objectives
+%    1. You should apply one of the techniques studied in the course to
+%       solve this problem.
+%    2. Devise and perform an empirical evaluation of your system.
+%    3. Report your work.
+%    4. All your documentation and source code should be available on your GitLab
+%       project repository, as well as tasks and milestones. This will be part of
+%       the evaluation.
+%
+% B. Deliverables
+%    1. Progress report (by the end of May) describing
+%     - selected approach and
+%     - general project work plan
+%     - group presentation of the report
+%    2. Project report
+%     - description of the problem
+%     - updated material from the progress report
+%     - description of your approach
+%     - description of the software: installation, requirements and usage notes
+%     - empirical evaluation
+%    3. Software
+%     - application and required libraries/software
+%     - brief installation notes (README file)
+%    4. Final Presentation
+%     - description of your approach
+%     - strengths and weaknesses
+%     - empirical evaluation
+%     - contribution of team members
+%
+% C. Timeline
+%    1. 2018-05-30 Progress report and presentation
+%    2. 2018-06-15 Software deliverable and final report
+%    3. 2018-06-22 Final Presentation and Demo
+
 \usepackage[utf8]{inputenc}
 \usepackage[T1]{fontenc}
 \usepackage[english]{babel}
@@ -8,7 +42,9 @@
 \usepackage{bookmark}
 \usepackage{csquotes}
 
-\title{??: A Player Agent for Wumpus}
+\newcommand{\htw}{\emph{Hunt the Wumpus}}
+
+\title{Hakuna Matata: A Logic-Based Agent for the \htw Game}
 \subtitle{Project Report}
 \author{Team White\\[2mm]Filippo~De~Bortoli \and Aneta~Koleva \and Lorenz~Leutgeb}
 \institute{Free University of Bozen-Bolzano\\[3mm] \texttt{\{\href{mailto:filippo.debortoli@stud-inf.unibz.it}{filippo.debortoli},\href{mailto:aneta.koleva@stud-inf.unibz.it}{aneta.koleva},\href{mailto:lorenz.leutgeb@stud-inf.unibz.it}{lorenz.leutgeb}\}\newline @stud-inf.unibz.it}}
@@ -18,16 +54,59 @@
 \maketitle
 
 \begin{abstract}
-  The assigned task is to develop an intelligent agent that plays the \emph{Wumpus} game, by using a logic-based approach in its implementation.
+  The assigned task is to develop an intelligent agent that plays the \htw game, by using a logic-based approach in its implementation.
   In order to complete a run of the game, this agent has to be able to face several challenges, like the incompleteness of the available information about the state of the world or the search for the best strategy to employ.
   The chosen approach is to develop a hybrid agent that relies on an ASP core to actuate its strategy and on graph-theory techniques to obtain additional insights on how to proceed in the exploration of a dungeon.
   To assess the performance of our agent, we implemented an omniscient agent that obtains an optimal score for a given dungeon and we ranked our agent against it.
   In this report, we introduce our solution to this task, by detailing the architecture of the agent and describing the chosen strategy, the heuristics and the obtained results.
 \end{abstract}
 
+\section{Problem Statement}
+%TODO Define what \htw is, all its rules and constraints.
+%TODO Mention that it is also an example in the standard textbook AIMA and thus suited as an exercise in logic-based AI.
+
+\section{Approach}
+% This should be a high-level section that does not really talk too much
+% about code (for that we have the "Implementation" section), but instead
+% about the general approach.
+
+%TODO Justify why we chose ASP (non-monotonic reasoning, fits nicely with incomplete knowledge), previous experience with it, easier to write high-level logic thanks to grounding.
+%TODO Describe the high level approach
+%TODO How does our agent explore the world (A*-search)
+%TODO Describe the modes that we extracted from the gameplay and what are the conditions that make the agnet switch modes.
+
+\section{Implementation}
+%TODO Short section where we describe the system, referring to the appendix (see below)
+%TODO as well as that we used DLV.
+
+%TODO Generate and include the Dependency Graph
+
+%TODO Autopilot (if it works at some point)
+
+%TODO Refer to usage file for actually running the system.
+
+\section{Evaluation}
+
+%TODO mention that we used randomly generated instances:
+
+\begin{tabular}{ccc}
+$n$ & $N_n$ \\
+4 & 120 \\
+5 &  20 \\
+6 &  20 \\
+7 &  20 \\
+8 &  20 \\
+\end{tabular}
+
+%TODO maybe more instances?
+
+%TODO We implemented an agent that solves the instances with perfect information to compare against.
+
 %\input{sections/introduction}
 %\input{sections/installation}
 %\input{sections/strategy}
 %\input{sections/evaluation}
+
+%TODO Appendix: ASP Lite rendered as TeX from Markdown.
 
 \end{document}
