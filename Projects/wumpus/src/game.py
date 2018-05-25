@@ -76,19 +76,17 @@ def generate(worldSize, seedV, base):
     with open(fname, 'a') as f:
         f.write('optimum {}\n'.format(world.getScore()))
 
-def instantiate(agentName):
+def instantiate(agentName, world):
     if agentName == 'proxy':
         return ProxyAgent()
     elif agentName == 'perfect':
-        return PerfectAgent(wumpusWorld)
+        return PerfectAgent(world)
     elif agentName == 'asp':
         return ASPAgent()
-    elif agentName == 'asp-cheat':
-        return ASPAgent(wumpusWorld)
 
 def play(world, agentName):
     world.writeTo('last-world.txt')
-    agent = instantiate(agentName)
+    agent = instantiate(agentName, world)
 
     while True:
         world.printTo()

@@ -17,7 +17,7 @@ from ..simulator import World
 from ..util      import dlv
 from .mode       import Mode
 
-PRINT_KNOWLEDGE=False
+PRINT_KNOWLEDGE=True
 PLOT=False
 
 if PLOT:
@@ -82,97 +82,48 @@ def ntos(n):
     return "(({}, {}), {})".format(x, y, o)
 
 class ASPAgent():
-    def __init__(self, init=None):
+    def __init__(self):
         self.dlv = dlv()
         self.actions = []
         self.shot = None
+        self.grabbed = None
+
+        # Initially we do not know about stench/breeze/glitter
+        # anywhere.
+        self.world = {}
+        self.position = Location(1, 1)
+        self.orientation = Orientation.RIGHT
+        self.wumpusDead = False
+        self.bump = None
+        self.previousAction = None
+
+        # Assume some large world. Will get adjusted once we bump.
+        self.size = 0xdeadbeef
 
         _, self.prog = mkstemp()
         unlite(join(dirname(__file__), 'agent.md'), self.prog)
-        unlite(join(dirname(__file__), 'agent.md'), 'agent.asp')
+        #unlite(join(dirname(__file__), 'agent.md'), 'agent.asp')
 
         with open('agent', 'w') as f: f.truncate()
 
-        if init == None:
-            # Assume some large world. Will get adjusted once we bump.
-            self.size = 0xcaffebabe
-
-            # Initially we do not know about stench/breeze/glitter
-            # anywhere.
-            self.world = {}
-            self.position = Location(1, 1)
-            self.orientation = Orientation.RIGHT
-            self.previousActions = []
-            self.wumpusDead = False
-            self.bump = None
-
-            # We build a graph that respresents reachability (with cost) for all cells.
-            self.g = nx.DiGraph()
-            for o in Orientation:
-                self.g.add_node((self.position, o))
-        else:
-            logger.debug('We are cheating!')
-            self.size = init.worldSize
-            self.world = {}
-            self.g = nx.DiGraph()
-
-            r = range(1, self.size + 1)
-            for x, y in product(r, r):
-                l = Location(x, y)
-                breeze, stench, glitter = False, False, False
-                for n in l.neighbors(self.size):
-                    if n in init.pits:
-                        breeze = True
-                    if n == init.wumpus:
-                        stench = True
-                    if n == init.gold:
-                        glitter = True
-
-                self.world[l] = (breeze, stench, glitter)
-
-                for o in Orientation:
-                    a = l.getAdjacent(o, self.size)
-
-                    if a == None:
-                        continue
-
-                    self.g.add_edge((l, o), (a, o), action=Action.GOFORWARD)
-
-                for action in {Action.TURNLEFT, Action.TURNRIGHT}:
-                    oa = o
-                    for i in range(3):
-                        oa = o.turn(action)
-                        self.g.add_edge((l, o), (l, oa), action=action)
-
-            self.position = Location(1, 1)
-            self.orientation = Orientation.RIGHT
-            self.previousActions = []
-            self.wumpusDead = False
-            self.bump = Location(self.size + 1, 1)
-
-    def previousAction(self):
-        return None if self.previousActions == [] else self.previousActions[-1]
+        # We build a graph that respresents reachability (with cost) for all cells.
+        self.g = nx.DiGraph()
+        for o in Orientation:
+            self.g.add_node((self.position, o))
 
     def process(self, percept):
-        prevAct = self.previousAction()
+        if percept.scream:
+            self.wumpusDead = True
 
-        # Infer size of the world.
         if percept.bump:
             self.size = max(self.position.x, self.position.y)
             if self.bump != None:
                 logger.debug('We appear to be bumping a second time.')
             self.bump = self.position.getAdjacent(self.orientation, self.size + 1)
-        elif prevAct == Action.GOFORWARD:
+        elif self.previousAction == Action.GOFORWARD:
             self.position = self.position.getAdjacent(self.orientation, self.size)
-        elif prevAct in {Action.TURNLEFT, Action.TURNRIGHT}:
-            self.orientation = self.orientation.turn(prevAct)
-        elif prevAct == Action.SHOOT:
-            if self.shot != None:
-                logger.debug('We appear to be shooting a second time.')
-                return None
-            self.shot = (self.position, self.orientation)
-            if percept.scream:
-                self.wumpusDead = True
+        elif self.previousAction in {Action.TURNLEFT, Action.TURNRIGHT}:
+            self.orientation = self.orientation.turn(self.previousAction)
 
         here = (self.position, self.orientation)
 
@@ -185,7 +136,6 @@ class ASPAgent():
             self.actions = []
         elif self.actions != []:
             action = self.actions.pop(0)
-            self.previousActions.append(action)
             logger.debug('Autopilot is active!')
             return action
 
@@ -206,8 +156,6 @@ class ASPAgent():
         knowledge = [
             fact(True, 'now', [self.position.x, self.position.y, self.orientation.toSymbol()]),
             fact(self.wumpusDead, 'wumpusDead'),
-            fact(Action.GRAB in self.previousActions, 'grabbed'),
-            fact(Action.SHOOT not in self.previousActions, 'haveArrow'),
         ]
 
         if self.bump != None:
@@ -215,6 +163,9 @@ class ASPAgent():
 
         if self.shot != None:
             knowledge.append(fact(True, 'shot', [self.shot[0].x, self.shot[0].y, self.shot[1].toSymbol()]))
+
+        if self.grabbed != None:
+            knowledge.append(fact(True, 'grabbed', [self.grabbed.x, self.grabbed.y]))
 
         for l in self.world:
             stench, breeze, glitter = self.world[l]
@@ -237,7 +188,7 @@ class ASPAgent():
             nx.draw_networkx_edge_labels(self.g, pos, edge_labels=edge_labels)
             plt.draw()
             plt.show()
-            write_dot(self.g, 'g-{}.gv'.format(len(self.previousActions)))
+            write_dot(self.g, 'graph.gv')
 
         proc = run(
             [
@@ -353,5 +304,12 @@ class ASPAgent():
             self.actions = []
             action = next(a for a, sign in result['do'].items() if sign)[0]
 
-        self.previousActions.append(action)
+        if action == Action.SHOOT:
+            if self.shot != None:
+                logger.debug('We appear to be shooting a second time.')
+            self.shot = here
+        elif action == Action.GRAB:
+            self.grabbed = self.position
+
+        self.previousAction = action
         return action
