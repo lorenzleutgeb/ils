@@ -17,7 +17,7 @@ from ..simulator import World
 from ..util      import dlv
 from .mode       import Mode
 
-PRINT_KNOWLEDGE=True
+PRINT_KNOWLEDGE=False
 PLOT=False
 
 if PLOT:
@@ -76,11 +76,6 @@ extract.update(dict([
     (predicate, (Location,)) for predicate in painted[1].keys()
 ]))
 
-# TODO: Remove once the autopilot works.
-def ntos(n):
-    (x, y), o = n
-    return "(({}, {}), {})".format(x, y, o)
-
 class ASPAgent():
     def __init__(self):
         self.dlv = dlv()
@@ -120,6 +115,14 @@ class ASPAgent():
             if self.bumped != None:
                 logger.debug('We appear to be bumping a second time.')
             self.bumped = self.position.getAdjacent(self.orientation, self.size + 1)
+
+            for i in range(1, self.size + 2):
+                for l in [Location(i, self.size + 1), Location(self.size + 1, i)]:
+                    for o in Orientation:
+                        n = (l, o)
+                        if n in self.g:
+                            self.g.remove_node(n)
+
         elif self.previousAction == Action.GOFORWARD:
             self.position = self.position.getAdjacent(self.orientation, self.size)
         elif self.previousAction in {Action.TURNLEFT, Action.TURNRIGHT}:
@@ -136,7 +139,7 @@ class ASPAgent():
             self.actions = []
         elif self.actions != []:
             action = self.actions.pop(0)
-            logger.debug('Autopilot is active!')
+            self.previousAction = action
             return action
 
         # We need to add all neighboring nodes to the graph to reason about them.
@@ -252,27 +255,11 @@ class ASPAgent():
                         logger.debug('No comment describing bad({}). Add a line starting with \'%{} \' followed by a description.'.format(x, x))
             return None
 
-        # TODO: Autopilot is buggy and therefore disabled. Fix it!
-        autopilot = result['autopilot'][()] and False
+        autopilot = result['autopilot'][()]
         if autopilot:
-            # First, extract safety information and update action graph.
-            for l, safe in result['safe'].items():
-                for o in Orientation:
-                    n = (l, o)
-                    if n not in self.g:
-                        continue
-                    self.g.nodes[n]['safe'] = safe
-
-            # Then extract goal and compute shortest path.
             goal = next(l for (l,), sign in result['goal'].items() if sign)
 
-            for n in self.g:
-                self.g.nodes[n]['label'] = ntos(n)
-
             def safeOnly(u, v, d):
-                if self.g.get_edge_data(u, v) == None:
-                    print(ntos(u) + " " + ntos(v) + " has no edge attributes")
-                    return None
                 return 1 if result['safe'][(v[0],)] else None
 
             shortestPath = None
