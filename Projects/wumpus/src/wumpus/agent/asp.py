@@ -17,15 +17,6 @@ from ..simulator import World
 from ..util      import dlv
 from .mode       import Mode
 
-PRINT_KNOWLEDGE=False
-PLOT=False
-
-if PLOT:
-    # The following two imports are only necessary for plotting,
-    # if you want them pip install -r plotting-requirements.txt
-    import matplotlib.pyplot as plt
-    from networkx.drawing.nx_agraph import write_dot
-
 logger = logging.getLogger('asp-agent')
 
 plain = {
@@ -116,19 +107,15 @@ class ASPAgent():
                 logger.debug('We appear to be bumping a second time.')
             self.bumped = self.position.getAdjacent(self.orientation, self.size + 1)
 
-            for i in range(1, self.size + 2):
-                for l in [Location(i, self.size + 1), Location(self.size + 1, i)]:
-                    for o in Orientation:
-                        n = (l, o)
-                        if n in self.g:
-                            self.g.remove_node(n)
+            for o in Orientation:
+                n = (self.bumped, o)
+                if n in self.g:
+                    self.g.remove_node(n)
 
         elif self.previousAction == Action.GOFORWARD:
             self.position = self.position.getAdjacent(self.orientation, self.size)
         elif self.previousAction in {Action.TURNLEFT, Action.TURNRIGHT}:
             self.orientation = self.orientation.turn(self.previousAction)
-
-        here = (self.position, self.orientation)
 
         explored = self.position not in self.world
 
@@ -163,36 +150,20 @@ class ASPAgent():
         ]
 
         if self.bumped != None:
-            knowledge.append(fact(True, 'bumped', [self.bumped.x, self.bumped.y]))
+            knowledge.append(fact(True, 'bumped', self.bumped))
 
         if self.shot != None:
             knowledge.append(fact(True, 'shot', [self.shot[0].x, self.shot[0].y, self.shot[1].toSymbol()]))
 
         if self.grabbed != None:
-            knowledge.append(fact(True, 'grabbed', [self.grabbed.x, self.grabbed.y]))
+            knowledge.append(fact(True, 'grabbed', self.grabbed))
 
-        for l in self.world:
-            stench, breeze, glitter = self.world[l]
-            knowledge.append(fact(stench, 'stench', [l.x, l.y]))
-            knowledge.append(fact(breeze, 'breeze', [l.x, l.y]))
-            knowledge.append(fact(glitter, 'glitter', [l.x, l.y]))
-            knowledge.append(fact(True, 'explored', [l.x, l.y]))
-
-        if PRINT_KNOWLEDGE:
-            logger.debug('\n'.join(knowledge))
-
-        # Plot the graph in case we explored something (debugging).
-        if explored and PLOT:
-            # Here is some code to plot the graph for debuging. Use it in
-            # combination with labels.
-            pos = nx.spring_layout(self.g, scale=3, k=0.05, iterations=20)
-            node_labels = nx.get_node_attributes(self.g, 'label')
-            nx.draw_networkx(self.g, pos=pos, arrows=True, labels=node_labels)
-            edge_labels = nx.get_edge_attributes(self.g, 'label')
-            nx.draw_networkx_edge_labels(self.g, pos, edge_labels=edge_labels)
-            plt.draw()
-            plt.show()
-            write_dot(self.g, 'graph.gv')
+        for k, v in self.world.items():
+            knowledge += [
+                fact(v[i], name, k) for i, name in enumerate(['stench', 'breeze', 'glitter'])
+            ] + [
+                fact(True, 'explored', k)
+            ]
 
         proc = run(
             [
@@ -260,7 +231,7 @@ class ASPAgent():
             goal = next(l for (l,), sign in result['goal'].items() if sign)
 
             def safeOnly(u, v, d):
-                return 1 if result['safe'][(v[0],)] else None
+                return 1 if result['safe'].get((v[0],), False) else None
 
             shortestPath = None
             for o in Orientation:
@@ -295,7 +266,7 @@ class ASPAgent():
         if action == Action.SHOOT:
             if self.shot != None:
                 logger.debug('We appear to be shooting a second time.')
-            self.shot = here
+            self.shot = (self.position, self.orientation)
         elif action == Action.GRAB:
             self.grabbed = self.position
 
