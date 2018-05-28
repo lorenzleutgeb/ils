@@ -92,7 +92,7 @@ For the purpose of this project, we decided to implement an intelligent agent th
 \subsection{A* search algorithm}
 For better exploration of the world, we build a graph that represents reachability (with cost) for all cells. Then we use \textit{Manhattan distance} as a cost function for calculating the cost for moving from a cell to a cell. We also consider the rotation cost  when the agent reasons about the number of moves it needs to make in order to move from a cell to another cell. To calculate this cost, first the cost of all turns on the way from current cell to a destination cell is calculated and to this is added the cost of departing the current cell (whether the agent needs to turn before leaving). For calculating the minimal cost of reaching the destination cell we use \textit{A* search algorithm} : \(f(n) = g(n) + h(n)\). \
 In order to efficiently use this algorithm next and goal cell must be known. 
-First the goal cell is calculated and based on this result, the next cell is decided.  The choice of a goal cell depends on the current mode of the agent which are explained in the section. If it's in mode \textit{explore}, goal is a reachable cell which is safe and hasn't been explored yet. If the agent's mode is \textit{kill}, then the goal is a cell which is safe and from which the wumpus can be shoot.   
+First the goal cell is calculated and based on this result, the next cell is decided.  The choice of a goal cell depends on the current mode of the agent which are explained below. If it's in mode \textit{explore}, goal is a reachable cell which is safe and hasn't been explored yet. If the agent's mode is \textit{kill}, then the goal is a cell which is safe and from which the wumpus can be shot.   
 In our program \(g(n)\) represents the cost of the path from the current cell to the next cell \(n\), and \(h(n)\) represents the heuristic estimated cost of the cheapest path from cell \(n\) to the goal cell. 
 
 %TODO How does our agent explore the world (A*-search)
@@ -100,7 +100,8 @@ In our program \(g(n)\) represents the cost of the path from the current cell to
 %departureTurnCost and rotCost or leave that for implementation
 
 \subsection{Different modes}
-While playing, our agent can be in one from four available modes at any time. 
+In order to simplify the implementation of the agent and the way it choses its next action we introduce four different modes of playing in which the agent can be at any time. This helps to abstract and in different modes enable and disable different possible actions. It also made it easier for developing the code. 
+While playing, our agent can be in exactly one from four available modes. 
 \paragraph{Explore} The agent is in this mode until it discovers the gold or there are more cells which should be explored. These are cells which are known to be reachable, safe and not yet explored. 
 
 \paragraph{Grab} Once the agent is in the cell where can perceive glitter, its next action is to grab the gold and in this moment is in mode \textit{grab}. 
