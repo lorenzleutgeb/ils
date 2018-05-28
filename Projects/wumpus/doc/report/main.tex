@@ -55,12 +55,16 @@
 \usepackage{multicol}
 \usepackage{rotating}
 
+\bibliographystyle{splncs03}
+
 % In the appendix:
 %\usepackage{longtable}
 \usepackage{booktabs}
 
 \usepackage{tikz,comment}
 \usetikzlibrary{shapes.multipart,positioning,backgrounds}
+
+
 
 \pagestyle{plain}
 
@@ -106,14 +110,45 @@ In the book Artificial Intelligence: A Modern Approach, the game is used as an e
 % This should be a high-level section that does not really talk too much
 % about code (for that we have the "Implementation" section), but instead
 % about the general approach.
-\subsection{ASP technique}
-For the purpose of this project, we decided to implement an intelligent agent that plays the wumpus game using ASP technique in combination with graph-theory techniques to explore the search space and find its best strategy for finishing the game with maximum points. The environment in which the agent is playing is discrete and static, since the wumpus, the gold and the pits are all fixed. The agent's initial knowledge base contains the rules of the game without specifying the size of the grid. The size is discovered by the agent when it hits a border and the 'Bump' percept is on, after which the agent knows how big the search space it is. In order to be able to find the best strategy, the agent first needs to acquire certain knowledge about the search space and to be able to reason wrt this knowledge. The facts and rules in the knowledge base are specified as ASP rules and DVL solver is used for grounding and solving. One of the advantages of ASP is the fact that it uses non-monotonic reasoning and closed world assumption which allow the agent to correctly derive what is logically right from it's knowledge base. Moreover DLV is able to process incomplete knowledge which the agent has while overcoming its initial ignorance with logical reasoning. 
 
-%TODO Justify why we chose ASP (non-monotonic reasoning, fits nicely with incomplete knowledge), previous experience with it, easier to write high-level logic thanks to grounding. 
+In this section, we describe the ideas and the concepts that underlie our approach to the assigned task.
+In particular, we single out those aspects that are relevant to the understanding of the behaviour that the Hakuna agent shows during a run of the game.
+
+For the purpose of this project, we decided to implement a logic-based agent, that plays \htw employing both Answer Set Programming (ASP) and suitable search techniques --- borrowed from graph theory --- to explore the search space and find an optimal strategy to finish the game with the maximum score.
+
+\subsection{ASP and World Knowledge}
+
+The environment in which the agent is playing is \emph{discrete} and \emph{static}, since the wumpus, the gold and the pits do not move throughout the dungeon.
+Therefore, the knowledge inferred by the agent at each point in time can be accumulated to circumscribe the search space in further moments in time.
+Initially, the agent's \emph{knowledge base} (KB) is populated with basic geometric knowledge (e.g. relation between directions), what is percepted in its initial position and what are the known world sizes.
+
+\paragraph{Incomplete knowledge.} One of the challenges of \htw is that a non-omniscient player starts the game with an incomplete knowledge of the world.
+By exploring the dungeon and perceiving what is in each new explored room, an agent can obtain additional insights about the state of the world and reshape its strategy according to it.
+As we want to be able to model non-monotonic reasoning --- if a room, previously thought to contain a pit, turns out to be safe, the agent should be able to infer this --- and to generalise statements by writing non-ground schematas, our system of choice is Answer Set Programming, which allows to model the problem in a logic fashion and achieves non-monotonic reasoning through \emph{closed-world assumption} (CWA).
+In particular, the DLV solver~\cite{DLV-system} has been embedded in the architecture of the agent, to be called at every point in time to infer the additional knowledge obtained by the agent, after grounding its KB.
+This approach allows the agent to correctly derive what is logically right from it's knowledge base. Moreover DLV is able to process incomplete knowledge which the agent has while overcoming its initial ignorance with logical reasoning.
+
+\paragraph{Safety.} As the Hakuna agents tries to maximise its score by minimising its death chances, the need of a concept of \emph{safety} arises.
+Namely, the agent moves towards some room if it is not aware of any danger lying in it (this is an application example of CWA) and marks as certainly \emph{safe} each room that he enters without dying.
+This, together with the other perceived information, allows the agent to ``draw'' an internal representation of the world that will progressively allow it to move further or search for alternative exploratory routes.
+
+\paragraph{Size of the world.} The agent proceeds by assuming that the world has a certain size, initially set to $1 \times 1$.
+Every time the agent succeeds to move to a room which coordinates exceed the assumed size of the world, for example $N \times N$, the KB is updated to assume that the world has size $N+1 \times N+1$.
+Otherwise, if a \emph{bump} is percepted, it infers the real size of the world and this will not be modified afterwards.
+
+\paragraph{Dangers.} The agent's policy for dangers is the following:
+\begin{itemize}
+	\item If a room signalling a nearby danger is entered, turn backwards and explore the next \emph{safe} and unexplored room. A signal can be a perceived \emph{stench} or a \emph{breeze}.
+	\item If the location of two stenches lying on a same axis is known, the wumpus is evinced to lie between them.
+	\item If the location of two stenches lying on a same diagonal is known and one of the common neighbours is known to be safe, the other neighbouring room is inferred to contain the wumpus.
+	\item If a breeze is found, all the unexplored neighbours are marked as rooms possibly containing a pit.
+	\item If a room without breezes is found nearby one marked as a possible pit, the KB is updated to state that such a room is instead not containing any pit. 
+\end{itemize}
+
 % maybe mention that we can write strong constraints, not sure if still have that
 
-\subsection{A* search algorithm}
-For better exploration of the world, we build a graph that represents reachability (with cost) for all cells. Then we use \textit{Manhattan distance} as a cost function for calculating the cost for moving from a cell to a cell. We also consider the rotation cost  when the agent reasons about the number of moves it needs to make in order to move from a cell to another cell. To calculate this cost, first the cost of all turns on the way from current cell to a destination cell is calculated and to this is added the cost of departing the current cell (whether the agent needs to turn before leaving). For calculating the minimal cost of reaching the destination cell we use \textit{A* search algorithm} : \(f(n) = g(n) + h(n)\). \
+\subsection{$A^{\star}$ Search and World Exploration}
+For better exploration of the world, we build a graph that represents reachability (with cost) for all cells. Then we use \emph{Manhattan distance}~\cite{Manhattan} as a cost function for calculating the cost for moving from a cell to a cell. We also consider the rotation cost  when the agent reasons about the number of moves it needs to make in order to move from a cell to another cell. To calculate this cost, first the cost of all turns on the way from current cell to a destination cell is calculated and to this is added the cost of departing the current cell (whether the agent needs to turn before leaving). For calculating the minimal cost of reaching the destination cell we use \textit{A* search algorithm} : \(f(n) = g(n) + h(n)\). \
 In order to efficiently use this algorithm next and goal cell must be known. 
 First the goal cell is calculated and based on this result, the next cell is decided.  The choice of a goal cell depends on the current mode of the agent which are explained below. If it's in mode \textit{explore}, goal is a reachable cell which is safe and hasn't been explored yet. If the agent's mode is \textit{kill}, then the goal is a cell which is safe and from which the wumpus can be shot.   
 In our program \(g(n)\) represents the cost of the path from the current cell to the next cell \(n\), and \(h(n)\) represents the heuristic estimated cost of the cheapest path from cell \(n\) to the goal cell. 
@@ -260,7 +295,21 @@ $n$ & $N_n$ \\
 
 %TODO maybe more instances?
 
-%TODO We implemented an agent that solves the instances with perfect information to compare against.
+\subsection{An omniscient agent}
+
+In order to assess the performance of our Hakuna agent, we built another agent, whose score has then been referenced in evaluating our results.
+
+The particularity of this other agent is \emph{omnisciency}: indeed, our assumption is that it has a perfect knowledge of the world: the location of the dangers and the location of the gold.
+In this setting, the search for the optimal solution can be reduced to the computation of the shortest path from the initial point over an \emph{action graph} built in the following way:
+\begin{itemize}
+	\item Each node is a configuration $(X,Y,O)$ that the agent can assume.
+	\item Two configurations are linked by an edge if one can be reached by the other.
+	\item The weight of each edge is $1$ if the target is not a configuration in the same position as the Wumpus's, $10$ otherwise; this reflects the need to kill the Wumpus in order to pass through it.
+\end{itemize}
+A shortest path over this graph reflects the shortest path in the dungeon from a configuration to another.
+Here, the cost function is the same that has been previously employed.
+
+Then, the perfect agent behaves as follows: if the gold is unreachable, thus it lies in a pit, it immediately climbs; otherwise, he takes the shortest path to the cell containing the gold, grabs it and comes back to the initial position from the same path, to finally climb.
 
 %\input{sections/introduction}
 %\input{sections/installation}
@@ -275,5 +324,7 @@ $n$ & $N_n$ \\
 \begin{multicols}{2}
 \include{appendix}
 \end{multicols}
+
+\bibliography{ref}
 
 \end{document}
