@@ -53,6 +53,7 @@
 \usepackage{bookmark}
 \usepackage{csquotes}
 \usepackage{multicol}
+\usepackage{rotating}
 
 % In the appendix:
 %\usepackage{longtable}
@@ -203,7 +204,9 @@ While playing, our agent can be in 1 from 4 available modes at any time. When th
 %TODO Autopilot (if it works at some point)
 %TODO Refer to usage file for actually running the system.
 
-In this section, we briefly describe how the agent described in the previous section was implemented. Note, however that for the implementation in its full detail we refer to Appendix \ref{hunt-the-wumpus}.
+In this section, we briefly describe how the agent described in the previous section was implemented. Note, however that for the implementation in its full detail we refer to Appendix \ref{hunt-the-wumpus}. Further, for the Python code that hosts the ASP based implementation and usage notes we refer to the project repository.
+
+The Python host keeps state in memory as the game progresses. This includes perceptions for all visited rooms, from which room and in which orientation the agent has shot the arrow (if applicable), whether the wumpus is dead or alive, and whether the agent has ever performed the \emph{grab} action. All this information is considered the \emph{memory} of the agent, and encoded as facts every time the logic program is invoked for the purpose of reasoning about the next action.
 
 \begin{figure}
 \begin{tikzpicture}
@@ -226,6 +229,11 @@ In this section, we briefly describe how the agent described in the previous sec
 \draw [->] (sim) -> (py) node [midway, below] {Perception};
 \end{tikzpicture}
 \end{figure}
+
+%\begin{sidewaysfigure}[ht]
+%\includegraphics[width=1\textwidth]{dep}
+%\caption[Dependency Graph of the Logic Program]{Dependency Graph of the Logic Program. }
+%\end{sidewaysfigure}
 
 \section{Evaluation}
 
