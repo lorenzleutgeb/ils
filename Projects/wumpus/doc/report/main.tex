@@ -31,7 +31,7 @@
 %
 % C. Timeline
 %    1. 2018-05-30 Progress report and presentation
-%    2. 2018-06-15 Software deliverable and final report
+%    2. 2018-06-18 Software deliverable and final report
 %    3. 2018-06-22 Final Presentation and Demo
 
 \usepackage[utf8]{inputenc}
@@ -42,7 +42,7 @@
 \usepackage{bookmark}
 \usepackage{csquotes}
 
-\newcommand{\htw}{\emph{Hunt the Wumpus}}
+\newcommand{\htw}{\emph{Hunt the Wumpus }}
 
 \title{Hakuna Matata: A Logic-Based Agent for the \htw Game}
 \subtitle{Project Report}
@@ -65,15 +65,47 @@
 %TODO Define what \htw is, all its rules and constraints.
 %TODO Mention that it is also an example in the standard textbook AIMA and thus suited as an exercise in logic-based AI.
 
+\htw is a single player, old computer game which was first released back in 1975. The game is played in the wumpus world(a cave) which is represented as a grid (default size 4x4) and in this world there are few challenges for the player. Each cell on the grid is a room which is connected by passageways with its orthogonally adjacent cell and in one of these cells there is Wumpus, a beast that eats the player if he enters the room. The player has only one arrow, that's one opportunity for shooting the Wumpus. In addition, some of the rooms are bottomless pits and if the player wanders in these rooms it will stay trapped. The main goal of the player is while facing these challenges, to find the hidden gold and leave the cave alive. At the beginning of the game, the player is always positioned on cell [1,1], facing to the right and has 0 points. From here it can use three moves : \textit{Forward, TurnLeft, TurnRight} for discovering its environment and three actions \textit{Shoot, Grab} and \textit{ Climb} for shooting the arrow, grabbing the gold and climbing out of the cave respectively. For each of the moves and actions the player loses 1 point and 10 points when using the arrow. When eaten by the wumpus or trapped in pit, loses 1000 points, and for climbing out of the cave with the gold gains 1000 points. Whenever the player goes to a new cell, it has five sensors that give information about:
+\begin{description}
+	\item [$\bullet$] Stench - whether the Wumpus is in adjacent cell 
+	\item [$\bullet$] Breeze - whether there is a pit in adjacent cell	
+	\item [$\bullet$] Glitter - when the gold is in the current cell
+	\item [$\bullet$] Bump - whether the player has hit a border
+	\item [$\bullet$] Scream- whether the Wumpus is hit by the arrow 
+\end{description}
+The locations of the gold and the wumpus are chosen randomly with uniform distribution in each cell other then the start. Additionally each cell can be a pit with probability 0.2.
+
+In the book Artificial Intelligence: A Modern Approach, the game is used as an example for representing knowledge-based agents. The environment which represents the Wumpus World is is described as discrete, static, single-agent and partly-observable. For an agent in such environment the main challenge is its initial ignorance of the configuration of the world and using logical reasoning can be helpful for solving this. 
+
+
+
 \section{Approach}
 % This should be a high-level section that does not really talk too much
 % about code (for that we have the "Implementation" section), but instead
 % about the general approach.
+\subsection{ASP technique}
+For the purpose of this project, we decided to implement an intelligent agent that plays the wumpus game using ASP technique in combination with graph-theory techniques to explore the search space and find its best strategy for finishing the game with maximum points. The environment in which the agent is playing is discrete and static, since the wumpus, the gold and the pits are all fixed. The agent's initial knowledge base contains the rules of the game without specifying the size of the grid. The size is discovered by the agent when it hits a border and the 'Bump' percept is on, after which the agent knows how big the search space it is. In order to be able to find the best strategy, the agent first needs to acquire certain knowledge about the search space and to be able to reason wrt this knowledge. The facts and rules in the knowledge base are specified as ASP rules and DVL solver is used for grounding and solving. One of the advantages of ASP is the fact that it uses non-monotonic reasoning and closed world assumption which allow the agent to correctly derive what is logically right from it's knowledge base. Moreover DLV is able to process incomplete knowledge which the agent has while overcoming its initial ignorance with logical reasoning. 
 
-%TODO Justify why we chose ASP (non-monotonic reasoning, fits nicely with incomplete knowledge), previous experience with it, easier to write high-level logic thanks to grounding.
-%TODO Describe the high level approach
+%TODO Justify why we chose ASP (non-monotonic reasoning, fits nicely with incomplete knowledge), previous experience with it, easier to write high-level logic thanks to grounding. 
+% maybe mention that we can write strong constraints, not sure if still have that
+
+\subsection{A* search algorithm}
+For better exploration of the world, we build a graph that represents reachability (with cost) for all cells. Then we use \textit{Manhattan distance} as a cost function for calculating the cost from the current cell to the next cell. 
+For calculating the minimal cost of reaching the goal cell we use \textit{A* search algorithm} : \(f(n) = g(n) + h(n)\).
+In our program \(g(n)\) represents the cost of the path from the current cell to the next cell \(n\), and \(h(n)\) represents the heuristic estimated cost of the cheapest path from cell \(n\) to the goal cell.  
+
 %TODO How does our agent explore the world (A*-search)
-%TODO Describe the modes that we extracted from the gameplay and what are the conditions that make the agnet switch modes.
+%not sure if here should be explained the purpose of pathTurnCost,
+%departureTurnCost and rotCost or leave that for implementation
+
+\subsection{Different modes}
+While playing, our agent can be in 1 from 4 available modes at any time. When the game starts, the first mode of the agent is \textit{explore}. It stays in this mode until it discovers the gold or there are cell which haven't been explored yet. Once the agent is in the cell where the gold is, its next action is to grab the gold and in this moment is in mode \textit{grab}. If there are no more cells safe for exploration, the gold is not grabbed and the agent is facing the wumpus, the mode switches to \textit{kill}. The last available mode is \textit{escape}, in which the agent is if it's not in any of the other three modes. The agent is in this mode after grabbing the gold or after not being able to explore any other cells and leaves the cave empty handed.
+
+%TODO Describe the modes that we extracted from the gameplay and what are the conditions that make the agent switch modes.
+
+
+%TODO Describe the high level approach
+
 
 \section{Implementation}
 %TODO Short section where we describe the system, referring to the appendix (see below)
