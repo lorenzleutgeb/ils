@@ -36,14 +36,32 @@
 
 \usepackage[utf8]{inputenc}
 \usepackage[T1]{fontenc}
+
+\usepackage{geometry}
+\geometry{
+  a4paper,
+  textwidth=16cm,  % llncs has 12.2cm
+  textheight=25cm, % llncs has 19.3cm
+  heightrounded,
+  hratio=1:1,
+  vratio=2:3,
+}
+
 \usepackage[english]{babel}
 
 \usepackage{hyperref}
 \usepackage{bookmark}
 \usepackage{csquotes}
+\usepackage{multicol}
+
+% In the appendix:
+%\usepackage{longtable}
+\usepackage{booktabs}
 
 \usepackage{tikz,comment}
 \usetikzlibrary{shapes.multipart,positioning,backgrounds}
+
+\pagestyle{plain}
 
 \newcommand{\htw}{\emph{Hunt the Wumpus }}
 
@@ -55,6 +73,7 @@
 \begin{document}
 
 \maketitle
+\thispagestyle{plain}
 
 \begin{abstract}
   The assigned task is to develop an intelligent agent that plays the \htw game, by using a logic-based approach in its implementation.
@@ -106,9 +125,7 @@ While playing, our agent can be in 1 from 4 available modes at any time. When th
 
 %TODO Describe the modes that we extracted from the gameplay and what are the conditions that make the agent switch modes.
 
-
 %TODO Describe the high level approach
-
 
 \begin{center}
 \begin{tikzpicture}[roundnode/.style={circle, draw=black!60, very thick,minimum size=4mm}]
@@ -182,12 +199,33 @@ While playing, our agent can be in 1 from 4 available modes at any time. When th
 \section{Implementation}
 %TODO Short section where we describe the system, referring to the appendix (see below)
 %TODO as well as that we used DLV.
-
 %TODO Generate and include the Dependency Graph
-
 %TODO Autopilot (if it works at some point)
-
 %TODO Refer to usage file for actually running the system.
+
+In this section, we briefly describe how the agent described in the previous section was implemented. Note, however that for the implementation in its full detail we refer to Appendix \ref{hunt-the-wumpus}.
+
+\begin{figure}
+\begin{tikzpicture}
+% py and sim should be inside pyr
+% mem should be inside py
+% asp should be inside dlv
+
+\node[fill=blue!30,text depth = 3cm,minimum width=3cm,font=\Large] (pyr) {Python Runtime};
+\node (sim) at (pyr.center) {Wumpus World Simulator};
+\node (py) at (pyr.south) {Python Implementation};
+\node (mem) at (py.south) {Memory};
+
+\node (dlv) {DLV};
+\node (asp) {ASP Implementation};
+
+\draw [->] (py) -> (asp) node [midway, below] {Facts};
+\draw [->] (asp) -> (py) node [midway, below] {Answer Set};
+
+\draw [->] (py) -> (sim) node [midway, below] {Action};
+\draw [->] (sim) -> (py) node [midway, below] {Perception};
+\end{tikzpicture}
+\end{figure}
 
 \section{Evaluation}
 
@@ -211,6 +249,13 @@ $n$ & $N_n$ \\
 %\input{sections/strategy}
 %\input{sections/evaluation}
 
-%TODO Appendix: ASP Lite rendered as TeX from Markdown.
+\newpage
+
+\appendix
+\footnotesize
+
+\begin{multicols}{2}
+\include{appendix}
+\end{multicols}
 
 \end{document}
