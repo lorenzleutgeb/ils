@@ -16,12 +16,18 @@
   \usetikzlibrary{arrows} % required in the preamble
 \usepackage{listings}
 \usepackage{todonotes}
+\usepackage{comment}
 
-\title{A Player Agent for the Wumpus Game}
+
+
+
+\newcommand{\htw}{\emph{Hunt the Wumpus }}
+
+\title{Hakuna Matata: A Logic-Based Agent for the \htw Game}
 \subtitle{Team White}
 \author{Filippo~De~Bortoli \and Aneta~Koleva \and Lorenz~Leutgeb}
 \institute{Free University of Bozen-Bolzano\\[2mm] \texttt{\{\href{mailto:filippo.debortoli@stud-inf.unibz.it}{filippo.debortoli},\href{mailto:aneta.koleva@stud-inf.unibz.it}{aneta.koleva},\href{mailto:lorenz.leutgeb@stud-inf.unibz.it}{lorenz.leutgeb}\}\newline @stud-inf.unibz.it}}
-\date{T.B.A.}
+\date{01.06.2018}
 
 \begin{document}
 
@@ -35,11 +41,12 @@
 
   \begin{frame}{Task}
     \begin{enumerate}
-      \item Implement an agent that plays the \alert{Wumpus} game
-      \item Implement a strategy to complete generated dungeons
-      \item Find an optimal strategy, i.e. maximise score
+      \item Develop an intelligent agent that plays the \htw game.
+      \item Implement a strategy to complete the knowledge about the state of the world and to be able to reason with respect to it. 
+      \item Find an optimal strategy, i.e. maximize score.
     \end{enumerate}
   \end{frame}
+%not sure if a slide with explanation of the game is needed
 
   \begin{frame}{Tools of the Trade}
   \begin{enumerate}
@@ -55,15 +62,17 @@
     Python & 3.6 & Runtime \\
     PyTest & 3.0 & Benchmarking \\
     DLV & Dec 2012 & ASP Solver \\
-    networkX & ? & Graph management \\
+    networkX & 2.1 & Graph management \\
     ? & ? & Dependency management \\
   \end{tabular}
   \end{center}
   \end{frame}
 
-  \section{Agent architecture}
+  \section{Ideas and used concepts}
 
+\begin{comment}
   \begin{frame}{Hybrid Agent}
+  	
       \begin{tabular}{lll}
         \textbf{Component} & \textbf{Task} & \textbf{Language} \\
         Perceptor & Retrieves what is perceived in current location & Python \\
@@ -72,17 +81,78 @@
         Working Memory & Stores information needed to decide next action & Python \\
         Planner & Infers new knowledge and decides next action & ASP \\ 
       \end{tabular}
+  
+  \end{frame}
+   
+\end{comment}
+
+
+ \begin{frame}{World Knowledge}
+	
+	  \begin{itemize}
+		\item Static, partly-observable environment.
+		\item Incomplete initial knowledge.
+		\item Safety first!
+		\item Discovers size of the world when it bumps. 
+		\item Dangers and how to reason to avoid them. 
+	  \end{itemize}
+ \end{frame}
+
+ \begin{frame}{Why ASP and DLV?}
+	\begin{itemize}
+		\item Previous experience with ASP.
+		\item Allows to model non-monotonic reasoning through CWA. 
+		\item Combines a high-level
+		logic with grounding and solving. 
+		\item DLV allows processing of incomplete knoledge. 
+		\item At each time step, ASP solver called after perception has been caught.
+		
+	\end{itemize}
+ \end{frame}
+
+  \begin{frame}{$A^{\star}$ Search and World Exploration}
+	 \begin{itemize}
+	 	\item Build a reachability graph such that:
+		 	\begin{itemize}
+				 \item Vertices are all the safe and reachable rooms that still haven't been explored.
+				 \item Edges are the connections between these rooms.
+		    \end{itemize}
+	    \item Calculate the weights using the cost function: 
+	    $$
+	    g(C,C^\prime) := M((X,Y),(X^\prime,Y^\prime)) + R(O,O^\prime)
+	    $$
+	    % not sure if we should add more about the cost funstion here
+	    \item Compute the minimal cost of reaching the target room using \emph{$A^{\star}$ search} : 
+	    \(f(n) = g(n) + h(n)\)
+	    \item Deciding a goal cell depending on the current mode of the agent .
+	    \item Choosing next cell depending on the goal one.
+		 
+	 \end{itemize}
   \end{frame}
 
-  \begin{frame}{Execution loop}
-    % TODO: diagram?
-    % At each time step, ASP solver called after perception has been caught.
+\begin{frame}{Reachability graph example}
+	\begin{figure}\centering
+		\includegraphics{graph}
+		\caption{Architecture }
+	\end{figure}
+\end{frame}
+
+
+  \begin{frame}{Different modes}
+   \begin{enumerate}
+   	\item Explore - until the gold is discovered or there are more unexplored cells 
+   	\item Grab - when glitter is perceived
+   	\item Kill - not in any other mode and the gold is still up for grabs
+		   	\begin{itemize}
+		   		\item can try to kill the wumpus?
+		   		\item should it try to kill the wumpus?
+		   		\item can it shoot?
+		   	\end{itemize}
+   	\item Escape - not in any other mode
+   \end{enumerate}
   \end{frame}
 
-  \begin{frame}{Action graph}
-    
-  \end{frame}
-
+\iffalse
   \begin{frame}{ASP Encoding}
     \begin{center}
       \begin{tabular}{ll}
@@ -98,9 +168,20 @@
   \begin{frame}{Heuristics}
     % TODO.
   \end{frame}
+\fi
+  \section{Implementation}
+	%something more here maybe? it's a section with one slide (diagram)
+  \begin{frame}{Architecture of the implementation}
+  	\begin{figure}\centering
+  		\includegraphics{architecture}
+  		\caption{Architecture }
+  	\end{figure}
+	
+  \end{frame}
+
 
   \section{Evaluation}
-
+  
   \begin{frame}{Perfect agent}
     Performance of the agent compared against a \alert{perfect} agent.
     \begin{itemize}
