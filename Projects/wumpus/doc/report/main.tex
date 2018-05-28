@@ -92,7 +92,10 @@
 %TODO Define what \htw is, all its rules and constraints.
 %TODO Mention that it is also an example in the standard textbook AIMA and thus suited as an exercise in logic-based AI.
 
-\htw is a single player, old computer game which was first released back in 1975. The game is played in the wumpus world(a cave) which is represented as a grid (default size 4x4) and in this world there are few challenges for the player. Each cell on the grid is a room which is connected by passageways with its orthogonally adjacent cell and in one of these cells there is wumpus, a beast that eats the player if he enters the room. The player has only one arrow, that's one opportunity for shooting the wumpus. In addition, some of the rooms are bottomless pits and if the player wanders in these rooms it will stay trapped. The main goal of the player is while facing these challenges, to find the hidden gold and leave the cave alive. At the beginning of the game, the player is always positioned on cell [1,1], facing to the right and has 0 points. From here it can use three moves : \textit{Forward, TurnLeft, TurnRight} for discovering its environment and three actions \textit{Shoot, Grab} and \textit{ Climb} for shooting the arrow, grabbing the gold and climbing out of the cave respectively. For each of the moves and actions the player loses 1 point and 10 points when using the arrow. When eaten by the wumpus or trapped in pit, loses 1000 points, and for climbing out of the cave with the gold gains 1000 points. Whenever the player goes to a new cell, it has five sensors that give information about:
+\htw is a single player computer game, first released in 1975.
+It is best known as a toy-problem in the field of Artificial Intelligence and has been thoroughly analysed by Russell and Norvig in~\cite{book:aima}, where it has been used to introduce the reader to a logic-based approach to \emph{Knowledge Representation} (KR). 
+
+The game is played in the wumpus world(a cave) which is represented as a grid (default size 4x4) and in this world there are few challenges for the player. Each cell on the grid is a room which is connected by passageways with its orthogonally adjacent cell and in one of these cells there is wumpus, a beast that eats the player if he enters the room. The player has only one arrow, that's one opportunity for shooting the wumpus. In addition, some of the rooms are bottomless pits and if the player wanders in these rooms it will stay trapped. The main goal of the player is while facing these challenges, to find the hidden gold and leave the cave alive. At the beginning of the game, the player is always positioned on cell [1,1], facing to the right and has 0 points. From here it can use three moves : \textit{Forward, TurnLeft, TurnRight} for discovering its environment and three actions \textit{Shoot, Grab} and \textit{ Climb} for shooting the arrow, grabbing the gold and climbing out of the cave respectively. For each of the moves and actions the player loses 1 point and 10 points when using the arrow. When eaten by the wumpus or trapped in pit, loses 1000 points, and for climbing out of the cave with the gold gains 1000 points. Whenever the player goes to a new cell, it has five sensors that give information about:
 \begin{description}
 	\item [$\bullet$] Stench - whether the Wumpus is in adjacent cell 
 	\item [$\bullet$] Breeze - whether there is a pit in adjacent cell	
@@ -102,9 +105,7 @@
 \end{description}
 The locations of the gold and the wumpus are chosen randomly with uniform distribution in each cell other then the start. Additionally each cell can be a pit with probability 0.2.
 
-In the book Artificial Intelligence: A Modern Approach, the game is used as an example for representing knowledge-based agents. The environment which represents the Wumpus World is is described as discrete, static, single-agent and partly-observable. For an agent in such environment the main challenge is its initial ignorance of the configuration of the world and using logical reasoning can be helpful for solving this. 
-
-
+In~\cite{book:aima}, the environment which represents the Wumpus World is is described as discrete, static, single-agent and partly-observable. For an agent in such environment the main challenge is its initial ignorance of the configuration of the world and using logical reasoning can be helpful for solving this. 
 
 \section{Approach}
 % This should be a high-level section that does not really talk too much
@@ -148,6 +149,7 @@ Otherwise, if a \emph{bump} is percepted, it infers the real size of the world a
 % maybe mention that we can write strong constraints, not sure if still have that
 
 \subsection{$A^{\star}$ Search and World Exploration}
+
 For better exploration of the world, we build a graph that represents reachability (with cost) for all cells. Then we use \emph{Manhattan distance}~\cite{Manhattan} as a cost function for calculating the cost for moving from a cell to a cell. We also consider the rotation cost  when the agent reasons about the number of moves it needs to make in order to move from a cell to another cell. To calculate this cost, first the cost of all turns on the way from current cell to a destination cell is calculated and to this is added the cost of departing the current cell (whether the agent needs to turn before leaving). For calculating the minimal cost of reaching the destination cell we use \textit{A* search algorithm} : \(f(n) = g(n) + h(n)\). \
 In order to efficiently use this algorithm next and goal cell must be known. 
 First the goal cell is calculated and based on this result, the next cell is decided.  The choice of a goal cell depends on the current mode of the agent which are explained below. If it's in mode \textit{explore}, goal is a reachable cell which is safe and hasn't been explored yet. If the agent's mode is \textit{kill}, then the goal is a cell which is safe and from which the wumpus can be shot.   
@@ -282,16 +284,35 @@ The Python host keeps state in memory as the game progresses. This includes perc
 
 \section{Evaluation}
 
+In this section, we explain how the empirical evaluation of our agent has been carried out.
+In particular, we describe which experiments our agent has been tested with, which parameters have been collected and how its performance has been assessed.
+To produce a satisfying evaluation, we generated a testing suite and, in order to obtain a reliable reference, we built an omniscient agent.
+
+\subsection{Testing Suite}
+
+In order to collect the results of our agent, we devised a testing suite, composed by a batch of dungeons, randomly generated by the Wumpus World Simulator that was made available as part of the assignment.
+Each entry of this suite, bundled together with our implementation of the agent, has the form \emph{world-<size>-<seed>}, where the \emph{seed} allows to reproduce the creation of the selected dungeon.
+In Table~\ref{tbl:test}, the composition of the testing suite is outlined.
 %TODO mention that we used randomly generated instances:
 
-\begin{tabular}{ccc}
-$n$ & $N_n$ \\
-4 & 120 \\
-5 &  20 \\
-6 &  20 \\
-7 &  20 \\
-8 &  20 \\
-\end{tabular}
+\begin{table}[t]
+	\label{tbl:test}
+	\centering
+	\begin{tabular}{ccc}
+	\toprule
+	Worlds size & Number of instances \\
+	\midrule
+	4 & 120 \\
+	5 &  20 \\
+	6 &  20 \\
+	7 &  20 \\
+	8 &  20 \\
+	\bottomrule\\
+	\end{tabular}
+	\caption{Composition of the testing suite used to assess the performances of Hakuna.}
+\end{table}
+
+Each world has been generated by taking into account the rules of \htw: indeed, each instance has a squared shape, it contains only one wumpus, one unit of gold and it may contain several pits, sparse through the dungeon.
 
 %TODO maybe more instances?
 
@@ -311,10 +332,21 @@ Here, the cost function is the same that has been previously employed.
 
 Then, the perfect agent behaves as follows: if the gold is unreachable, thus it lies in a pit, it immediately climbs; otherwise, he takes the shortest path to the cell containing the gold, grabs it and comes back to the initial position from the same path, to finally climb.
 
-%\input{sections/introduction}
-%\input{sections/installation}
-%\input{sections/strategy}
-%\input{sections/evaluation}
+\subsection{Performance Assessment}
+
+For each instance, a run of the omniscient agent and one of the Hakuna agent have been recorded and their scores collected for comparison.
+Being ours a pure logic-based approach, the score obtained by both agents on an instance can be exactly reproduced, given the agent and the instance; this would not be the case, if probabilistic reasoning was taken into account.
+From the collected data, the gap between the results scored by the two agents in each instance has been computed, and the sample mean and standard deviation have been computed.
+
+After data collection, we investigated those instances where the the perfect agent outperformed Kakuna, to understand the possible causes and search for plausible improvements.
+What we have found out can be summarised as the following:
+\begin{itemize}
+	\item Hakuna performed similarly to the agent in those instances where the gold was reachable by just exploring the dungeon and in those where killing the Wumpus led to the discovery of a safe path to the gold.
+	\item On the other hand, Hakuna was outperformed in those instances where the phenomenon of \emph{breeze walls} happened: the location of the breezes brought the agent to infer a disposition of possible pits that blocked its way to the gold, even though there were no pits between it and the reward.
+	\item On instances where gold was unreachable, the agent lost on average a small amount of points before concluding that the search was useless and climbing back to the exit.
+\end{itemize}
+
+% TODO: talking about runtime? Influence of the autopilot?
 
 \newpage
 
