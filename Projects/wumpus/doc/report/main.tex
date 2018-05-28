@@ -106,14 +106,11 @@ The locations of the gold and the wumpus are chosen randomly with uniform distri
 In~\cite{book:aima}, the environment which represents the Wumpus World is is described as discrete, static, single-agent and partly-observable. For an agent in such environment the main challenge is its initial ignorance of the configuration of the world and using logical reasoning can be helpful for solving this. 
 
 \section{Approach}
-% This should be a high-level section that does not really talk too much
-% about code (for that we have the "Implementation" section), but instead
-% about the general approach.
 
 In this section, we describe the ideas and the concepts that underlie our approach to the assigned task.
 In particular, we single out those aspects that are relevant to the understanding of the behaviour that the Hakuna agent shows during a run of the game.
 
-For the purpose of this project, we decided to implement a logic-based agent, that plays \htw employing both Answer Set Programming (ASP) and suitable search techniques --- borrowed from graph theory --- to explore the search space and find an optimal strategy to finish the game with the maximum score.
+For the purpose of this project, we decided to implement a logic-based agent, that plays \htw employing both Answer Set Programming (ASP, in~\cite{ASPprimer} a detailed introduction is given) and suitable search techniques --- borrowed from graph theory --- to explore the search space and find an optimal strategy to finish the game with the maximum score.
 
 \subsection{ASP and World Knowledge}
 
@@ -148,7 +145,16 @@ Otherwise, if a \emph{bump} is percepted, it infers the real size of the world a
 
 \subsection{$A^{\star}$ Search and World Exploration}
 
-For better exploration of the world, we build a graph that represents reachability (with cost) for all cells. Then we use \emph{Manhattan distance}~\cite{Manhattan} as a cost function for calculating the cost for moving from a cell to a cell. We also consider the rotation cost  when the agent reasons about the number of moves it needs to make in order to move from a cell to another cell. To calculate this cost, first the cost of all turns on the way from current cell to a destination cell is calculated and to this is added the cost of departing the current cell (whether the agent needs to turn before leaving). For calculating the minimal cost of reaching the destination cell we use \textit{A* search algorithm} : \(f(n) = g(n) + h(n)\). \
+As a way to exploit the partial knowledge of the world and improve the subsequent planning, the agent builds an internal representation of a reachability graph.
+The vertexes of such a graph represent those configuration lying in the \emph{frontier} of the agent, that is, safe and reachable rooms that are yet to be explored.
+The edges of the graph represent the reachability of a configuration from another.
+The edges are weighted according to the following cost function: given the actual configuration $C = (X,Y,O)$ and a target configuration $C^\prime = (X^\prime,Y^\prime,O^\prime)$,
+$$
+	g(C,C^\prime) := M((X,Y),(X^\prime,Y^\prime)) + R(O,O^\prime)
+$$
+where $M$ represents the \emph{Manhattan distance}~\cite{Manhattan} between the two rooms and $R$ is the rotational cost between the two orientations.
+% For better exploration of the world, we build a graph that represents reachability (with cost) for all cells. Then we use \emph{Manhattan distance}~\cite{Manhattan} as a cost function for calculating the cost for moving from a cell to a cell. We also consider the rotation cost  when the agent reasons about the number of moves it needs to make in order to move from a cell to another cell. To calculate this cost, first the cost of all turns on the way from current cell to a destination cell is calculated and to this is added the cost of departing the current cell (whether the agent needs to turn before leaving).
+To compute the minimal cost needed to reach the target room the agent performs an \emph{$A^{\star}$ search} (as first introduced in~\cite{AStar}) s : \(f(n) = g(n) + h(n)\). \
 In order to efficiently use this algorithm next and goal cell must be known. 
 First the goal cell is calculated and based on this result, the next cell is decided.  The choice of a goal cell depends on the current mode of the agent which are explained below. If it's in mode \textit{explore}, goal is a reachable cell which is safe and hasn't been explored yet. If the agent's mode is \textit{kill}, then the goal is a cell which is safe and from which the wumpus can be shot.   
 In our program \(g(n)\) represents the cost of the path from the current cell to the next cell \(n\), and \(h(n)\) represents the heuristic estimated cost of the cheapest path from cell \(n\) to the goal cell. 
@@ -156,10 +162,13 @@ In our program \(g(n)\) represents the cost of the path from the current cell to
 %TODO How does our agent explore the world (A*-search)
 %not sure if here should be explained the purpose of pathTurnCost,
 %departureTurnCost and rotCost or leave that for implementation
+% @filippo-23:20 28/05/2018: I think that details can be left for Implementation, but if they are used to define cost/heuristic, I would briefly mention them here. 
 
-\subsection{Different modes}
+\subsection{Agent Modes and Strategies}
+
 In order to simplify the implementation of the agent and the way it choses its next action we introduce four different modes of playing in which the agent can be at any time. This helps to abstract and in different modes enable and disable different possible actions. It also made it easier for developing the code. 
-While playing, our agent can be in exactly one from four available modes. 
+While playing, our agent can be in exactly one from four available modes.
+
 \paragraph{Explore} The agent is in this mode until it discovers the gold or there are more cells which should be explored. These are cells which are known to be reachable, safe and not yet explored. 
 
 \paragraph{Grab} Once the agent is in the cell where can perceive glitter, its next action is to grab the gold and in this moment is in mode \textit{grab}. 
@@ -306,7 +315,6 @@ To produce a satisfying evaluation, we generated a testing suite and, in order t
 In order to collect the results of our agent, we devised a testing suite, composed by a batch of dungeons, randomly generated by the Wumpus World Simulator that was made available as part of the assignment.
 Each entry of this suite, bundled together with our implementation of the agent, has the form \emph{world-<size>-<seed>}, where the \emph{seed} allows to reproduce the creation of the selected dungeon.
 In Table~\ref{tbl:test}, the composition of the testing suite is outlined.
-%TODO mention that we used randomly generated instances:
 
 \begin{table}[t]
 	\label{tbl:test}
