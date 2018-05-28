@@ -708,8 +708,6 @@ fixes the current location and orientation of the agent.
 Now, for the three modes that require goals, we define candidate
 sets.
 
-##### Explore
-
 In the explore mode, interesting candidates are those rooms that
 we have not yet explored and for which we know that they are safe.
 
@@ -718,16 +716,12 @@ we have not yet explored and for which we know that they are safe.
 		frontier    X Y
 		mode        explore
 
-##### Kill
-
 The goal is a room form which we can attack the wumpus.
 
 	candidate 1         X Y C
 		costFromNow X Y C
 		attack      X Y _
 		mode        kill
-
-##### Escape
 
 When escaping, the only candidate is the starting point.
 
