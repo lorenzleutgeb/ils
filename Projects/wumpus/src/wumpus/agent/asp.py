@@ -93,8 +93,8 @@ class ASPAgent():
         self.world = {}
         self.position = Location(1, 1)
         self.orientation = Orientation.RIGHT
-        self.wumpusDead = False
-        self.bump = None
+        self.killed = False
+        self.bumped = None
         self.previousAction = None
 
         # Assume some large world. Will get adjusted once we bump.
@@ -113,13 +113,13 @@ class ASPAgent():
 
     def process(self, percept):
         if percept.scream:
-            self.wumpusDead = True
+            self.killed = True
 
         if percept.bump:
             self.size = max(self.position.x, self.position.y)
-            if self.bump != None:
+            if self.bumped != None:
                 logger.debug('We appear to be bumping a second time.')
-            self.bump = self.position.getAdjacent(self.orientation, self.size + 1)
+            self.bumped = self.position.getAdjacent(self.orientation, self.size + 1)
         elif self.previousAction == Action.GOFORWARD:
             self.position = self.position.getAdjacent(self.orientation, self.size)
         elif self.previousAction in {Action.TURNLEFT, Action.TURNRIGHT}:
@@ -153,13 +153,14 @@ class ASPAgent():
                 for action in {Action.TURNLEFT, Action.TURNRIGHT}:
                     self.g.add_edge((self.position, o), (self.position, o.turn(action)), action=action)
 
+        # now/3 and killed/0 are certain.
         knowledge = [
             fact(True, 'now', [self.position.x, self.position.y, self.orientation.toSymbol()]),
-            fact(self.wumpusDead, 'wumpusDead'),
+            fact(self.killed, 'killed'),
         ]
 
-        if self.bump != None:
-            knowledge.append(fact(True, 'bump', [self.bump.x, self.bump.y]))
+        if self.bumped != None:
+            knowledge.append(fact(True, 'bumped', [self.bumped.x, self.bumped.y]))
 
         if self.shot != None:
             knowledge.append(fact(True, 'shot', [self.shot[0].x, self.shot[0].y, self.shot[1].toSymbol()]))
