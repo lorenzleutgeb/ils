@@ -62,9 +62,7 @@
 \usepackage{booktabs}
 
 \usepackage{tikz,comment}
-\usetikzlibrary{shapes.multipart,positioning,backgrounds}
-
-
+\usetikzlibrary{shapes.multipart,positioning,backgrounds,positioning,fit,calc,arrows.meta}
 
 \pagestyle{plain}
 
@@ -256,25 +254,40 @@ In this section, we briefly describe how the agent described in the previous sec
 The Python host keeps state in memory as the game progresses. This includes perceptions for all visited rooms, from which room and in which orientation the agent has shot the arrow (if applicable), whether the wumpus is dead or alive, and whether the agent has ever performed the \emph{grab} action. All this information is considered the \emph{memory} of the agent, and encoded as facts every time the logic program is invoked for the purpose of reasoning about the next action.
 
 \begin{figure}
-\begin{tikzpicture}
-% py and sim should be inside pyr
-% mem should be inside py
-% asp should be inside dlv
+\begin{center}
+\begin{tikzpicture}[
+  node distance=1cm and 5mm,
+  every node/.style={font=\sffamily},
+  title/.style={font=\color{black!50}\sffamily},
+  typetag/.style={rectangle, draw=black!50, font=\sffamily, anchor=west, text height=3mm, align=center}
+]
 
-\node[fill=blue!30,text depth = 3cm,minimum width=3cm,font=\Large] (pyr) {Python Runtime};
-\node (sim) at (pyr.center) {Wumpus World Simulator};
-\node (py) at (pyr.south) {Python Implementation};
-\node (mem) at (py.south) {Memory};
+  \node (lp) at (0, -1cm) {};
+  \node (as) at (0, -3.2cm) {};
 
-\node (dlv) {DLV};
-\node (asp) {ASP Implementation};
+  \node (gl) at (3.6cm, 0) [align=center, text width=2.1cm, title] { \large Python };
 
-\draw [->] (py) -> (asp) node [midway, below] {Facts};
-\draw [->] (asp) -> (py) node [midway, below] {Answer Set};
+  \node (par) [below=of gl.west, text width=22mm, typetag] { Simulator };
+  \node (gro) [below=1.7cm of par.west, text width=22mm, typetag] { Agent Host };
 
-\draw [->] (py) -> (sim) node [midway, below] {Action};
-\draw [->] (sim) -> (py) node [midway, below] {Perception};
+  \node (g) [draw=gray!10, line width=1mm, inner sep=5pt, fit={(gl) (par) (gro)}] {};
+
+  \node (sl) at (9.6cm, -1.7cm) [align=center, text width=2.7cm, title] { \large DLV };
+
+  \node (ngs) [below=of sl.west, text width=3cm, typetag] { Agent };
+
+  \node (s) [draw=gray!10, line width=1mm, inner sep=5pt, fit={(sl) (ngs)}] {};
+
+  \draw [->, draw=black!80] (gro) to [out=340, in=200] node [midway, below] {State as Facts} (ngs);
+  \draw [->, draw=black!80] (ngs) to [out=160, in=20] node [midway, above] {Answer Set} (gro);
+
+  \draw [->, draw=black!80] (par) to [out=280, in=80] node [midway, right] {Perceptions} (gro);
+  \draw [<-, draw=black!80] (par) to [out=260, in=100] node [midway, left] {Actions} (gro);
+
+  \draw [->, draw=black!80] (lp) -- (par) node [midway, above] {World};
 \end{tikzpicture}
+\end{center}
+\caption{Architecture of the Implementation}
 \end{figure}
 
 %\begin{sidewaysfigure}[ht]
