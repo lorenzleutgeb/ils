@@ -1,30 +1,30 @@
-# Hunt the Wumpus
+# Hakuna Matata the Wumpus Hunter
 
 This is an implementation of an agent that plays "Hunt the Wumpus".
 
 Input should be given as follows:
 
-| Predicate  | Terms   | Semantics |
-|------------|---------|-----------|
-| now        |  X Y O | The agent is currently at position X, Y and oriented in direction O |
-| stench     |  X Y   | The agent has perceived a stench at position X, Y. |
-| breeze     |  X Y   | The agent has perceived a breeze at position X, Y. |
-| glitter    |  X Y   | The agent has perceived a glitter at position X, Y. |
-| wumpusDead |        | The wumpus is dead. |
-| haveArrow  |        | The agent has an arrow  which it may shoot. |
-| explored   |  X Y   | The agent has been  or is at position X, Y. |
-| bump       |  X Y   | The agent has bumped against a wall when it attempted to move to X, Y. |
-| grabbed    |        | The agent has at some point attempted to grab the gold. |
-| shot       |  X Y O | The agent has shot its arrow at X, Y in orientation O. |
+| Predicate | Terms  | Semantics |
+|-----------|--------|-----------|
+| now       |  X Y O | The agent is currently at position X, Y and its orientation is O. |
+| stench    |  X Y   | The agent has perceived a stench at position X, Y. |
+| breeze    |  X Y   | The agent has perceived a breeze at position X, Y. |
+| glitter   |  X Y   | The agent has perceived a glitter at position X, Y. |
+| explored  |  X Y   | The agent has been or is at position X, Y. |
+| bumped    |  X Y   | The agent has bumped against a wall when it attempted to move to X, Y. |
+| grabbed   |  X Y   | The agent has performed the grab action at X, Y. |
+| shot      |  X Y O | The agent has shot its arrow at X, Y in orientation O. |
+| killed    |        | The wumpus has been killed. |
 
 	#maxint = 1000.
 
 ## Constants
 
 We use constants to encode concrete orientations, actions and modes, and one
-corresponding predicate to all of them respectively.
+corresponding predicate to represent all of them respectively.
 
-According to `wumpus.common.Orientation` we define orientations.
+According to `wumpus.common.Orientation` and `.../wsu/Orientation.py`
+we define orientations.
 
 	#const right = 0.
 	#const up    = 1.
@@ -33,7 +33,8 @@ According to `wumpus.common.Orientation` we define orientations.
 
 	isOrientation 0..3
 
-According to `wumpus.common.Action` we define actions.
+According to `wumpus.common.Action` and `.../wsu/Action.py`
+we define actions.
 
 	#const goforward = 0.
 	#const turnleft  = 1.
@@ -44,7 +45,8 @@ According to `wumpus.common.Action` we define actions.
 
 	isAction 0..5
 
-According to `wumpus.agent.Mode` we define modes.
+According to `wumpus.agent.Mode` (not present in `.../wsu`)
+we define modes.
 
 	#const explore = 0.
 	#const escape  = 1.
@@ -61,6 +63,9 @@ Being able to mirror orientations/turns will come in handy.
 
 	mirror         left right
 	mirror         up   down
+
+And of course, our mirror is symmetric :)
+
 	mirror         O2   O1
 		mirror O1   O2
 
@@ -70,10 +75,11 @@ If the agent never bumped against a wall, it has no information
 about the size of the world.
 
 	sizeKnown
-		bump _ _
+		bumped _ _
 
 We will therefore derive the size of the world from something
-already known.
+already known. We derive the maximum coordinate we have seen
+from the explored rooms we know about.
 
 	exploredSize     X
 		explored X Y
@@ -81,7 +87,7 @@ already known.
 	exploredSize       Y
 		explored X Y
 
-Since any cell we already explored certainly is
+Since any room we already explored certainly is
 part of the world, we can use this information and guess that
 the world is "just a little" bigger than we already know.
 
@@ -94,20 +100,20 @@ the world is "just a little" bigger than we already know.
 Of course, if the agent bumped, the size can be directly inferred.
 
 	size               S
-		bump  Sm Y
+		bumped  Sm Y
 		>     Sm Y
 		#prec Sm   S
 
 	size               S
-		bump  X Sm
+		bumped  X Sm
 		<=    X Sm
 		#prec   Sm S
 
-## Cells, Neighbors, Facing And Bumps
+## Rooms, Neighbors, Facing and Bumps
 
-Span the space of cells.
+Span the space of rooms.
 
-	cell         X Y
+	room         X Y
 		#int X
 		#int   Y
 		>      Y 0
@@ -119,35 +125,35 @@ Span the space of cells.
 	corner 1 1
 
 	corner       X 1
-		cell X 1
+		room X 1
 		size X
 		sizeKnown
 
 	corner       1 Y
-		cell 1 Y
+		room 1 Y
 		size   Y
 		sizeKnown
 
 	corner       S S
-		cell S S
+		room S S
 		size S
 		sizeKnown
 
-Two cells are different if any of the components  X, Y are unequal.
+Two rooms are different if any of the components  X, Y are unequal.
 
 	diff         X1 Y1 X2 Y2
-		cell X1 Y1
-		cell       X2 Y2
+		room X1 Y1
+		room       X2 Y2
 		!=   X1    X2
 
 	diff         X1 Y1 X2 Y2
-		cell X1 Y1
-		cell       X2 Y2
+		room X1 Y1
+		room       X2 Y2
 		!=      Y1    Y2
 
 ### Distances and Costs
 
-The two predicates `outgoing` and `incoming` will help us to
+The two predicates `outgoing/2` and `incoming/2` will help us to
 keep the space for which we have to compute costs small.
 
 	neighborhood              X2 Y2
@@ -167,63 +173,22 @@ keep the space for which we have to compute costs small.
 We define distance along axes
 
 	distAlong        X1 Y1 X2 Y2 right D
-		cell     X1 Y1
-		cell           X2 Y2
+		room     X1 Y1
+		room           X2 Y2
 		#absdiff       X1 X2       D
 
 	distAlong        X1 Y1 X2 Y2 up D
 		#absdiff       Y1 Y2    D
-		cell     X1 Y1
-		cell           X2 Y2
+		room     X1 Y1
+		room           X2 Y2
 
 And using that, manhattan/taxicab distance is a charm.
 
-	manhattan            X1 Y1 X2 Y2             M
-		outgoing     X1 Y1
-		distAlong    X1 Y1 X2 Y2 right D1
-		distAlong    X1 Y1 X2 Y2 up    D2
-		+                              D1 D2 M
-
-	pathTurnCost          X Y O X Y 0
-		outgoing  X Y
-		isOrientation     O
-
-	pathTurnCost          X1 Y1 O1 X2 Y2 0
-		isOrientation       O1
-		facing        X1 Y1 _ X2 Y2
-		diff          X1 Y1   X2 Y2
-
-	pathTurnCost             X1 Y1 O1 X2 Y2 1
-		outgoing         X1 Y1
-		isOrientation          O1
-		incoming                  X2 Y2
-		not pathTurnCost X1 Y1 O1 X2 Y2 0
-
-	departureTurnCost        X1 Y1 O1 X2 Y2    C
-		outgoing     X1 Y1
-		isOrientation          O1
-		incoming                  X2 Y2
-		#min                               C Cm
-			reach    X1 Y1    X2 Y2 O2
-			turnCost       O1       O2   Cm
-
-	rotCost                   X1 Y1 O1 X2 Y2       C
-		outgoing          X1 Y1
-		isOrientation           O1
-		incoming                   X2 Y2
-		pathTurnCost      X1 Y1 O1 X2 Y2 Cp
-		departureTurnCost X1 Y1 O1 X2 Y2    Cd
-		+                                Cp Cd C
-
-We use the Manhattan distance as cost function.
-
-	cost                      X1 Y1 O1 X2 Y2 C
-		outgoing          X1 Y1
-		isOrientation           O1
-		incoming                   X2 Y2
-		rotCost           X1 Y1 O1 X2 Y2 Cr
-		manhattan         X1 Y1    X2 Y2    Cm
-		+                                Cr Cm C
+	manhattan         X1 Y1 X2 Y2             M
+		outgoing  X1 Y1
+		distAlong X1 Y1 X2 Y2 right D1
+		distAlong X1 Y1 X2 Y2 up       D2
+		+                           D1 D2 M
 
 The turn predicate associates two orientations with the action
 that must be taken in order to turn from the first orientation
@@ -239,30 +204,95 @@ to the second (if possible).
 	turn left  up    turnright
 	turn right down  turnright
 
-	turnCost              O O 0
+From here, we abstract towards a cost function. We are
+interested in the number of turns that need to be performed
+in order to change from one orientation to another.
+
+Of course, no change in orientation is free.
+
+	turns                 O O 0
 		isOrientation O
 
-	turnCost                  O1 O2 1
+Left and right turns, i.e. ones that do not mirror
+orientation take exactly one turn.
+
+	turns                     O1 O2 1
 		    isOrientation O1
-		    isOrientation     O2
+		    isOrientation    O2
 		    !=            O1 O2
 		not mirror        O1 O2
 
-	turnCost               O1 O2 2
+The worst case is when the orientations are mirrored.
+
+	turns                  O1 O2 2
 		isOrientation  O1
 		isOrientation     O2
 		mirror         O1 O2
 
-Neighboring cells along the horizontal and vertical axis.
+With this simple counts for turns we go further and
+compute how many turns are needed along the way from
+one room to another.
+
+Again, staying in the same room is free.
+
+	turnsTo               X Y O X Y 0
+		outgoing      X Y
+		isOrientation     O
+
+Rooms that are faced also need no turns, one can just
+go straight forward.
+
+	turnsTo               X1 Y1 O1 X2 Y2 0
+		isOrientation       O1
+		facing        X1 Y1 _  X2 Y2
+		diff          X1 Y1    X2 Y2
+
+All other cases require at most one turn since two
+components are off.
+
+	turnsTo               X1 Y1 O1 X2 Y2 1
+		outgoing      X1 Y1
+		isOrientation       O1
+		incoming               X2 Y2
+		not turnsTo   X1 Y1 O1 X2 Y2 0
+
+	turnsFrom                X1 Y1 O1 X2 Y2    C
+		outgoing         X1 Y1
+		isOrientation          O1
+		incoming                  X2 Y2
+		#min                               C Cm
+			reach    X1 Y1    X2 Y2 O2
+			turns          O1       O2   Cm
+
+	turnCost              X1 Y1 O1 X2 Y2       C
+		outgoing      X1 Y1
+		isOrientation       O1
+		incoming               X2 Y2
+		turnsTo       X1 Y1 O1 X2 Y2 Cp
+		turnsFrom     X1 Y1 O1 X2 Y2    Cd
+		+                            Cp Cd C
+
+We combine turn cost and Manhattan distance as high level
+cost function.
+
+	cost                      X1 Y1 O1 X2 Y2       C3
+		outgoing          X1 Y1
+		isOrientation           O1
+		incoming                   X2 Y2
+		turnCost          X1 Y1 O1 X2 Y2 C1
+		manhattan         X1 Y1    X2 Y2    C2
+		+                                C1 C2 C3
+
+Neighboring rooms along the horizontal and vertical axis.
 
 	neighbor      X1 Y X2 Y right
-		cell  X1 Y
-		cell       X2 Y
+		room  X1 Y
+		room       X2 Y
 		#succ X1   X2
 
 	neighbor      X Y1 X Y2 up
-		cell  X Y1
-		cell       X Y2
+		room  X Y1
+		room       X Y2
 		#succ   Y1   Y2
 
 	neighbor         X1 Y1 X2 Y2 O2
@@ -289,47 +319,47 @@ Neighboring cells along the horizontal and vertical axis.
 		diff     X1 Y1       X3 Y3
 		axis                       A
 
-Cells that agree on one component.
+Rooms that agree on one component.
 
 	facing       X Z up X Y
-		cell X Z
+		room X Z
 		<      Z      Y
-		cell X        Y
+		room X        Y
 
 	facing       Z Y right X Y
-		cell           X Y
+		room           X Y
 		<    Z         X
-		cell Z           Y
+		room Z           Y
 
 	facing         X2 Y2    O2 X1 Y1
 		facing X1 Y1 O1    X2 Y2
 		mirror       O1 O2
 
 	reach        X1 Y1 X2 Y2 right
-		cell X1 Y1
-		cell       X2 Y2
+		room X1 Y1
+		room       X2 Y2
 		<    X1    X2
 
 	reach        X1 Y1 X2 Y2 up
-		cell X1 Y1
-		cell       X2 Y2
+		room X1 Y1
+		room       X2 Y2
 		<       Y1    Y2
 
 	reach        X1 Y1 X2 Y2 left
-		cell X1 Y1
-		cell       X2 Y2
+		room X1 Y1
+		room       X2 Y2
 		>    X1    X2
 
 	reach        X1 Y1 X2 Y2 down
-		cell X1 Y1
-		cell       X2 Y2
+		room X1 Y1
+		room       X2 Y2
 		>       Y1    Y2
 
 Complete information about information. We only do this here and
 not in Python since we might have assumed a size.
 
 	-explored            X Y
-		cell         X Y
+		room         X Y
 		not explored X Y
 
 ## Do
@@ -367,13 +397,23 @@ not in Python since we might have assumed a size.
 		now    X Y O
 		attack X Y O
 
-Pick gold if there's some in the cell, independently of the current mode.
+We restrict ourselves to only grab once.
+
+	-canGrab
+		grabbed _ _
+
+	canGrab
+		not -canGrab
+
+
+Pick gold if there's some in the room, independently of the current mode.
 
 	shouldGrab
 		now     X Y O
 		glitter X Y
+		canGrab
 
-Climb if gold is picked and back to initial cell.
+Climb if gold is picked and back to initial room.
 
 	shouldClimb
 		now 1 1 O
@@ -405,7 +445,10 @@ want to take high priority actions like grabbing, climbing or shooting.
 		canFace A
 		not towards goforward
 
-TODO: Can we turn in a better way?
+If the agent cannot go forward towards next and also cannot
+face it by turning once it needs to turn around. We currently
+implement this as left turns always. There might be better
+ways to sort this out...
 
 	towards turnleft
 		not towards goforward
@@ -413,44 +456,44 @@ TODO: Can we turn in a better way?
 
 ## Detection Of Wumpus
 
-	wumpus         X1 Y1
-		square X1 Y1 X2 Y2 X3 Y3 X4 Y4
-		stench       X2 Y2
-		stench             X3 Y3
-		explored                 X4 Y4
-		-wumpusDead
+	wumpus            X1 Y1
+		 square   X1 Y1 X2 Y2 X3 Y3 X4 Y4
+		 stench         X2 Y2
+		 stench               X3 Y3
+		 explored                   X4 Y4
+		-killed
 
 Antipodal matching.
 
-	wumpus               X2 Y2
-		triple X1 Y1 X2 Y2 X3 Y3
-		stench X1 Y1
-		stench             X3 Y3
-		-wumpusDead
+	wumpus                X2 Y2
+		 triple X1 Y1 X2 Y2 X3 Y3
+		 stench X1 Y1
+		 stench             X3 Y3
+		-killed
 
 Corner case.
 
-	wumpus                     XW YW
-		twoNeighbors XC YC XW YW XE YE
-		stench       XC YC
-		corner       XC YC
-		explored                 XE YE
-		-wumpusDead
+	wumpus                      XW YW
+		 twoNeighbors XC YC XW YW XE YE
+		 stench       XC YC
+		 corner       XC YC
+		 explored                 XE YE
+		-killed
 
 Auxiliary flag to signal detection of wumpus.
 
 	wumpusDetected
-		cell  X Y
+		room   X Y
 		wumpus X Y
 
-If wumpus is not certainly detected, we must exclude other cells where it might be.
+If wumpus is not certainly detected, we must exclude other rooms where it might be.
 
-	possibleWumpus            X2 Y2
-		anyNeighbor X1 Y1 X2 Y2
-		stench      X1 Y1
-		-explored         X2 Y2
-		not shotAt        X2 Y2
-		-wumpusDead
+	possibleWumpus                X2 Y2
+		    anyNeighbor X1 Y1 X2 Y2
+		    -explored         X2 Y2
+		    stench      X1 Y1
+		not shotAt            X2 Y2
+		    -killed
 		not wumpusDetected
 
 	shotAt                  X Y
@@ -466,12 +509,12 @@ A neighbor of a breeze is a possible pit if it can be.
 		anyNeighbor XB YB XP YP
 		not -pit          XP YP
 
-Any explored cell certainly cannot be a pit, otherwise we would be dead by now.
+Any explored room certainly cannot be a pit, otherwise we would be dead by now.
 
 	-pit             X Y
 		explored X Y
 
-If we have explored a cell already and felt no brezee, then no neighbor can be a pit.
+If we have explored a room already and felt no brezee, then no neighbor can be a pit.
 
 	-pit                      X2 Y2
 		anyNeighbor X1 Y1 X2 Y2
@@ -482,9 +525,9 @@ Finally, we assume that there are pits where there might be possible pits.
 	pit                     X Y
 		possiblePit _ _ X Y
 
-## Safety Of Cells
+## Safety Of Rooms
 
-Any cell where the wumpus is is not safe.
+Any room where the wumpus is is not safe.
 
 	safe             X Y
 		explored X Y
@@ -498,9 +541,9 @@ Any cell where the wumpus is is not safe.
 	-safe       X Y
 		pit X Y
 
-	safe              X Y
-		reachable X Y
-		not -safe X Y
+	safe                   X Y
+		     reachable X Y
+		not -safe      X Y
 
 ## Explore Mode
 
@@ -513,41 +556,74 @@ Any cell where the wumpus is is not safe.
 
 Auxiliary flag to signal whether we can still explore further.
 
-	frontier          X Y
-		reachable X Y
-		safe      X Y
-		-explored X Y
+	frontier           X Y
+		 reachable X Y
+		 safe      X Y
+		-explored  X Y
 
 	shouldExplore
 		frontier X Y
 
 ## Kill Mode
 
-	dontShoot
-		possibleWumpus X Y
-		pit            X Y
+This mode is concerned with killing, or trying to kill, the wumpus.
+Killing the wumpus makes sense if this allows to further explore
+the world.
+Trying to kill it may still allow us to infer where the wumpus is,
+even though it might still be alive.
+
+First, we identify cases where we certainly should not (attempt to)
+kill the wumpus.
+
+If the wumpus is in a room where there might also be a pit, then
+we will not be able to pass safely even if we manage to kill it.
 
 	dontShoot
 		wumpus X Y
 		pit    X Y
 
+The same holds for uncertainty of the wumpus' location. Note
+that this constraint may be relaxed, since in the case we miss
+the wumpus, we might deduce that we can pass through another
+room.
+
+	dontShoot
+		possibleWumpus X Y
+		pit            X Y
+
+Certainly, we cannot (and will not) shoot if we already used our
+arrow.
+
 	dontShoot
 		not haveArrow
 
-	dontShoot
-		wumpusDead
+Also, if the wumpus is already killed, we will not shoot again.
 
 	dontShoot
-		grabbed
+		killed
+
+If we already have the gold, we should be on our way out of the
+cave, and leave the wumpus alone.
+
+	dontShoot
+		grabbed _ _
+
+We can kill the wumpus if we know where it is, and there is a
+safe room from which it can be faced.
 
 	canKill        XS YS OS
 		facing XS YS OS XW YW
 		wumpus          XW YW
 		safe   XS YS
 
+We should actually kill the wumpus if it is possible, and if
+none of our special cases above tells us not to.
+
 	shouldKill
-		canKill _ _ _
+		    canKill   _ _ _
 		not dontShoot
+
+Analogously, we might *try* to kill it.
 
 	canTryKill       X Y O
 		facing   X Y O XC YC
@@ -559,12 +635,16 @@ Auxiliary flag to signal whether we can still explore further.
 		not shouldKill
 		not dontShoot
 
-	attack             X Y O
-		canTryKill X Y O
+We generalize from trying to kill and actually killing to an
+attack, which streamlines the actions that need to be done in
+both cases.
+
+	attack                X Y O
+		canTryKill    X Y O
 		shouldTryKill
 
-	attack          X Y O
-		canKill X Y O
+	attack             X Y O
+		canKill    X Y O
 		shouldKill
 
 	shouldAttack
@@ -576,10 +656,10 @@ Auxiliary flag to signal whether we can still explore further.
 		not attack XS YS O
 		    now    XS YS O
 
-	canAim                A
-		turn    O1 O2 A
-		aim        O2
-		now _ _ O1
+	canAim                  A
+		turn      O1 O2 A
+		aim          O2
+		now   _ _ O1
 
 	-cannotAim
 		canAim _
@@ -591,86 +671,107 @@ Auxiliary flag to signal whether we can still explore further.
 		canAim A
 		mode   kill
 
-	succAim turnleft
-		aim _
+	succAim           turnleft
+		aim       _
 		cannotAim
-		mode kill
+		mode      kill
 
 	shouldAim
 		succAim A
 
-## Optimization For Goal
+## A*-Search
 
-	h                     X2 Y2 C
-		cost X1 Y1 O1 X2 Y2 C
-		now  X1 Y1 O1
+This section is concerned with selection of the goal room,
+and consequently the next room to move to.
 
-Interesting candidates are those cells that we have not yet explored
-and we know that they are safe.
-
-	candidate 1      X Y C
-		h        X Y C
-		frontier X Y
-		mode     explore
-
-	candidate 1    X Y C
-		h      X Y C
-		attack X Y _
-		mode   kill
-
-	candidate 1 1 1 C
-		h   1 1 C
-		mode escape
-
-	candidate 2                     X Y         C
-		now         XN YN ON
-		anyNeighbor XN YN   X Y
-		safe                X Y
-		goal                      XG YG
-		cost                X Y O XG YG C2
-		reach       XN YN X Y O
-		+ C1 C2 C
-		+ Cr 1 C1
-		departureTurnCost XN YN ON X Y Cr
-		not easyGoal
-
-	candidate      2 X Y C
-		choice 1 X Y C
-		easyGoal
+We will use weak constraints in two levels. The first level
+is conerned with finding out the optimal goal while the
+second level is then about choosing the next room.
 
 	level 1
 	level 2
 
-	next X Y
-		choice 2 X Y C
+### Candidate Rooms
 
-	goal X Y
-		choice 1 X Y C
+For both levels we will define candidate sets in the following
+subsections.
+
+#### Goal Room
+
+For convenience we define a selection on the cost function that
+fixes the current location and orientation of the agent.
+
+	costFromNow           X2 Y2 C
+		cost X1 Y1 O1 X2 Y2 C
+		now  X1 Y1 O1
+
+Now, for the three modes that require goals, we define candidate
+sets.
+
+##### Explore
+
+In the explore mode, interesting candidates are those rooms that
+we have not yet explored and for which we know that they are safe.
+
+	candidate 1         X Y C
+		costFromNow X Y C
+		frontier    X Y
+		mode        explore
+
+##### Kill
+
+The goal is a room form which we can attack the wumpus.
+
+	candidate 1         X Y C
+		costFromNow X Y C
+		attack      X Y _
+		mode        kill
+
+##### Escape
+
+When escaping, the only candidate is the starting point.
+
+	candidate 1 1 1 1
+		mode escape
+
+#### Next Room
+
+Choosing the next room is trivial if the goal room is
+adjacent to the one that the agent is currently in:
+Just move there.
 
 	easyGoal
-		now         XN YN _
+		now         XN YN       _
 		anyNeighbor XN YN XG YG
 		goal              XG YG
 
-	foundNext
-		next _ _
+	candidate 2      X Y C
+		choice 1 X Y C
+		easyGoal
 
-TODO: Inconsistent?
-	-
-		    foundGoal
-		not foundNext
+Otherwise, choose an adjacent room.
 
-	foundGoal
-		goal _ _
+	candidate 2                      X2 Y2                C
+		    now         X1 Y1 O1
+		    anyNeighbor X1 Y1    X2 Y2
+		    reach       X1 Y1    X2 Y2 O2
+		    safe                 X2 Y2
+		    cost                 X2 Y2 O2 XG YG    C2
+		    goal                          XG YG
+		    turnsFrom   X1 Y1 O1 X2 Y2          C1
+		    +                                   C1 C2 C
+		not easyGoal
 
-TODO: Inconsistent?
-	-
-		not foundGoal
-		not priority
+### Weak Constraints
+
+Now, any candidate is either our choice or it is not. Span the
+search space.
 
 	choice L X Y C | -choice L X Y C
 		level     L
 		candidate L X Y C
+
+Of course we want to minimize cost.
 
 	~
 		level     L
@@ -678,6 +779,28 @@ TODO: Inconsistent?
 		candidate L          X2 Y2 C2
 		choice    L          X2 Y2 C2
 		<=                C1       C2
+
+Give more explicit names to the choices.
+
+	next X Y
+		choice 2 X Y C
+
+	goal X Y
+		choice 1 X Y C
+
+	foundNext
+		next _ _
+
+	-
+		    foundGoal
+		not foundNext
+
+	foundGoal
+		goal _ _
+
+	-
+		not foundGoal
+		not priority
 
 ## Autopilot
 
@@ -698,15 +821,15 @@ TODO: Inconsistent?
 		shouldGrab
 
 	mode explore
-		 not mode grab
-		shouldExplore
-		-grabbed
+		    shouldExplore
+		    canGrab
+		not mode grab
 
 	mode kill
-		not mode grab
-		not mode explore
-		shouldAttack
-		-grabbed
+		    canGrab
+		    shouldAttack
+		not mode         grab
+		not mode         explore
 
 	mode escape
 		not mode grab
@@ -751,7 +874,7 @@ TODO: Inconsistent?
 
 	bad 2
 		do shoot
-		wumpusDead
+		killed
 
 3 The agent is not ubiquitous.
 
@@ -801,15 +924,15 @@ TODO: Inconsistent?
 		wumpus X1    Y2
 		!=        Y1 Y2
 
-10 There is a cell outside of the world. Whut?
+10 There is a room outside of the world. Whut?
 
 	bad 10
-		cell X Y
+		room X Y
 		>    X   S
 		size     S
 
 	bad 10
-		cell X Y
+		room X Y
 		>      Y S
 		size     S
 
@@ -825,10 +948,10 @@ TODO: Inconsistent?
 		explored    X Y
 		notExplored X Y
 
-13 A cell cannot be -safe and explored.
+13 A room cannot be -safe and explored.
 
 	bad 13
-		cell     X Y
+		room     X Y
 		-safe    X Y
 		explored X Y
 
@@ -856,6 +979,6 @@ TODO: Inconsistent?
 17 Rotation cost must be decisive.
 
 	bad 17
-		rotCost X1 Y1 O1 X2 Y2 C1
-		rotCost X1 Y1 O1 X2 Y2    C2
+		turnCost X1 Y1 O1 X2 Y2 C1
+		turnCost X1 Y1 O1 X2 Y2    C2
 		!=                     C1 C2
