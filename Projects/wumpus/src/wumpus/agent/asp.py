@@ -136,6 +136,7 @@ class ASPAgent():
         return run(
             [
                 self.dlv,
+                '-n=1',
                 '-silent',
                 '-filter=' + ','.join(extract.keys()),
                 self.prog,
