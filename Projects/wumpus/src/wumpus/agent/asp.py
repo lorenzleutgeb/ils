@@ -7,15 +7,14 @@ from tempfile   import mkstemp
 
 import logging
 
-import networkx as nx
+from networkx                                 import DiGraph, NetworkXNoPath
+from networkx.algorithms.shortest_paths.astar import astar_path as astar
 
-from networkx.algorithms.shortest_paths.astar import astar_path
-
+from .mode       import Mode
 from ..asp       import unlite, fact, atom, AnswerSet
 from ..common    import Action, Orientation, Location, paint
 from ..simulator import World
 from ..util      import dlv
-from .mode       import Mode
 
 logger = logging.getLogger('asp-agent')
 
@@ -92,10 +91,9 @@ class ASPAgent():
 
         with open('agent', 'w') as f: f.truncate()
 
-        # We build a graph that respresents reachability (with cost) for all cells.
-        self.g = nx.DiGraph()
-        for o in Orientation:
-            self.g.add_node((self.position, o))
+        # We build a graph that respresents cost for all rooms.
+        self.g = DiGraph()
+        self.g.add_nodes_from([(self.position, o) for o in Orientation])
 
     def expand(self):
         for o in Orientation:
@@ -111,28 +109,28 @@ class ASPAgent():
 
     def facts(self):
         # now/3 and killed/0 are certain.
-        knowledge = [
+        result = [
             fact(True, 'now', [self.position.x, self.position.y, self.orientation.toSymbol()]),
             fact(self.killed, 'killed'),
         ]
 
         if self.bumped != None:
-            knowledge.append(fact(True, 'bumped', self.bumped))
+            result.append(fact(True, 'bumped', self.bumped))
 
         if self.shot != None:
-            knowledge.append(fact(True, 'shot', [self.shot[0].x, self.shot[0].y, self.shot[1].toSymbol()]))
+            result.append(fact(True, 'shot', [self.shot[0].x, self.shot[0].y, self.shot[1].toSymbol()]))
 
         if self.grabbed != None:
-            knowledge.append(fact(True, 'grabbed', self.grabbed))
+            result.append(fact(True, 'grabbed', self.grabbed))
 
         for k, v in self.world.items():
-            knowledge += [
+            result += [
                 fact(v[i], name, k) for i, name in enumerate(['stench', 'breeze', 'glitter'])
             ] + [
                 fact(True, 'explored', k)
             ]
 
-        return knowledge
+        return result
 
     def solve(self):
         return run(
@@ -149,42 +147,22 @@ class ASPAgent():
             encoding='utf-8'
         )
 
-    def autopilot(self, result):
-        if not result['autopilot'][()]:
-            return []
-
-        goal = next(l for (l,), sign in result['goal'].items() if sign)
-
-        def safeOnly(u, v, d):
-            return 1 if result['safe'].get((v[0],), False) else None
-
-        shortestPath = None
-        for o in Orientation:
-            if (goal, o) not in self.g:
-                continue
-
-            try:
-                path = astar_path(self.g, (self.position, self.orientation), (goal, o), heuristic=heuristic, weight=safeOnly)
-                if shortestPath == None or len(shortestPath) > len(path):
-                    shortestPath = path
-            except nx.NetworkXNoPath:
-                continue
-
-        if shortestPath == None:
-            logger.debug('The autopilot could not find a shortest path!')
-            return []
-
-        # Next step will be exploration, do not turn on autopilot.
-        if shortestPath[1][0] not in self.world:
-            return []
-
-        actions = []
-        for i in range(len(shortestPath) - 1):
-            u = shortestPath[i]
-            v = shortestPath[i + 1]
-            actions.append(self.g[u][v]['action'])
-
-        return actions
+    def autopilot(self, goal, safe):
+        path = min(
+            [
+                astar(
+                    self.g,
+                    (self.position, self.orientation),
+                    (goal, o),
+                    heuristic=heuristic,
+                    weight=lambda u, v, d: 1 if safe.get((v[0],), False) else None
+                )
+                for o in Orientation
+                if (goal, o) in self.g
+            ],
+            key=len
+        )
+        return [self.g[u][v]['action'] for u, v in zip(path, path[1:])]
 
     def process(self, percept):
         if percept.scream:
@@ -195,34 +173,29 @@ class ASPAgent():
             if self.bumped != None:
                 logger.debug('We appear to be bumping a second time.')
             self.bumped = self.position.getAdjacent(self.orientation, self.size + 1)
-
-            for o in Orientation:
-                n = (self.bumped, o)
-                if n in self.g:
-                    self.g.remove_node(n)
-
+            self.g.remove_nodes_from([(self.bumped, o) for o in Orientation])
         elif self.previousAction == Action.GOFORWARD:
             self.position = self.position.getAdjacent(self.orientation, self.size)
         elif self.previousAction in {Action.TURNLEFT, Action.TURNRIGHT}:
             self.orientation = self.orientation.turn(self.previousAction)
+        elif self.previousAction == Action.SHOOT:
+            if self.shot != None:
+                logger.debug('We appear to be shooting a second time.')
+            self.shot = (self.position, self.orientation)
+        elif self.previousAction == Action.GRAB:
+            self.grabbed = self.position
 
-        explored = self.position not in self.world
-
-        self.world[self.position] = (percept.stench, percept.breeze, percept.glitter)
-
-        # Since we do not set explored to true in case of a bump, this is checked explicitly.
-        if explored or percept.bump:
-            self.actions = []
-        elif self.actions != []:
-            action = self.actions.pop(0)
-            self.previousAction = action
-            return action
+        if self.actions != []:
+            self.previousAction = self.actions.pop(0)
+            return self.previousAction
 
         # We need to add all neighboring nodes to the graph to reason about them.
         # Once we explore a new state, we need to add to the graph the possibility
         # to turn here.
-        if explored:
+        if self.position not in self.world:
             self.expand()
+
+        self.world[self.position] = (percept.stench, percept.breeze, percept.glitter)
 
         result = self.solve().stdout
 
@@ -271,25 +244,16 @@ class ASPAgent():
                         logger.debug('No comment describing bad({}). Add a line starting with \'%{} \' followed by a description.'.format(x, x))
             return None
 
-        self.actions = self.autopilot(result)
+        if result['autopilot'][()]:
+            goal = next(l for (l,), sign in result['goal'].items() if sign)
+            self.actions = self.autopilot(goal, result['safe'])
 
         if self.actions != []:
-            action = self.actions.pop(0)
+            self.previousAction = self.actions.pop(0)
         else:
-            self.actions = []
-            action = next(a for a, sign in result['do'].items() if sign)[0]
+            self.previousAction = next(a for a, sign in result['do'].items() if sign)[0]
 
-        if action == Action.SHOOT:
-            if self.shot != None:
-                logger.debug('We appear to be shooting a second time.')
-            self.shot = (self.position, self.orientation)
-        elif action == Action.GRAB:
-            self.grabbed = self.position
-
-        self.previousAction = action
-        return action
-
-# Heuristic Function:
+        return self.previousAction
 
 def turns(o1, o2):
     od = abs(int(o1) - int(o2))
