@@ -95,7 +95,7 @@
 \htw is a single player computer game, first released in 1975.
 It is best known as a toy-problem in the field of Artificial Intelligence and has been thoroughly analysed by Russell and Norvig in~\cite{book:aima}, where it has been used to introduce the reader to a logic-based approach to \emph{Knowledge Representation} (KR). 
 
-The game is played in the wumpus world(a cave) which is represented as a grid (default size 4x4) and in this world there are few challenges for the player. Each cell on the grid is a room which is connected by passageways with its orthogonally adjacent cell and in one of these cells there is wumpus, a beast that eats the player if he enters the room. The player has only one arrow, that's one opportunity for shooting the wumpus. In addition, some of the rooms are bottomless pits and if the player wanders in these rooms it will stay trapped. The main goal of the player is while facing these challenges, to find the hidden gold and leave the cave alive. At the beginning of the game, the player is always positioned on cell [1,1], facing to the right and has 0 points. From here it can use three moves : \emph{Forward, TurnLeft, TurnRight} for discovering its environment and three actions \emph{Shoot, Grab} and \emph{ Climb} for shooting the arrow, grabbing the gold and climbing out of the cave respectively. For each of the moves and actions the player loses 1 point and 10 points when using the arrow. When eaten by the wumpus or trapped in pit, loses 1000 points, and for climbing out of the cave with the gold gains 1000 points. Whenever the player goes to a new cell, it has five sensors that give information about:
+The game is played in the wumpus world(a cave) which is represented as a grid (default size 4x4) and in this world there are few challenges for the player. Each cell on the grid is a room which is connected by passageways with its orthogonally adjacent cell and in one of these cells there is wumpus, a beast that eats the player if he enters the room. The player has only one arrow, that's one opportunity for shooting the wumpus. In addition, some of the rooms are bottomless pits and if the player wanders in these rooms it will stay trapped. The main goal of the player is while facing these challenges, to find the hidden gold and leave the cave alive. At the beginning of the game, the player is always positioned on cell [1,1], facing to the right and has 0 points. From here it can use three moves : \emph{Forward}, \emph{TurnLeft}, \emph{TurnRight} for discovering its environment and three actions \emph{Shoot}, \emph{Grab} and \emph{Climb} for shooting the arrow, grabbing the gold and climbing out of the cave respectively. For each of the moves and actions the player loses 1 point and 10 points when using the arrow. When eaten by the wumpus or trapped in pit, loses 1000 points, and for climbing out of the cave with the gold gains 1000 points. Whenever the player goes to a new cell, it has five sensors that give information about:
 \begin{description}
 	\item [$\bullet$] Stench - whether the Wumpus is in adjacent cell 
 	\item [$\bullet$] Breeze - whether there is a pit in adjacent cell	
@@ -152,9 +152,9 @@ The vertexes of such a graph represent those configuration lying in the \emph{fr
 The edges of the graph represent the reachability of a configuration from another.
 The edges are weighted according to the following cost function: given the actual configuration $C = (X,Y,O)$ and a target configuration $C^\prime = (X^\prime,Y^\prime,O^\prime)$,
 $$
-	g(C,C^\prime) := M((X,Y),(X^\prime,Y^\prime)) + R(O,O^\prime)
+	g(C,C^\prime) := M((X,Y),(X^\prime,Y^\prime)) + R((X,Y),O,(X^\prime,Y^\prime))
 $$
-where $M$ represents the \emph{Manhattan distance}~\cite{Manhattan} between the two rooms and $R$ is the rotational cost between the two orientations.
+where $M$ represents the \emph{Manhattan distance}~\cite{Manhattan} between the two rooms and $R$ is the least number of turns needed by the agent to reach $(X^\prime,Y^\prime)$ from $(X,Y)$.
 % For better exploration of the world, we build a graph that represents reachability (with cost) for all cells. Then we use \emph{Manhattan distance}~\cite{Manhattan} as a cost function for calculating the cost for moving from a cell to a cell. We also consider the rotation cost  when the agent reasons about the number of moves it needs to make in order to move from a cell to another cell. To calculate this cost, first the cost of all turns on the way from current cell to a destination cell is calculated and to this is added the cost of departing the current cell (whether the agent needs to turn before leaving).
 To compute the minimal cost needed to reach the target room the agent performs an \emph{$A^{\star}$ search} (as first introduced in~\cite{AStar}) s : \(f(n) = g(n) + h(n)\). \
 In order to efficiently use this algorithm next and goal cell must be known. 
@@ -238,25 +238,33 @@ To produce a satisfying evaluation, we generated a testing suite and, in order t
 
 \subsection{Testing Suite}
 
-In order to collect the results of our agent, we devised a testing suite, composed by a batch of dungeons, randomly generated by the Wumpus World Simulator that was made available as part of the assignment.
-Each entry of this suite, bundled together with our implementation of the agent, has the form \emph{world-<size>-<seed>}, where the \emph{seed} allows to reproduce the creation of the selected dungeon.
+The implementation of the agent Hakuna has been continuously refined by testing it against a suite of dungeons.
+The instances contained in the suite have been randomly generated using the Wumpus World Simulator~\cite{WWS} provided in the assignment.
+This prevented the suite from containing building biases, like non-uniform distribution of the pits and non-overlapping entities in the dungeon.
+Each entry of this suite, bundled together with our implementation of the agent, is characterized by the \emph{size} of the dungeon and the \emph{seed} used to generate it; this allows one to reproduce the creation of each dungeon collected in the suite.
 In Table~\ref{tbl:test}, the composition of the testing suite is outlined.
 
 \begin{table}[t]
 	\label{tbl:test}
 	\centering
-	\begin{tabular}{ccc}
+	\begin{tabular}{llccc}
 	\toprule
-	Worlds size & Number of instances \\
+	World size & instances & avg. gap & stddev gap & avg. CPU time\\
 	\midrule
-	4 & 120 \\
-	5 &  20 \\
-	6 &  20 \\
-	7 &  20 \\
-	8 &  20 \\
+	4 & 160	& 419 & 488 & 0.1440 \\
+	5 & 80  & 464 & 493 & 0.2656 \\
+	6 & 80  & 634 & 474 & 0.4600 \\
+	7 & 40  & 630 & 468 & 2.8005 \\
+	8 & 40  & 653 & 471 & 3.8736 \\
+	9 & 20  & 557 & 490 & 4.7723 \\
+	10 & 20 & 714 & 452 & 11.3828 \\
+	11 & 10 & 785 & 414 & 0.1573 \\
+	12 & 10 & 595 & 498 & 0.5594 \\
+	13 & 5  & 383 & 524 & 0.0158 \\
+	14 & 5  & 600 & 506 & 11.8238 \\
 	\bottomrule\\
 	\end{tabular}
-	\caption{Composition of the testing suite used to assess the performances of Hakuna.}
+	\caption{Some aggregated results obtained by assessing Hakuna against our testing suite.}
 \end{table}
 
 Each world has been generated by taking into account the rules of \htw: indeed, each instance has a squared shape, it contains only one wumpus, one unit of gold and it may contain several pits, sparse through the dungeon.
@@ -291,8 +299,11 @@ What we have found out can be summarised as the following:
 	\item On instances where gold was unreachable, the agent lost on average a small amount of points before concluding that the search was useless and climbing back to the exit.
 \end{itemize}
 
+With increasing sizes, the gap between the score of the omniscient agent and the one obtained by Hakuna tends to increase: this might be caused by the greater amount of rooms that Hakuna has to visit, while it is in \emph{explore} mode. 
+
 During the development stage, the execution time of the agent on each instance has been collected.
 This allowed us to effectively evince that the introduction of the autopilot brought significant time savings in several instances, for example, the ones where most of the time was spent in exploring the dungeon.
+The collected data are displayed in Table~\ref{tbl:test}. Information about mean execution time for samples drawn for dungeon size greater than 10 might be misleading, because of the small size of the samples.
 
 \newpage
 \newgeometry{
