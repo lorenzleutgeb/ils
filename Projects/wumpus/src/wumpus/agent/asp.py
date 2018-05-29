@@ -156,7 +156,7 @@ class ASPAgent():
         goal = next(l for (l,), sign in result['goal'].items() if sign)
 
         def safeOnly(u, v, d):
-            return 1 if result['safe'].get((v[0],), False) else 100
+            return 1 if result['safe'].get((v[0],), False) else None
 
         shortestPath = None
         for o in Orientation:
