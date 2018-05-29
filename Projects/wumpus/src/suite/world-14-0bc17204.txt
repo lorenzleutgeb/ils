@@ -1,0 +1,37 @@
+size 14
+wumpus 4 4
+gold 14 13
+pit 1 6
+pit 1 9
+pit 2 7
+pit 3 2
+pit 3 7
+pit 4 3
+pit 4 13
+pit 5 2
+pit 5 4
+pit 5 5
+pit 5 7
+pit 5 10
+pit 5 11
+pit 6 1
+pit 6 8
+pit 7 7
+pit 7 10
+pit 7 11
+pit 7 12
+pit 7 13
+pit 8 1
+pit 8 7
+pit 8 13
+pit 8 14
+pit 9 10
+pit 9 14
+pit 10 2
+pit 10 6
+pit 11 6
+pit 11 11
+pit 13 9
+pit 14 11
+pit 14 13
+optimum -1

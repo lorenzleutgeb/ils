@@ -1,0 +1,5 @@
+size 5
+wumpus 4 4
+gold 3 2
+pit 3 2
+optimum -1
