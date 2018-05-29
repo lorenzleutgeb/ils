@@ -198,6 +198,13 @@ By lifting some of these constraints, the uniqueness of the stable model would g
 Such a feature could be exploited to introduce a form of ``don't know'' non-deterministic choice for the agent, in planning its next moves and goals.
 If not properly handled, though, this might lead to a loss of some desired properties of our agent, for example, the minimization of the costs in the \emph{explore} mode.
 
+\subsection{Taking Risks}
+Equipped with above notion of safety, the agent is able to navigate the network of rooms without failing. However, in some scenarios, this implies that the gold is not found, e.g.\ because it is obstructed by the perception of breezes, even though it could be reached. We generously call the action of going forward into a cell that might contain a pit or the wumpus \emph{taking a risk}. The connection to incomplete knowledge about the game is apparent, i.e.\ in a game with perfect knowledge, there are no risks of this character, since the outcome of every action is certain.
+
+In early phases of designing our approach, we also considered how risk taking fits in. We investigated into approaches that may yield a quantification and finally a probabilistic decision procedure for the agent. However our conclusion is that necessary theoretic foundations like Markov processes and Bayesian models (or possibly others, unknown to us) would mean departing from a logic based agent.
+
+%To reason about risk taking, we compare the best possible outcome and the worst possible one. For the sake of simplicity we only consider theOf utmost importance for these considerations is how failure of the agent is scored, and how probable that failure is. The world simulator that we worked with defines a probability of 20\% for any room (except the initial room) to contain a pit or the wumpus, and a score of -1000 pts.\ in this case the agent enters such a room.  Intuitively, risk taking should therefore have at least an average utility of 1000 pts.\ in order to break even for growing sample sizes. We argue that reaching this utility is impossible: Given that the agent is able to safely return to its initial position afterwards, the action with the highest utility is grabbing the gold (999 pts., 1000 for leaving the cave with the gold, and -1 pt.\ for grabbing it). Thus, even if the gold happens to be in the same room that the agent enters as it is taking a risk,   Reaching this utility is impossible, since the action with the highest
+
 \section{Implementation}
 %TODO Short section where we describe the system, referring to the appendix (see below)
 %TODO as well as that we used DLV.
