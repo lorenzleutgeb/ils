@@ -95,7 +95,7 @@
 \htw is a single player computer game, first released in 1975.
 It is best known as a toy-problem in the field of Artificial Intelligence and has been thoroughly analysed by Russell and Norvig in~\cite{book:aima}, where it has been used to introduce the reader to a logic-based approach to \emph{Knowledge Representation} (KR). 
 
-The game is played in the wumpus world(a cave) which is represented as a grid (default size 4x4) and in this world there are few challenges for the player. Each cell on the grid is a room which is connected by passageways with its orthogonally adjacent cell and in one of these cells there is wumpus, a beast that eats the player if he enters the room. The player has only one arrow, that's one opportunity for shooting the wumpus. In addition, some of the rooms are bottomless pits and if the player wanders in these rooms it will stay trapped. The main goal of the player is while facing these challenges, to find the hidden gold and leave the cave alive. At the beginning of the game, the player is always positioned on cell [1,1], facing to the right and has 0 points. From here it can use three moves : \textit{Forward, TurnLeft, TurnRight} for discovering its environment and three actions \textit{Shoot, Grab} and \textit{ Climb} for shooting the arrow, grabbing the gold and climbing out of the cave respectively. For each of the moves and actions the player loses 1 point and 10 points when using the arrow. When eaten by the wumpus or trapped in pit, loses 1000 points, and for climbing out of the cave with the gold gains 1000 points. Whenever the player goes to a new cell, it has five sensors that give information about:
+The game is played in the wumpus world(a cave) which is represented as a grid (default size 4x4) and in this world there are few challenges for the player. Each cell on the grid is a room which is connected by passageways with its orthogonally adjacent cell and in one of these cells there is wumpus, a beast that eats the player if he enters the room. The player has only one arrow, that's one opportunity for shooting the wumpus. In addition, some of the rooms are bottomless pits and if the player wanders in these rooms it will stay trapped. The main goal of the player is while facing these challenges, to find the hidden gold and leave the cave alive. At the beginning of the game, the player is always positioned on cell [1,1], facing to the right and has 0 points. From here it can use three moves : \emph{Forward, TurnLeft, TurnRight} for discovering its environment and three actions \emph{Shoot, Grab} and \emph{ Climb} for shooting the arrow, grabbing the gold and climbing out of the cave respectively. For each of the moves and actions the player loses 1 point and 10 points when using the arrow. When eaten by the wumpus or trapped in pit, loses 1000 points, and for climbing out of the cave with the gold gains 1000 points. Whenever the player goes to a new cell, it has five sensors that give information about:
 \begin{description}
 	\item [$\bullet$] Stench - whether the Wumpus is in adjacent cell 
 	\item [$\bullet$] Breeze - whether there is a pit in adjacent cell	
@@ -158,7 +158,7 @@ where $M$ represents the \emph{Manhattan distance}~\cite{Manhattan} between the 
 % For better exploration of the world, we build a graph that represents reachability (with cost) for all cells. Then we use \emph{Manhattan distance}~\cite{Manhattan} as a cost function for calculating the cost for moving from a cell to a cell. We also consider the rotation cost  when the agent reasons about the number of moves it needs to make in order to move from a cell to another cell. To calculate this cost, first the cost of all turns on the way from current cell to a destination cell is calculated and to this is added the cost of departing the current cell (whether the agent needs to turn before leaving).
 To compute the minimal cost needed to reach the target room the agent performs an \emph{$A^{\star}$ search} (as first introduced in~\cite{AStar}) s : \(f(n) = g(n) + h(n)\). \
 In order to efficiently use this algorithm next and goal cell must be known. 
-First the goal cell is calculated and based on this result, the next cell is decided.  The choice of a goal cell depends on the current mode of the agent which are explained below. If it's in mode \textit{explore}, goal is a reachable cell which is safe and hasn't been explored yet. If the agent's mode is \textit{kill}, then the goal is a cell which is safe and from which the wumpus can be shot.   
+First the goal cell is calculated and based on this result, the next cell is decided.  The choice of a goal cell depends on the current mode of the agent which are explained below. If it's in mode \emph{explore}, goal is a reachable cell which is safe and hasn't been explored yet. If the agent's mode is \emph{kill}, then the goal is a cell which is safe and from which the wumpus can be shot.   
 In our program \(g(n)\) represents the cost of the path from the current cell to the next cell \(n\), and \(h(n)\) represents the heuristic estimated cost of the cheapest path from cell \(n\) to the goal cell. 
 
 %TODO How does our agent explore the world (A*-search)
@@ -173,12 +173,12 @@ While playing, our agent can be in exactly one from four available modes.
 
 \paragraph{Explore} The agent is in this mode until it discovers the gold or there are more cells which should be explored. These are cells which are known to be reachable, safe and not yet explored. 
 
-\paragraph{Grab} Once the agent is in the cell where can perceive glitter, its next action is to grab the gold and in this moment is in mode \textit{grab}. 
+\paragraph{Grab} Once the agent is in the cell where can perceive glitter, its next action is to grab the gold and in this moment is in mode \emph{grab}. 
 
-\paragraph{Kill} In order for the agent to deduce that is in mode \textit{kill} few conditions need to be satisfied. First it should not be in mode grab or explore and the gold is still not grabbed. Next it should be able to attack the wumpus. A necessary precondition for attacking the wumpus is to deduce that it can try to kill and it should try to do so. Can try to kill the wumpus only if it's on a safe cell, it perceives stench and it's with orientation facing the cell where the wumpus possibly is. 
+\paragraph{Kill} In order for the agent to deduce that is in mode \emph{kill} few conditions need to be satisfied. First it should not be in mode grab or explore and the gold is still not grabbed. Next it should be able to attack the wumpus. A necessary precondition for attacking the wumpus is to deduce that it can try to kill and it should try to do so. Can try to kill the wumpus only if it's on a safe cell, it perceives stench and it's with orientation facing the cell where the wumpus possibly is. 
 Should try to kill can be derived if it's known that it can try to kill the wumpus and none of the preconditions for don't shoot are known to be true. These preconditions for not shooting include: the arrow is not available, the wumpus is in a cell with a pit, the wumpus is already dead and the gold is already grabbed. 
 
-\paragraph{Escape} The last available mode is \textit{escape}, in which the agent is if it's not in any of the other three modes. The agent is in this mode after grabbing the gold or after not being able to explore any other cells and leaves the cave empty handed.
+\paragraph{Escape} The last available mode is \emph{escape}, in which the agent is if it's not in any of the other three modes. The agent is in this mode after grabbing the gold or after not being able to explore any other cells and leaves the cave empty handed.
 
 %TODO Describe the modes that we extracted from the gameplay and what are the conditions that make the agent switch modes.
 
@@ -216,6 +216,20 @@ The Python host keeps state in memory as the game progresses. This includes perc
 %\caption[Dependency Graph of the Logic Program]{Dependency Graph of the Logic Program. }
 %\end{sidewaysfigure}
 
+\subsection{Autopilot}
+
+An enhancement that has been found to effectively impact the execution time of the agent is the introduction of an \emph{autopilot}.
+The autopilot is activated when the following requirements are met:
+\begin{itemize}
+	\item The agent is either in \emph{explore} or \emph{escape} mode;
+	\item No priorities are in place, that is, the agent is not trying to grab, shoot, aim or climb.
+\end{itemize}
+Given these conditions, the Python agent host takes control, performs an $A^{\star}$ search over the graph to find the best path to reach the next goal, by assigning an additional cost of $1$ to those rooms that are yet unknown to be safe.
+Then, the game will be executed without calling the ASP solver, as long as the selected goal has not been reached.
+Once the goal room has been reached, the Python host calls again the ASP solver, to infer the next move.
+
+This approach brings a relevant decrease in the execution time: indeed, every time the autopilot is activated, the execution cost required by the calls to DLV is saved.
+
 \section{Evaluation}
 
 In this section, we explain how the empirical evaluation of our agent has been carried out.
@@ -247,8 +261,6 @@ In Table~\ref{tbl:test}, the composition of the testing suite is outlined.
 
 Each world has been generated by taking into account the rules of \htw: indeed, each instance has a squared shape, it contains only one wumpus, one unit of gold and it may contain several pits, sparse through the dungeon.
 
-%TODO maybe more instances?
-
 \subsection{An omniscient agent}
 
 In order to assess the performance of our Hakuna agent, we built another agent, whose score has then been referenced in evaluating our results.
@@ -279,7 +291,8 @@ What we have found out can be summarised as the following:
 	\item On instances where gold was unreachable, the agent lost on average a small amount of points before concluding that the search was useless and climbing back to the exit.
 \end{itemize}
 
-% TODO: talking about runtime? Influence of the autopilot?
+During the development stage, the execution time of the agent on each instance has been collected.
+This allowed us to effectively evince that the introduction of the autopilot brought significant time savings in several instances, for example, the ones where most of the time was spent in exploring the dungeon.
 
 \newpage
 \newgeometry{
