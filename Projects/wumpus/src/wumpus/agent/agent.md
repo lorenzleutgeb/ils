@@ -595,7 +595,7 @@ Certainly, we cannot (and will not) shoot if we already used our
 arrow.
 
 	dontShoot
-		not haveArrow
+		shot _ _ _
 
 Also, if the wumpus is already killed, we will not shoot again.
 
@@ -956,12 +956,6 @@ Give more explicit names to the choices.
 		not shouldGrab
 		not shouldClimb
 		mode explore
-
-15 We are shooting even though we do not have the arrow anymore.
-
-	bad 15
-		do shoot
-		-haveArrow
 
 16 Cost function must be decisive.
 
