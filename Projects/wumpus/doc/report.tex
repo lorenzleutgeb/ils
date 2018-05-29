@@ -236,6 +236,11 @@ This mechanic is what we exploit with the autopilot. Once a goal is chosen, a pa
 
 In order to prevent planning of paths that pass through unsafe rooms, all incoming edges to such rooms may be assigned an infinite cost, thus effectively making them unreachable.
 
+% TODO Mentionhow we keep the search space for cost function small
+
+% TODO Mention that we digressed into dependency graphs, alternate syntax
+% TODO Mention bad/1 and why we introduced it instead of looking at an inconsistent program
+
 %\begin{sidewaysfigure}[ht]
 %\includegraphics[width=1\textwidth]{dep}
 %\caption[Dependency Graph of the Logic Program]{Dependency Graph of the Logic Program. }
@@ -329,6 +334,14 @@ With increasing sizes, the gap between the score of the omniscient agent and the
 During the development stage, the execution time of the agent on each instance has been collected.
 This allowed us to effectively evince that the introduction of the autopilot brought significant time savings in several instances, for example, the ones where most of the time was spent in exploring the dungeon.
 The collected data are displayed in Table~\ref{tbl:test}. Information about mean execution time for samples drawn for dungeon size greater than 10 might be misleading, because of the small size of the samples.
+
+\section{Conclusion}
+
+% TODO Conclusion: implementing an agent is possible, we implemented an agent according to a logic based repr of the problem that exhibits a specific behaviour: is trying to stay alive (maximize score) and during the development phase we tested . the implementation merges several ideas and led to problems but we considered the advanteges and drawbacks of a logic based approach. leads to graph based solution. we managed to improve the performance of our agent by pruning the search space
+
+\paragraph{Future Work}
+% TODO we considered some approaches that go beyond logic and we are interested in a hybrid approach with probabalistic reasoning
+% TODO Consider other variants of the game (multi agent, oracle, bats, other topologies not square grids)
 
 \newpage
 \newgeometry{
