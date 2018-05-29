@@ -40,8 +40,8 @@
 \usepackage{geometry}
 \geometry{
   a4paper,
-  textwidth=16cm,  % llncs has 12.2cm
-  textheight=25cm, % llncs has 19.3cm
+  textwidth=13cm,  % llncs has 12.2cm
+  textheight=22cm, % llncs has 19.3cm
   heightrounded,
   hratio=1:1,
   vratio=2:3,
@@ -65,6 +65,8 @@
 \usetikzlibrary{shapes.multipart,positioning,backgrounds,positioning,fit,calc,arrows.meta}
 
 \pagestyle{plain}
+
+\setlength{\columnseprule}{0.2pt}
 
 \newcommand{\htw}{\emph{Hunt the Wumpus }}
 
@@ -182,74 +184,13 @@ Should try to kill can be derived if it's known that it can try to kill the wump
 
 %TODO Describe the high level approach
 
+\begin{figure}
 \begin{center}
-\begin{tikzpicture}[roundnode/.style={circle, draw=black!60, very thick,minimum size=4mm}]
-	\begin{scope}
-	    \node (n11) {$(1, 1)$};
-		\node[roundnode] (u11) [below=5mm of n11] {$u$};
-		\node[roundnode] (l11) [below left=10mm of u11] {$l$};
-		\node[roundnode] (r11) [below right=10mm of u11] {$r$};
-		\node[roundnode] (d11) [below right=10mm of l11] {$d$};
-		\draw [<->] (u11) -> (l11);
-		\draw [<->] (u11) -> (r11);
-		\draw [<->] (d11) -> (l11);
-		\draw [<->] (d11) -> (r11);
-	\end{scope}
-
-	\begin{scope}[xshift=5cm]
-	    \node (n21) {$(2, 1)$};
-		\node[roundnode] (u21) [below=5mm of n21] {$u$};
-		\node[roundnode] (l21) [below left=10mm of u21] {$l$};
-		\node[roundnode] (r21) [below right=10mm of u21] {$r$};
-		\node[roundnode] (d21) [below right=10mm of l21] {$d$};
-		\draw [<->] (u21) -> (l21);
-		\draw [<->] (u21) -> (r21);
-		\draw [<->] (d21) -> (l21);
-		\draw [<->] (d21) -> (r21);
-	\end{scope}
-
-	\begin{scope}[yshift=5cm]
-	    \node (n12) {$(1, 2)$};
-		\node[roundnode] (u12) [below=5mm of n12] {$u$};
-		\node[roundnode] (l12) [below left=10mm of u12] {$l$};
-		\node[roundnode] (r12) [below right=10mm of u12] {$r$};
-		\node[roundnode] (d12) [below right=10mm of l12] {$d$};
-		\draw [<->] (u12) -> (l12);
-		\draw [<->] (u12) -> (r12);
-		\draw [<->] (d12) -> (l12);
-		\draw [<->] (d12) -> (r12);
-	\end{scope}
-
-	\begin{scope}[yshift=5cm,xshift=5cm]
-	    \node (n22) {$(2, 2)$};
-		\node[roundnode] (u22) [below=5mm of n22] {$u$};
-		\node[roundnode] (l22) [below left=10mm of u22] {$l$};
-		\node[roundnode] (r22) [below right=10mm of u22] {$r$};
-		\node[roundnode] (d22) [below right=10mm of l22] {$d$};
-		\draw [<->] (u22) -> (l22);
-		\draw [<->] (u22) -> (r22);
-		\draw [<->] (d22) -> (l22);
-		\draw [<->] (d22) -> (r22);
-	\end{scope}
-
-	\path [->] (r11) edge [bend left] (r21);
-	\path [->] (l21) edge [bend left] (l11);
-	\path [->] (u11) edge [bend left] (u12);
-	\path [->] (d12) edge [bend left] (d11);
-	\path [->] (u21) edge [bend left] (u22);
-	\path [->] (d22) edge [bend left] (d21);
-	\path [->] (r12) edge [bend left] (r22);
-	\path [->] (l22) edge [bend left] (l12);
-
-	\begin{pgfonlayer}{background}
-		\filldraw[line width=4mm,join=round,black!5]
-			(n11.north -| r11.east) rectangle (d11.south -| l11.west)
-			(n21.north -| r21.east) rectangle (d21.south -| l21.west)
-			(n12.north -| r12.east) rectangle (d12.south -| l12.west)
-			(n22.north -| r22.east) rectangle (d22.south -| l22.west);
-	\end{pgfonlayer}
-\end{tikzpicture}
+\include{graph}
 \end{center}
+\caption{Cost Calculation}
+\label{fig:graph}
+\end{figure}
 
 \section{Implementation}
 %TODO Short section where we describe the system, referring to the appendix (see below)
@@ -264,39 +205,10 @@ The Python host keeps state in memory as the game progresses. This includes perc
 
 \begin{figure}
 \begin{center}
-\begin{tikzpicture}[
-  node distance=1cm and 5mm,
-  every node/.style={font=\sffamily},
-  title/.style={font=\color{black!50}\sffamily},
-  typetag/.style={rectangle, draw=black!50, font=\sffamily, anchor=west, text height=3mm, align=center}
-]
-
-  \node (lp) at (0, -1cm) {};
-  \node (as) at (0, -3.2cm) {};
-
-  \node (gl) at (3.6cm, 0) [align=center, text width=2.1cm, title] { \large Python };
-
-  \node (par) [below=of gl.west, text width=22mm, typetag] { Simulator };
-  \node (gro) [below=1.7cm of par.west, text width=22mm, typetag] { Agent Host };
-
-  \node (g) [draw=gray!10, line width=1mm, inner sep=5pt, fit={(gl) (par) (gro)}] {};
-
-  \node (sl) at (9.6cm, -1.7cm) [align=center, text width=2.7cm, title] { \large DLV };
-
-  \node (ngs) [below=of sl.west, text width=3cm, typetag] { Agent };
-
-  \node (s) [draw=gray!10, line width=1mm, inner sep=5pt, fit={(sl) (ngs)}] {};
-
-  \draw [->, draw=black!80] (gro) to [out=340, in=200] node [midway, below] {State as Facts} (ngs);
-  \draw [->, draw=black!80] (ngs) to [out=160, in=20] node [midway, above] {Answer Set} (gro);
-
-  \draw [->, draw=black!80] (par) to [out=280, in=80] node [midway, right] {Perceptions} (gro);
-  \draw [<-, draw=black!80] (par) to [out=260, in=100] node [midway, left] {Actions} (gro);
-
-  \draw [->, draw=black!80] (lp) -- (par) node [midway, above] {World};
-\end{tikzpicture}
+\include{architecture}
 \end{center}
 \caption{Architecture of the Implementation}
+\label{fig:architecture}
 \end{figure}
 
 %\begin{sidewaysfigure}[ht]
@@ -370,7 +282,12 @@ What we have found out can be summarised as the following:
 % TODO: talking about runtime? Influence of the autopilot?
 
 \newpage
-
+\newgeometry{
+  left=1cm,  % llncs has 12.2cm
+  right=1cm,
+  top=1cm, % llncs has 19.3cm
+  bottom=2cm,
+}
 \appendix
 \footnotesize
 
