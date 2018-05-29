@@ -68,10 +68,8 @@ def generate(worldSize, seedV, base):
     world.writeTo(fname)
     agent = PerfectAgent(world)
 
-    moves = 0
-    while not world.isGameOver() and moves < MAX_MOVES:
-        world.execute(agent.process(world.percept))
-        moves += 1
+    while world.execute(agent.process(world.percept)):
+        ''
 
     with open(fname, 'a') as f:
         f.write('optimum {}\n'.format(world.getScore()))
@@ -104,6 +102,7 @@ def benchmark(bglob, agentName):
     for instance in glob(bglob):
         wumpusWorld = World.readFrom(instance)
         optimum = '{:5}'.format(wumpusWorld.optimum) if wumpusWorld.optimum else '  ?  '
+        numPits = '{:2}'.format(len(wumpusWorld.pits))
         start = time()
         result = play(
             wumpusWorld,
@@ -112,7 +111,7 @@ def benchmark(bglob, agentName):
         end = time()
         result = '!' if result is None else '{:5}'.format(result)
         elapsed = '{:7.4f}'.format(end - start)
-        print('\t'.join([instance, optimum, result, elapsed]))
+        print('\t'.join([instance, numPits, optimum, result, elapsed]))
 
 if __name__ == "__main__":
     main()

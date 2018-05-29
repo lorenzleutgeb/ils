@@ -24,6 +24,18 @@ class Orientation(Enum):
             },
         }[action][self]
 
+    def mirror(self):
+        if self == Orientation.RIGHT:
+            return Orientation.LEFT
+        elif self == Orientation.UP:
+            return Orientation.DOWN
+        elif self == Orientation.LEFT:
+            return Orientation.RIGHT
+        elif self == Orientation.DOWN:
+            return Orientation.UP
+        else:
+            return None
+
     def __str__(self):
         if self == Orientation.RIGHT:
             return '→'#'R'

@@ -9,7 +9,7 @@ import logging
 
 import networkx as nx
 
-from networkx.algorithms.shortest_paths.generic import shortest_path
+from networkx.algorithms.shortest_paths.astar import astar_path
 
 from ..asp       import unlite, fact, atom, AnswerSet
 from ..common    import Action, Orientation, Location, paint
@@ -97,6 +97,95 @@ class ASPAgent():
         for o in Orientation:
             self.g.add_node((self.position, o))
 
+    def expand(self):
+        for o in Orientation:
+            a = self.position.getAdjacent(o, self.size)
+            if a == None:
+                continue
+
+            self.g.add_edge((self.position, o), (a, o), action=Action.GOFORWARD)
+
+            for action in {Action.TURNLEFT, Action.TURNRIGHT}:
+                self.g.add_edge((self.position, o), (self.position, o.turn(action)), action=action)
+                self.g.add_edge((self.position, o.mirror()), (self.position, o.turn(action).mirror()), action=action)
+
+    def facts(self):
+        # now/3 and killed/0 are certain.
+        knowledge = [
+            fact(True, 'now', [self.position.x, self.position.y, self.orientation.toSymbol()]),
+            fact(self.killed, 'killed'),
+        ]
+
+        if self.bumped != None:
+            knowledge.append(fact(True, 'bumped', self.bumped))
+
+        if self.shot != None:
+            knowledge.append(fact(True, 'shot', [self.shot[0].x, self.shot[0].y, self.shot[1].toSymbol()]))
+
+        if self.grabbed != None:
+            knowledge.append(fact(True, 'grabbed', self.grabbed))
+
+        for k, v in self.world.items():
+            knowledge += [
+                fact(v[i], name, k) for i, name in enumerate(['stench', 'breeze', 'glitter'])
+            ] + [
+                fact(True, 'explored', k)
+            ]
+
+        return knowledge
+
+    def solve(self):
+        return run(
+            [
+                self.dlv,
+                '-silent',
+                '-filter=' + ','.join(extract.keys()),
+                self.prog,
+                '--'
+            ],
+            stderr=STDOUT,
+            stdout=PIPE,
+            input='\n'.join(self.facts()),
+            encoding='utf-8'
+        )
+
+    def autopilot(self, result):
+        if not result['autopilot'][()]:
+            return []
+
+        goal = next(l for (l,), sign in result['goal'].items() if sign)
+
+        def safeOnly(u, v, d):
+            return 1 if result['safe'].get((v[0],), False) else None
+
+        shortestPath = None
+        for o in Orientation:
+            if (goal, o) not in self.g:
+                continue
+
+            try:
+                path = astar_path(self.g, (self.position, self.orientation), (goal, o), heuristic=heuristic, weight=safeOnly)
+                if shortestPath == None or len(shortestPath) > len(path):
+                    shortestPath = path
+            except nx.NetworkXNoPath:
+                continue
+
+        if shortestPath == None:
+            logger.debug('The autopilot could not find a shortest path!')
+            return []
+
+        # Next step will be exploration, do not turn on autopilot.
+        if shortestPath[1][0] not in self.world:
+            return []
+
+        actions = []
+        for i in range(len(shortestPath) - 1):
+            u = shortestPath[i]
+            v = shortestPath[i + 1]
+            actions.append(self.g[u][v]['action'])
+
+        return actions
+
     def process(self, percept):
         if percept.scream:
             self.killed = True
@@ -133,53 +222,9 @@ class ASPAgent():
         # Once we explore a new state, we need to add to the graph the possibility
         # to turn here.
         if explored:
-            for o in Orientation:
-                a = self.position.getAdjacent(o, self.size)
-                if a == None:
-                    continue
+            self.expand()
 
-                self.g.add_edge((self.position, o), (a, o), action=Action.GOFORWARD)
-
-                for action in {Action.TURNLEFT, Action.TURNRIGHT}:
-                    self.g.add_edge((self.position, o), (self.position, o.turn(action)), action=action)
-
-        # now/3 and killed/0 are certain.
-        knowledge = [
-            fact(True, 'now', [self.position.x, self.position.y, self.orientation.toSymbol()]),
-            fact(self.killed, 'killed'),
-        ]
-
-        if self.bumped != None:
-            knowledge.append(fact(True, 'bumped', self.bumped))
-
-        if self.shot != None:
-            knowledge.append(fact(True, 'shot', [self.shot[0].x, self.shot[0].y, self.shot[1].toSymbol()]))
-
-        if self.grabbed != None:
-            knowledge.append(fact(True, 'grabbed', self.grabbed))
-
-        for k, v in self.world.items():
-            knowledge += [
-                fact(v[i], name, k) for i, name in enumerate(['stench', 'breeze', 'glitter'])
-            ] + [
-                fact(True, 'explored', k)
-            ]
-
-        proc = run(
-            [
-                self.dlv,
-                '-silent',
-                '-filter=' + ','.join(extract.keys()),
-                self.prog,
-                '--'
-            ],
-            stderr=STDOUT,
-            stdout=PIPE,
-            input='\n'.join(knowledge),
-            encoding='utf-8'
-        )
-
-        result = proc.stdout
+        result = self.solve().stdout
 
         if len(result) == 0:
             logger.debug('ASP program did not return any answer sets! Inconsistency?')
@@ -226,40 +271,11 @@ class ASPAgent():
                         logger.debug('No comment describing bad({}). Add a line starting with \'%{} \' followed by a description.'.format(x, x))
             return None
 
-        autopilot = result['autopilot'][()]
-        if autopilot:
-            goal = next(l for (l,), sign in result['goal'].items() if sign)
+        self.actions = self.autopilot(result)
 
-            def safeOnly(u, v, d):
-                return 1 if result['safe'].get((v[0],), False) else None
-
-            shortestPath = None
-            for o in Orientation:
-                try:
-                    path = shortest_path(self.g, (self.position, self.orientation), (goal, o), weight=safeOnly)
-                    if shortestPath == None or len(shortestPath) > len(path):
-                        shortestPath = path
-                except nx.NetworkXNoPath:
-                    #print('{} to {} is impossible!'.format(ntos((self.position, self.orientation)), ntos((goal, o))))
-                    continue
-
-            if shortestPath == None:
-                autopilot = False
-            else:
-                nextCell, _ = shortestPath[1]
-                # Next step will be exploration, do not turn on autopilot.
-                if nextCell not in self.world:
-                    autopilot = False
-                else:
-                    actions = []
-                    for i in range(len(shortestPath) - 1):
-                        u = shortestPath[i]
-                        v = shortestPath[i + 1]
-                        actions.append(self.g[u][v]['action'])
-                    action = actions.pop(0)
-                    self.actions = actions
-
-        if not autopilot:
+        if self.actions != []:
+            action = self.actions.pop(0)
+        else:
             self.actions = []
             action = next(a for a, sign in result['do'].items() if sign)[0]
 
@@ -272,3 +288,43 @@ class ASPAgent():
 
         self.previousAction = action
         return action
+
+# Heuristic Function:
+
+def turns(o1, o2):
+    od = abs(int(o1) - int(o2))
+    return 1 if od == 3 else od
+
+def routes(a, b):
+    result = []
+
+    dx = a.x - b.x
+    if dx < 0:
+        result.append(Orientation.RIGHT)
+    elif dx > 0:
+        result.append(Orientation.LEFT)
+
+    dy = a.y - b.y
+    if dy < 0:
+        result.append(Orientation.UP)
+    elif dy > 0:
+        result.append(Orientation.DOWN)
+
+    return result
+
+def heuristic(a, b):
+    (l1, o1), (l2, o2) = a, b
+
+    if l1 == l2:
+        return turns(o1, o2)
+
+    rs = routes(l1, l2)
+    penalty = len(rs) > 1
+    rs = map(lambda x: turns(o1, x), rs)
+
+    return min(rs) + penalty + taxicab(l1, l2)
+
+def taxicab(a, b):
+    if len(a) != len(b):
+        return None
+    return reduce(lambda s, x: s + abs(x[0] - x[1]), zip(a, b), 0)
