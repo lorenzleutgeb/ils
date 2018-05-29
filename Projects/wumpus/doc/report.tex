@@ -97,11 +97,11 @@ It is best known as a toy-problem in the field of Artificial Intelligence and ha
 
 The game is played in the wumpus world(a cave) which is represented as a grid (default size 4x4) and in this world there are few challenges for the player. Each cell on the grid is a room which is connected by passageways with its orthogonally adjacent cell and in one of these cells there is wumpus, a beast that eats the player if he enters the room. The player has only one arrow, that's one opportunity for shooting the wumpus. In addition, some of the rooms are bottomless pits and if the player wanders in these rooms it will stay trapped. The main goal of the player is while facing these challenges, to find the hidden gold and leave the cave alive. At the beginning of the game, the player is always positioned on cell [1,1], facing to the right and has 0 points. From here it can use three moves : \emph{Forward, TurnLeft, TurnRight} for discovering its environment and three actions \emph{Shoot, Grab} and \emph{ Climb} for shooting the arrow, grabbing the gold and climbing out of the cave respectively. For each of the moves and actions the player loses 1 point and 10 points when using the arrow. When eaten by the wumpus or trapped in pit, loses 1000 points, and for climbing out of the cave with the gold gains 1000 points. Whenever the player goes to a new cell, it has five sensors that give information about:
 \begin{description}
-	\item [$\bullet$] Stench - whether the Wumpus is in adjacent cell 
-	\item [$\bullet$] Breeze - whether there is a pit in adjacent cell	
-	\item [$\bullet$] Glitter - when the gold is in the current cell
-	\item [$\bullet$] Bump - whether the player has hit a border
-	\item [$\bullet$] Scream- whether the Wumpus is hit by the arrow 
+	\item[Stench]{whether the Wumpus is in adjacent cell}
+	\item[Breeze]{whether there is a pit in adjacent cell}
+	\item[Glitter]{when the gold is in the current cell}
+	\item[Bump]{whether the player has hit a border}
+	\item[Scream]{whether the Wumpus is hit by the arrow}
 \end{description}
 The locations of the gold and the wumpus are chosen randomly with uniform distribution in each cell other then the start. Additionally each cell can be a pit with probability 0.2.
 
