@@ -211,6 +211,16 @@ The Python host keeps state in memory as the game progresses. This includes perc
 \label{fig:architecture}
 \end{figure}
 
+\subsection{Autopilot}
+
+One optimization that was employed to decrease the overall run time of the agent in the course of a game is what we call the autopilot. In this section we motivate the reason for introducing this component and describe it and its interaction with the rest of the implementation briefly.
+
+It is obvious that most of the run time is spent computing a stable model by the ASP solver, since both the world simulator as well as the Python host program do not solve hard computational problems. With this in mind, the motivation to call the ASP solver as rarely as possible is apparent. In particular, since the ASP program is deterministic, the resulting answer sets only change with new input.
+
+Choice of the goal is influenced by past perceptions and the current location and orientation of the agent. However, as long as the goal is not reached, the ASP program will \enquote{steer} towards it: The cost to reach the goal gradually gets smaller, until finally it is reached. As long as no new room is explored, goal selection remains stable.
+
+This mechanic is what we exploit with the autopilot. Once a goal is chosen, a path that leads there is planned and forwarded to the world simulator without invoking the solver. This setup requires careful selection rules for the goal and detection of dangerous rooms.
+
 %\begin{sidewaysfigure}[ht]
 %\includegraphics[width=1\textwidth]{dep}
 %\caption[Dependency Graph of the Logic Program]{Dependency Graph of the Logic Program. }
