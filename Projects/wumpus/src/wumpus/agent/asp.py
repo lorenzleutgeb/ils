@@ -87,6 +87,8 @@ class ASPAgent():
 
         _, self.prog = mkstemp()
         unlite(join(dirname(__file__), 'agent.md'), self.prog)
+
+        # To look at the ASP-Core compliant version, uncomment this.
         #unlite(join(dirname(__file__), 'agent.md'), 'agent.asp')
 
         with open('agent', 'w') as f: f.truncate()
@@ -136,6 +138,7 @@ class ASPAgent():
         return run(
             [
                 self.dlv,
+                '-n=1',
                 '-silent',
                 '-filter=' + ','.join(extract.keys()),
                 self.prog,
@@ -212,14 +215,7 @@ class ASPAgent():
             logger.error('ASP Errors:\n  \033[31m' + result.replace('\n', '\n  ') + '\033[0m')
             return None
 
-        result = result.strip().split('\n')
-        result = list(map(lambda x: AnswerSet.parse(x, extract), result))
-
-        if len(result) > 1:
-            logger.warning('ASP program returned multiple answer sets. Only considering the first!')
-
-        result = result[0]
-
+        result = AnswerSet.parse(result.strip().split('\n')[0], extract)
         size = next(l for (l,), sign in result['size'].items() if sign)
 
         paint(
