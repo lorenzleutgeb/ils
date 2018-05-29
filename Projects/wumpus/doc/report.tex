@@ -145,27 +145,6 @@ Otherwise, if a \emph{bump} is percepted, it infers the real size of the world a
 
 % maybe mention that we can write strong constraints, not sure if still have that
 
-\subsection{$A^{\star}$ Search and World Exploration}
-
-As a way to exploit the partial knowledge of the world and improve the subsequent planning, the agent builds an internal representation of a reachability graph.
-The vertexes of such a graph represent those configuration lying in the \emph{frontier} of the agent, that is, safe and reachable rooms that are yet to be explored.
-The edges of the graph represent the reachability of a configuration from another.
-The edges are weighted according to the following cost function: given the actual configuration $C = (X,Y,O)$ and a target configuration $C^\prime = (X^\prime,Y^\prime,O^\prime)$,
-$$
-	g(C,C^\prime) := M((X,Y),(X^\prime,Y^\prime)) + R((X,Y),O,(X^\prime,Y^\prime))
-$$
-where $M$ represents the \emph{Manhattan distance}~\cite{Manhattan} between the two rooms and $R$ is the least number of turns needed by the agent to reach $(X^\prime,Y^\prime)$ from $(X,Y)$.
-% For better exploration of the world, we build a graph that represents reachability (with cost) for all cells. Then we use \emph{Manhattan distance}~\cite{Manhattan} as a cost function for calculating the cost for moving from a cell to a cell. We also consider the rotation cost  when the agent reasons about the number of moves it needs to make in order to move from a cell to another cell. To calculate this cost, first the cost of all turns on the way from current cell to a destination cell is calculated and to this is added the cost of departing the current cell (whether the agent needs to turn before leaving).
-To compute the minimal cost needed to reach the target room the agent performs an \emph{$A^{\star}$ search} (as first introduced in~\cite{AStar}) s : \(f(n) = g(n) + h(n)\). \
-In order to efficiently use this algorithm next and goal cell must be known. 
-First the goal cell is calculated and based on this result, the next cell is decided.  The choice of a goal cell depends on the current mode of the agent which are explained below. If it's in mode \emph{explore}, goal is a reachable cell which is safe and hasn't been explored yet. If the agent's mode is \emph{kill}, then the goal is a cell which is safe and from which the wumpus can be shot.   
-In our program \(g(n)\) represents the cost of the path from the current cell to the next cell \(n\), and \(h(n)\) represents the heuristic estimated cost of the cheapest path from cell \(n\) to the goal cell. 
-
-%TODO How does our agent explore the world (A*-search)
-%not sure if here should be explained the purpose of pathTurnCost,
-%departureTurnCost and rotCost or leave that for implementation
-% @filippo-23:20 28/05/2018: I think that details can be left for Implementation, but if they are used to define cost/heuristic, I would briefly mention them here. 
-
 \subsection{Agent Modes and Strategies}
 
 In order to simplify the implementation of the agent and the way it choses its next action we introduce four different modes of playing in which the agent can be at any time. This helps to abstract and in different modes enable and disable different possible actions. It also made it easier for developing the code. 
@@ -180,16 +159,33 @@ Should try to kill can be derived if it's known that it can try to kill the wump
 
 \paragraph{Escape} The last available mode is \emph{escape}, in which the agent is if it's not in any of the other three modes. The agent is in this mode after grabbing the gold or after not being able to explore any other cells and leaves the cave empty handed.
 
-%TODO Describe the modes that we extracted from the gameplay and what are the conditions that make the agent switch modes.
+\subsection{$A^{\star}$ Search and World Exploration}
 
-%TODO Describe the high level approach
+As a way to exploit the partial knowledge of the world and improve the subsequent planning, the agent builds an internal representation of a reachability graph.
+The vertexes of such a graph represent those configuration lying in the \emph{frontier} of the agent, that is, safe and reachable rooms that are yet to be explored.
+The edges of the graph represent the reachability of a configuration from another.
+The edges are weighted according to the following cost function: given the actual configuration $C = (X,Y,O)$ and a target configuration $C^\prime = (X^\prime,Y^\prime,O^\prime)$,
+$$
+	g(C,C^\prime) := M((X,Y),(X^\prime,Y^\prime)) + R((X,Y),O,(X^\prime,Y^\prime))
+$$
+where $M$ represents the \emph{Manhattan distance}~\cite{Manhattan} between the two rooms and $R$ is the least number of turns needed by the agent to reach $(X^\prime,Y^\prime)$ from $(X,Y)$.
+% For better exploration of the world, we build a graph that represents reachability (with cost) for all cells. Then we use \emph{Manhattan distance}~\cite{Manhattan} as a cost function for calculating the cost for moving from a cell to a cell. We also consider the rotation cost  when the agent reasons about the number of moves it needs to make in order to move from a cell to another cell. To calculate this cost, first the cost of all turns on the way from current cell to a destination cell is calculated and to this is added the cost of departing the current cell (whether the agent needs to turn before leaving).
+To compute the minimal cost needed to reach the target room the agent performs an \emph{$A^{\star}$ search} (as first introduced in~\cite{AStar}). s : \(f(n) = g(n) + h(n)\). \
+In order to efficiently use this algorithm next and goal cell must be known. 
+First the goal cell is calculated and based on this result, the next cell is decided.  The choice of a goal cell depends on the current mode of the agent. If it's in mode \emph{explore}, goal is a reachable cell which is safe and hasn't been explored yet. If the agent's mode is \emph{kill}, then the goal is a cell which is safe and from which the wumpus can be shot.   
+In our program \(g(n)\) represents the cost of the path from the current cell to the next cell \(n\), and \(h(n)\) represents the heuristic estimated cost of the cheapest path from cell \(n\) to the goal cell. 
+
+%TODO How does our agent explore the world (A*-search)
+%not sure if here should be explained the purpose of pathTurnCost,
+%departureTurnCost and rotCost or leave that for implementation
+% @filippo-23:20 28/05/2018: I think that details can be left for Implementation, but if they are used to define cost/heuristic, I would briefly mention them here. 
 
 \begin{figure}
-\begin{center}
-\include{graph}
-\end{center}
-\caption{Cost Calculation}
-\label{fig:graph}
+	\begin{center}
+		\include{graph}
+	\end{center}
+	\caption{Cost Calculation}
+	\label{fig:graph}
 \end{figure}
 
 \subsection{Reasoning modes and Planning}
