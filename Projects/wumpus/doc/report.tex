@@ -62,7 +62,7 @@
 \usepackage{booktabs}
 
 \usepackage{tikz,comment}
-\usetikzlibrary{shapes.multipart,positioning,backgrounds,positioning,fit,calc,arrows.meta}
+\usetikzlibrary{shapes.multipart,shapes.geometric,positioning,backgrounds,fit,calc,arrows.meta}
 
 \pagestyle{plain}
 
@@ -184,7 +184,7 @@ In our program \(g(n)\) represents the cost of the path from the current cell to
 	\begin{center}
 		\include{graph}
 	\end{center}
-	\caption{Cost Calculation}
+	\caption[Cost Calculation and Reachability graph]{Cost Calculation and Reachability graph for a grid of four rooms. Here $u$ (up), $d$ (down), $l$ (left), and $r$ (right) naturally correspond to orientations, while a cluster of four nodes corresponds to a room. Note that straight edges represent turns and bent edges represent going forward.}
 	\label{fig:graph}
 \end{figure}
 
@@ -226,6 +226,8 @@ It is obvious that most of the run time is spent computing a stable model by the
 Choice of the goal is influenced by past perceptions and the current location and orientation of the agent. However, as long as the goal is not reached, the ASP program will \enquote{steer} towards it: The cost to reach the goal gradually gets smaller, until finally it is reached. As long as no new room is explored, goal selection remains stable.
 
 This mechanic is what we exploit with the autopilot. Once a goal is chosen, a path that leads there is planned and forwarded to the world simulator without invoking the solver. This setup requires careful selection rules for the goal and detection of unsafe rooms.
+
+In order to prevent planning of paths that pass through unsafe rooms, all incoming edges to such rooms may be assigned an infinite cost, thus effectively making them unreachable.
 
 %\begin{sidewaysfigure}[ht]
 %\includegraphics[width=1\textwidth]{dep}
