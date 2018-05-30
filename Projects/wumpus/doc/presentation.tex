@@ -12,13 +12,11 @@
 \usepackage{xspace}
 \usepackage{booktabs}
 \usepackage{amssymb}
-\usepackage{tikz}
-  \usetikzlibrary{arrows} % required in the preamble
 \usepackage{listings}
 \usepackage{todonotes}
-\usepackage{comment}
 
-
+\usepackage{tikz,comment}
+\usetikzlibrary{shapes.multipart,positioning,backgrounds,positioning,fit,calc,arrows.meta}
 
 
 \newcommand{\htw}{\emph{Hunt the Wumpus }}
@@ -130,10 +128,10 @@
 	 \end{itemize}
   \end{frame}
 
-\begin{frame}{Reachability graph example}
+\begin{frame}{Cost graph example}
 	\begin{figure}\centering
-		\includegraphics{graph}
-		\caption{Architecture }
+		\include{graph}
+		\caption{Visualization of cost}
 	\end{figure}
 \end{frame}
 
@@ -173,7 +171,7 @@
 	%something more here maybe? it's a section with one slide (diagram)
   \begin{frame}{Architecture of the implementation}
   	\begin{figure}\centering
-  		\includegraphics{architecture}
+  		\include{architecture}
   		\caption{Architecture }
   	\end{figure}
 	

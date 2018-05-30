@@ -1,0 +1,34 @@
+
+		
+			\begin{tikzpicture}[
+			node distance=1cm and 5mm,
+			every node/.style={font=\sffamily},
+			title/.style={font=\color{black!50}\sffamily},
+			typetag/.style={rectangle, draw=black!50, font=\sffamily, anchor=west, text height=3mm, align=center}
+			]
+			
+			\node (lp) at (0, -1cm) {};
+			\node (as) at (0, -3.2cm) {};
+			
+			\node (gl) at (3.6cm, 0) [align=center, text width=2.1cm, title] { \large Python };
+			
+			\node (par) [below=of gl.west, text width=22mm, typetag] { Simulator };
+			\node (gro) [below=1.7cm of par.west, text width=22mm, typetag] { Agent Host };
+			
+			\node (g) [draw=gray!10, line width=1mm, inner sep=5pt, fit={(gl) (par) (gro)}] {};
+			
+			\node (sl) at (9.6cm, -1.7cm) [align=center, text width=2.7cm, title] { \large DLV };
+			
+			\node (ngs) [below=of sl.west, text width=3cm, typetag] { Agent };
+			
+			\node (s) [draw=gray!10, line width=1mm, inner sep=5pt, fit={(sl) (ngs)}] {};
+			
+			\draw [->, draw=black!80] (gro) to [out=340, in=200] node [midway, below] {State as Facts} (ngs);
+			\draw [->, draw=black!80] (ngs) to [out=160, in=20] node [midway, above] {Answer Set} (gro);
+			
+			\draw [->, draw=black!80] (par) to [out=280, in=80] node [midway, right] {Perceptions} (gro);
+			\draw [<-, draw=black!80] (par) to [out=260, in=100] node [midway, left] {Actions} (gro);
+			
+			\draw [->, draw=black!80] (lp) -- (par) node [midway, above] {World};
+			\end{tikzpicture}
+	
