@@ -343,11 +343,27 @@ The collected data are displayed in Table~\ref{tbl:test}. Information about mean
 
 \section{Conclusion}
 
-% TODO Conclusion: implementing an agent is possible, we implemented an agent according to a logic based repr of the problem that exhibits a specific behaviour: is trying to stay alive (maximize score) and during the development phase we tested . the implementation merges several ideas and led to problems but we considered the advanteges and drawbacks of a logic based approach. leads to graph based solution. we managed to improve the performance of our agent by pruning the search space
+At the end of this project, our team managed to implement a playing agent for \htw that is compliant with the given specification.
+The agent, named Hakuna, has been implemented with a logic-based design: the representation of its world and the deductive rules upon which its reasoning is based have been encoded using Answer Set Programming.
+ASP, as a technique, has been chosen because of some of its strength points, namely schemata grounding and non-monotonic reasoning, over other logic-based formalisms.
+Drawbacks of a pure logic-based solution include the hardness of searching the goal space, which accounts for most of the runtime of the agent.
+The component of Hakuna delegated to search has thus been implemented in Python, employing graph-theory techniques like $A^{\star}$ search.
+In later stages of the development, we managed to improve the performance of our agent by pruning the search space and introducing an autopilot modality.
+This hybrid approach, together with other implementational choices, allowed us to produce an agent that completed the tested instances in a reasonable amount of time, by maximising the score obtainable by avoiding any risk.
+The empirical evaluation of the agent required the creation of an appropriate testing suite, to take into account the possible aspects of the world and of the agent that could influence the results of each run of the game, and the collection of data that could highlight some relevant problems of the implementation (execution time, non-optimal behaviour).
 
-\paragraph{Future Work}
-% TODO we considered some approaches that go beyond logic and we are interested in a hybrid approach with probabalistic reasoning
-% TODO Consider other variants of the game (multi agent, oracle, bats, other topologies not square grids)
+\paragraph{Future Work} The behaviour of Hakuna --- not taking any risk in the exploration of the world --- is a double-edged sword, since in several instances the unsafeness of the rooms separating the agent from the gold is only apparent.
+A possible enhancement that goes beyond the scope of this project would be to incorporate a probabilistic component into the architecture of the agent.
+Such a feature might be implemented into an appropriate structure, for example a Markov chain, that allows the agent to choose to \enquote{risk} in presence of a breeze with probability $1 - p$, where $p = 0.2$ is the probability of a pit being in a room.
+To support the claim that this would bring improvement to the outcoming results, a thorough statistical evaluation would then be needed.
+Room for change can also be found, by considering several variants of \htw, including the following:
+\begin{description}
+	\item[Multiagent] What if the Wumpus was able to move, or bats where moving in the dungeon?
+	\item[Topology] What if the space was shaped in a different way?
+	\item[Continuum] What if the space was \emph{continuous} and not discrete?
+	\item[Oracle] What if the agent was given the possibility to know the content of a single room without exploring it?
+\end{description}
+All these extensions require a rethinking of the behavioural principles of the agent, in order to accomodate the new elements of the game and try to achieve an optimal result.
 
 \newpage
 \newgeometry{
