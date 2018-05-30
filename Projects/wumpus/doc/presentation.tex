@@ -108,15 +108,15 @@
 	 \end{itemize}
   \end{frame}
 
-\begin{frame}{Cost graph example}
-	\begin{figure}\centering
-		\include{graph}
-		\caption{Visualization of cost}
-	\end{figure}
+\begin{frame}{Visualization of a Cost Graph}
+	\begin{center}
+		\resizebox{8cm}{8cm}{
+		\input{graph} }
+	\end{center}
 \end{frame}
 
 
-  \begin{frame}{Different modes}
+  \begin{frame}{Different Modes}
    \begin{enumerate}
    	\item Explore - until the gold is discovered or there are more unexplored rooms 
    	\item Grab - when glitter is perceived
@@ -169,7 +169,7 @@
 
   \section{Evaluation}
   
-  \begin{frame}{Perfect agent}
+  \begin{frame}{Perfect Agent}
     
     \begin{itemize}
       \item Omniscience, i.e. complete knowledge of the world. 
@@ -186,7 +186,7 @@
   \end{frame}
 
 
-  \begin{frame}{The test suite and results}
+  \begin{frame}{The Test Suite and Results}
     \begin{table}[t]
       	\label{tbl:test}
       	\centering
@@ -211,7 +211,7 @@
       \end{table}
    \end{frame}
 
-	\begin{frame}{Performance assessment}
+	\begin{frame}{Performance Assessment}
 		\begin{itemize}
 			\item Performance of the agent compared against the perfect agent.
 			\item Reasons for Hakuna's under-performing: 
@@ -227,11 +227,28 @@
 
   \section{Conclusion}
 
-  \begin{frame}{Possible Improvements}
-      % TODO: I think this can be skipped, if we do a good job.
+  \begin{frame}{Conclusion}
+  	\begin{itemize}
+  		\item Developed an intelligent agent that plays the \htw game. 
+  		\item Developed an additional agent - for evaluation of performance.
+  		\item  Additionally, an autopilot was employed for improving the overall time and score of the agent. 
+  		\item Successfully carried out an empirical evaluation. 
+  	\end{itemize}
+    
   \end{frame}
 
-  \begin{frame}{Conclusion}
+  \begin{frame}{Further Extensions}
+  
+  	\begin{itemize}
+	  	 \item Use probability when calculating the next move.
+		 \item Variants of the \htw
+  	  \begin{itemize}
+  		\item \textbf{Multiagent} What if the Wumpus was able to move, or bats where moving in the dungeon?
+	  	\item \textbf{Topology} What if the space was shaped in a different way?
+	  	\item \textbf{Continuum} What if the space was \emph{continuous} and not discrete?
+	  	\item \textbf{Oracle} What if the agent was given the possibility to know the content of a single room without exploring it?
+  	  \end{itemize}
+  	\end{itemize}
   \end{frame}
 
   \begin{frame}[standout]
