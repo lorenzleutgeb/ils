@@ -7,30 +7,20 @@ distinguish(Q1, Q2) :-
 	    accept(Q1),
 	    state (Q2),
 	not accept(Q2).
+% Simmetry is needed to handle this case.
 
 % Condition 2
 distinguish(Q1, Q2) :-
 	delta(Q1, A, Sx),
 	delta(Q2, A, Sy),
-	distinguish(Sx, Sy),
-	Q1 != Q2.
+	distinguish(Sx, Sy).
+	% Q1 != Q2. % Not needed: in a DFA, delta is functional.
 
 % Symmetry
 distinguish(Q1, Q2) :-
 	distinguish(Q2, Q1).
 
-% Closedness
--distinguish(Q1, Q2) :-
-	    state(Q1),
-	    state(Q2),
-	not distinguish(Q1, Q2).
-
-% Transitivity
--distinguish(Q1, Q3) :-
-	-distinguish(Q1, Q2),
-	-distinguish(Q2, Q3).
-
 merge(Q1, Q2) :-
 	state(Q2),
-	Q1 = #min{Q3: -distinguish(Q3, Q2)},
-	Q1 != Q2.
+	Q1 = #min{Q3: not distinguish(Q3, Q2), state(Q3)},
+	Q1 != Q2. % Not strictly needed, prevents reflexive merges being printed.
