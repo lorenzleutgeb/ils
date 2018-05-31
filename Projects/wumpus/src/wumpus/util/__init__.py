@@ -1,10 +1,9 @@
-from os      import chmod, getcwd
-from os.path import isfile, join
-from shutil  import which
-from stat    import S_IRGRP, S_IRWXU, S_IWGRP
-from sys     import platform, maxsize
-
-from requests import get
+from os             import chmod, getcwd
+from os.path        import isfile, join
+from shutil         import which
+from stat           import S_IRGRP, S_IRWXU, S_IWGRP
+from sys            import platform, maxsize
+from urllib.request import urlopen
 
 def downloadDlv(fname):
     # Taken from http://www.dlvsystem.com/dlv/
@@ -18,12 +17,14 @@ def downloadDlv(fname):
     if platform.startswith('cygwin') or platform.startswith('win'):
         url = 'http://www.dlvsystem.com/files/dlv.mingw.exe'
 
-    res = get(url, stream=True)
-    res.raise_for_status()
+    res = urlopen(url)
+
+    if res.status != 200:
+        print('Failed to download DLV! GET {} resulted in HTTP {}'.format(url, res.status))
+        return
 
     with open(fname, 'wb') as f:
-        for b in res.iter_content(1024):
-            f.write(b)
+        f.write(res.read())
 
 def dlv():
     here = join(getcwd(), 'dlv')
