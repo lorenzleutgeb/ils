@@ -87,7 +87,7 @@ def paint(n, painters, fname, notes=[]):
     for i, note in enumerate(notes):
         image[-(i + 2)] += '    ' + ' ' * (max(0, 30 - imw)) + note
 
-    with open(fname, 'a') as f:
+    with open(fname, 'w') as f:
         f.write('\n' * 20)
         f.write('\n'.join(image))
         f.write('\n' * 3)

@@ -1,4 +1,7 @@
-from random import randint, random
+from os      import stat
+from os.path import exists
+from stat    import S_ISFIFO
+from random  import randint, random
 
 from ..common import *
 
@@ -20,7 +23,7 @@ MAX_ACTIONS = 1000
 
 class World():
     def __init__(self, size=4, wumpus=None, gold=None, pits=None, optimum=None):
-        with open('world', 'w') as f: f.truncate()
+        self.shouldPaint = exists('world') and S_ISFIFO(stat('world').st_mode)
 
         self.agentLocation = Location(1,1)
         self.agentOrientation = Orientation.RIGHT
@@ -204,14 +207,19 @@ class World():
 
         return score
 
-    def printTo(self):
+    def paint(self):
+        if not self.shouldPaint:
+            return
+
         notes = [
             "  Agent has "+ARROW+": " + ('\033[32mYes\033[0m' if self.agentHasArrow else '\033[31mNo\033[0m'),
             "  Agent has "+GOLD+": " + ('\033[32mYes\033[0m' if self.agentHasGold else '\033[31mNo\033[0m'),
             "  Score:      " + SPC + str(self.getScore())
         ]
+
         def projAgent(l):
             return str(self.agentOrientation) if l == self.agentLocation else None
+
         paint(self.worldSize, [
             (self.wumpus, 'W' if self.wumpusAlive else 'w'),
             (self.pits, 'P'),

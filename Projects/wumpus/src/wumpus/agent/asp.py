@@ -1,14 +1,13 @@
-from functools  import reduce
-from itertools  import product
-from os.path    import dirname, join
-from os         import remove
-from subprocess import PIPE, STDOUT, run
-from tempfile   import mkstemp
+from collections import deque
+from functools   import reduce
+from itertools   import product
+from os.path     import exists, dirname, join
+from os          import remove, stat
+from stat        import S_ISFIFO
+from subprocess  import PIPE, STDOUT, run
+from tempfile    import mkstemp
 
 import logging
-
-from networkx                                 import DiGraph, NetworkXNoPath
-from networkx.algorithms.shortest_paths.astar import astar_path as astar
 
 from .mode       import Mode
 from ..asp       import unlite, fact, atom, AnswerSet
@@ -73,8 +72,7 @@ class ASPAgent():
         self.shot = None
         self.grabbed = None
 
-        # Initially we do not know about stench/breeze/glitter
-        # anywhere.
+        # Initially we do not know about stench/breeze/glitter anywhere.
         self.world = {}
         self.position = Location(1, 1)
         self.orientation = Orientation.RIGHT
@@ -91,23 +89,7 @@ class ASPAgent():
         # To look at the ASP-Core compliant version, uncomment this.
         #unlite(join(dirname(__file__), 'agent.md'), 'agent.asp')
 
-        with open('agent', 'w') as f: f.truncate()
-
-        # We build a graph that respresents cost for all rooms.
-        self.g = DiGraph()
-        self.g.add_nodes_from([(self.position, o) for o in Orientation])
-
-    def expand(self):
-        for o in Orientation:
-            a = self.position.getAdjacent(o, self.size)
-            if a == None:
-                continue
-
-            self.g.add_edge((self.position, o), (a, o), action=Action.GOFORWARD)
-
-            for action in {Action.TURNLEFT, Action.TURNRIGHT}:
-                self.g.add_edge((self.position, o), (self.position, o.turn(action)), action=action)
-                self.g.add_edge((self.position, o.mirror()), (self.position, o.turn(action).mirror()), action=action)
+        self.paint = exists('agent') and S_ISFIFO(stat('agent').st_mode)
 
     def facts(self):
         # now/3 and killed/0 are certain.
@@ -150,22 +132,35 @@ class ASPAgent():
             encoding='utf-8'
         )
 
-    def autopilot(self, goal, safe):
-        path = min(
-            [
-                astar(
-                    self.g,
-                    (self.position, self.orientation),
-                    (goal, o),
-                    heuristic=heuristic,
-                    weight=lambda u, v, d: 1 if safe.get((v[0],), False) else None
-                )
-                for o in Orientation
-                if (goal, o) in self.g
-            ],
-            key=len
-        )
-        return [self.g[u][v]['action'] for u, v in zip(path, path[1:])]
+    def bfs(self, safe, target):
+        source = (self.position, self.orientation)
+        visited = {source: None}
+        queue = deque([source])
+        while queue:
+            node = queue.popleft()
+            if node == target:
+                path = []
+                while node is not None:
+                    v = visited[node]
+                    if v == None:
+                        break
+                    act, node = v
+                    path.append(act)
+                return path[::-1]
+
+            (l, o) = node
+            neighbours = [(a, (l, o.turn(a))) for a in {Action.TURNLEFT, Action.TURNRIGHT}]
+
+            adj = l.getAdjacent(o, self.size)
+            if adj != None and (safe.get((adj,), False) or adj == target[0]):
+                neighbours.append((Action.GOFORWARD, (adj, o)))
+
+            for act, neighbour in neighbours:
+                if neighbour not in visited:
+                    visited[neighbour] = (act, node)
+                    queue.append(neighbour)
+
+        return None
 
     def process(self, percept):
         if percept.scream:
@@ -176,7 +171,6 @@ class ASPAgent():
             if self.bumped != None:
                 logger.debug('We appear to be bumping a second time.')
             self.bumped = self.position.getAdjacent(self.orientation, self.size + 1)
-            self.g.remove_nodes_from([(self.bumped, o) for o in Orientation])
         elif self.previousAction == Action.GOFORWARD:
             self.position = self.position.getAdjacent(self.orientation, self.size)
         elif self.previousAction in {Action.TURNLEFT, Action.TURNRIGHT}:
@@ -191,12 +185,6 @@ class ASPAgent():
         if self.actions != []:
             self.previousAction = self.actions.pop(0)
             return self.previousAction
-
-        # We need to add all neighboring nodes to the graph to reason about them.
-        # Once we explore a new state, we need to add to the graph the possibility
-        # to turn here.
-        if self.position not in self.world:
-            self.expand()
 
         self.world[self.position] = (percept.stench, percept.breeze, percept.glitter)
 
@@ -218,13 +206,14 @@ class ASPAgent():
         result = AnswerSet.parse(result.strip().split('\n')[0], extract)
         size = next(l for (l,), sign in result['size'].items() if sign)
 
-        paint(
-            size,
-            [(result.tofun(pred),) for pred, _ in painted[0].items()] +
-            [(result.tobfun(pred), symbol) for pred, symbol in painted[1].items()],
-            'agent',
-            result.pretty(interesting.keys())
-        )
+        if self.paint:
+            paint(
+                size,
+                [(result.tofun(pred),) for pred, _ in painted[0].items()] +
+                [(result.tobfun(pred), symbol) for pred, symbol in painted[1].items()],
+                'agent',
+                result.pretty(interesting.keys())
+            )
 
         bads = result['bad'].items()
         if len(bads) > 0:
@@ -242,7 +231,7 @@ class ASPAgent():
 
         if result['autopilot'][()]:
             goal = next(l for (l,), sign in result['goal'].items() if sign)
-            self.actions = self.autopilot(goal, result['safe'])
+            self.actions = min([self.bfs(result['safe'], (goal, o)) for o in Orientation], key=len)
 
         if self.actions != []:
             self.previousAction = self.actions.pop(0)
@@ -250,41 +239,3 @@ class ASPAgent():
             self.previousAction = next(a for a, sign in result['do'].items() if sign)[0]
 
         return self.previousAction
-
-def turns(o1, o2):
-    od = abs(int(o1) - int(o2))
-    return 1 if od == 3 else od
-
-def routes(a, b):
-    result = []
-
-    dx = a.x - b.x
-    if dx < 0:
-        result.append(Orientation.RIGHT)
-    elif dx > 0:
-        result.append(Orientation.LEFT)
-
-    dy = a.y - b.y
-    if dy < 0:
-        result.append(Orientation.UP)
-    elif dy > 0:
-        result.append(Orientation.DOWN)
-
-    return result
-
-def heuristic(a, b):
-    (l1, o1), (l2, o2) = a, b
-
-    if l1 == l2:
-        return turns(o1, o2)
-
-    rs = routes(l1, l2)
-    penalty = len(rs) > 1
-    rs = map(lambda x: turns(o1, x), rs)
-
-    return min(rs) + penalty + taxicab(l1, l2)
-
-def taxicab(a, b):
-    if len(a) != len(b):
-        return None
-    return reduce(lambda s, x: s + abs(x[0] - x[1]), zip(a, b), 0)

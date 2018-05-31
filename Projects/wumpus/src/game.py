@@ -87,7 +87,7 @@ def play(world, agentName):
     agent = instantiate(agentName, world)
 
     while True:
-        world.printTo()
+        world.paint()
 
         percept = world.percept
         action = agent.process(percept)
