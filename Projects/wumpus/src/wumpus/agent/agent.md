@@ -685,7 +685,7 @@ This section is concerned with selection of the goal room,
 and consequently the next room to move to.
 
 We will use weak constraints in two levels. The first level
-is conerned with finding out the optimal goal while the
+is concerned with finding out the optimal goal while the
 second level is then about choosing the next room.
 
 	level 1
@@ -716,7 +716,7 @@ we have not yet explored and for which we know that they are safe.
 		frontier    X Y
 		mode        explore
 
-The goal is a room form which we can attack the wumpus.
+The goal is a room from which we can attack the wumpus.
 
 	candidate 1         X Y C
 		costFromNow X Y C

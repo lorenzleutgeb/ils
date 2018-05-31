@@ -16,7 +16,8 @@
 \usepackage{todonotes}
 
 \usepackage{tikz,comment}
-\usetikzlibrary{shapes.multipart,positioning,backgrounds,positioning,fit,calc,arrows.meta}
+\usetikzlibrary{shapes.multipart,shapes.geometric,positioning,backgrounds,fit,calc,arrows.meta}
+
 
 
 \newcommand{\htw}{\emph{Hunt the Wumpus }}
@@ -39,9 +40,9 @@
 
   \begin{frame}{Task}
     \begin{enumerate}
-      \item Develop an intelligent agent that plays the \htw game.
+      \item Develop an intelligent agent that plays the game \htw.
       \item Implement a strategy to complete the knowledge about the state of the world and to be able to reason with respect to it. 
-      \item Find an optimal strategy, i.e. maximize score.
+      \item Find an optimal strategy, i.e.\ maximize score.
     \end{enumerate}
   \end{frame}
 %not sure if a slide with explanation of the game is needed
@@ -58,43 +59,23 @@
   \begin{tabular}{lll}
     \textbf{Tool/Library} & \textbf{Version} & \textbf{Purpose} \\
     Python & 3.6 & Runtime \\
-    PyTest & 3.0 & Benchmarking \\
-    DLV & Dec 2012 & ASP Solver \\
-    networkX & 2.1 & Graph management \\
-    ? & ? & Dependency management \\
+    DLV & Dec 2012 & ASP solver \\
+    NetworkX & 2.1 & Graph algorithms \\
   \end{tabular}
   \end{center}
   \end{frame}
 
   \section{Ideas and used concepts}
-
-\begin{comment}
-  \begin{frame}{Hybrid Agent}
-  	
-      \begin{tabular}{lll}
-        \textbf{Component} & \textbf{Task} & \textbf{Language} \\
-        Perceptor & Retrieves what is perceived in current location & Python \\
-        Long-term Memory & Stores information about what has been discovered and done & Python \\
-        Action Graph & Searches for optimal actions to be taken & Python \\
-        Working Memory & Stores information needed to decide next action & Python \\
-        Planner & Infers new knowledge and decides next action & ASP \\ 
-      \end{tabular}
-  
-  \end{frame}
-   
-\end{comment}
-
-
- \begin{frame}{World Knowledge}
+	 \begin{frame}{World Knowledge}
 	
 	  \begin{itemize}
 		\item Static, partly-observable environment.
 		\item Incomplete initial knowledge.
 		\item Safety first!
-		\item Discovers size of the world when it bumps. 
-		\item Dangers and how to reason to avoid them. 
+		\item The agent discovers size of the world when it bumps. 
+		\item Unsafe rooms and how to reason to avoid them. 
 	  \end{itemize}
- \end{frame}
+	 \end{frame}
 
  \begin{frame}{Why ASP and DLV?}
 	\begin{itemize}
@@ -102,8 +83,8 @@
 		\item Allows to model non-monotonic reasoning through CWA. 
 		\item Combines a high-level
 		logic with grounding and solving. 
-		\item DLV allows processing of incomplete knoledge. 
-		\item At each time step, ASP solver called after perception has been caught.
+		\item ASP allows processing of incomplete knowledge. 
+		\item At each time step, DLV called after perception has been caught.
 		
 	\end{itemize}
  \end{frame}
@@ -117,28 +98,27 @@
 		    \end{itemize}
 	    \item Calculate the weights using the cost function: 
 	    $$
-	    g(C,C^\prime) := M((X,Y),(X^\prime,Y^\prime)) + R(O,O^\prime)
+	    	g(C,C^\prime) := M((X,Y),(X^\prime,Y^\prime)) + R((X,Y),O,(X^\prime,Y^\prime))
 	    $$
-	    % not sure if we should add more about the cost funstion here
 	    \item Compute the minimal cost of reaching the target room using \emph{$A^{\star}$ search} : 
 	    \(f(n) = g(n) + h(n)\)
-	    \item Deciding a goal cell depending on the current mode of the agent .
-	    \item Choosing next cell depending on the goal one.
+	    \item Deciding a goal room depending on the current mode of the agent.
+	    \item Choosing next room depending on the goal.
 		 
 	 \end{itemize}
   \end{frame}
 
-\begin{frame}{Cost graph example}
-	\begin{figure}\centering
-		\include{graph}
-		\caption{Visualization of cost}
-	\end{figure}
+\begin{frame}{Visualization of a Cost Graph}
+	\begin{center}
+		\resizebox{8cm}{8cm}{
+		\input{graph} }
+	\end{center}
 \end{frame}
 
 
-  \begin{frame}{Different modes}
+  \begin{frame}{Different Modes}
    \begin{enumerate}
-   	\item Explore - until the gold is discovered or there are more unexplored cells 
+   	\item Explore - until the gold is discovered or there are more unexplored rooms 
    	\item Grab - when glitter is perceived
    	\item Kill - not in any other mode and the gold is still up for grabs
 		   	\begin{itemize}
@@ -146,7 +126,7 @@
 		   		\item should it try to kill the wumpus?
 		   		\item can it shoot?
 		   	\end{itemize}
-   	\item Escape - not in any other mode
+   	\item Escape - not in any other mode.
    \end{enumerate}
   \end{frame}
 
@@ -173,34 +153,102 @@
   	\begin{figure}\centering
   		\include{architecture}
   		\caption{Architecture }
-  	\end{figure}
-	
+  	\end{figure}	
+  \end{frame}
+
+  \begin{frame}{Autopilot}
+  	\begin{itemize}
+  		\item Careful selected rules for the goal and detection of unsafe rooms.
+  		\item Prevent planning of paths that pass thorough unsafe rooms.		  		
+		\item Decreases the overall run time of the agent.
+
+  	\end{itemize}
+  	
   \end{frame}
 
 
   \section{Evaluation}
   
-  \begin{frame}{Perfect agent}
-    Performance of the agent compared against a \alert{perfect} agent.
+  \begin{frame}{Perfect Agent}
+    
     \begin{itemize}
-      \item \alert{Omniscience}, i.e. total knowledge of the world 
-      \item Optimal solution as shortest path over the action graph
-      \item Score of this agent taken as reference for a dungeon
+      \item Omniscience, i.e. complete knowledge of the world. 
+      \item Optimal solution as shortest path over the action graph:
+      \begin{itemize}
+      	\item Nodes - room with orientation (X,Y,O)
+      	\item Edges - connections between neighboring rooms
+      	\item Weight = 1 - if the target is not in the same room where the Wumpus is 
+      	\item Weight = 10 - otherwise
+      \end{itemize}
+	  \item If the gold is unreachable, climbs out immediately.
+      \item Score of this agent taken as reference for a dungeon.
     \end{itemize}
   \end{frame}
 
-  \begin{frame}{The Test Suite}
-    %Powered by \alert{PyTest}.
 
-  \end{frame}
+  \begin{frame}{The Test Suite and Results}
+    \begin{table}[t]
+      	\label{tbl:test}
+      	\centering
+      	\begin{tabular}{rrrrr}
+      		\toprule
+      		\multicolumn{1}{c}{World size} & \multicolumn{1}{c}{instances} & \multicolumn{1}{c}{avg. gap} & \multicolumn{1}{c}{stddev gap} & \multicolumn{1}{c}{avg. wall-time (s)}\\
+      		\midrule
+      		4 & 160	& 419 & 488 & 0.1440 \\
+      		5 & 80  & 464 & 493 & 0.2656 \\
+      		6 & 80  & 634 & 474 & 0.4600 \\
+      		7 & 40  & 630 & 468 & 2.8005 \\
+      		8 & 40  & 653 & 471 & 3.8736 \\
+      		9 & 20  & 557 & 490 & 4.7723 \\
+      		10 & 20 & 714 & 452 & 11.3828 \\
+      		11 & 10 & 785 & 414 & 0.1573 \\
+      		12 & 10 & 595 & 498 & 0.5594 \\
+      		13 & 5  & 383 & 524 & 0.0158 \\
+      		14 & 5  & 600 & 506 & 11.8238 \\
+      		\bottomrule\\
+      	\end{tabular}
+      	\caption{Some aggregated results obtained by assessing Hakuna against our testing suite.}
+      \end{table}
+   \end{frame}
+
+	\begin{frame}{Performance Assessment}
+		\begin{itemize}
+			\item Performance of the agent compared against the perfect agent.
+			\item Reasons for Hakuna's under-performing: 
+			\begin{itemize}
+				\item Possible pits blocking its way to the gold.
+				\item Checks all possible rooms before giving up when the gold is unreachable.
+			
+			\end{itemize}
+		\end{itemize}
+	\end{frame}
+
+	
 
   \section{Conclusion}
 
-  \begin{frame}{Possible Improvements}
-      % TODO: I think this can be skipped, if we do a good job.
+  \begin{frame}{Conclusion}
+  	\begin{itemize}
+  		\item Developed an intelligent agent that plays the \htw game. 
+  		\item Developed an additional agent - for evaluation of performance.
+  		\item  Additionally, an autopilot was employed for improving the overall time and score of the agent. 
+  		\item Successfully carried out an empirical evaluation. 
+  	\end{itemize}
+    
   \end{frame}
 
-  \begin{frame}{Conclusion}
+  \begin{frame}{Further Extensions}
+  
+  	\begin{itemize}
+	  	 \item Use probability when calculating the next move.
+		 \item Variants of the \htw
+  	  \begin{itemize}
+  		\item \textbf{Multiagent} What if the Wumpus was able to move, or bats where moving in the dungeon?
+	  	\item \textbf{Topology} What if the space was shaped in a different way?
+	  	\item \textbf{Continuum} What if the space was \emph{continuous} and not discrete?
+	  	\item \textbf{Oracle} What if the agent was given the possibility to know the content of a single room without exploring it?
+  	  \end{itemize}
+  	\end{itemize}
   \end{frame}
 
   \begin{frame}[standout]
