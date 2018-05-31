@@ -3,4 +3,5 @@
   before_script:
     - cd Projects/wumpus/src
   script:
+    - python3 -m pip install -e .
     - python3 -m hakuna_matata.cli -agent asp -benchmark '../suite/world-*.txt'
