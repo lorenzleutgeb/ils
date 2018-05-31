@@ -2,6 +2,5 @@
   image: fedora:28
   before_script:
     - cd Projects/wumpus/src
-    - pip3 install -r requirements.txt
   script:
-    - python3 game.py -agent asp -benchmark 'suite/world-*.txt'
+    - python3 -m hakuna_matata.cli -agent asp -benchmark '../suite/world-*.txt'
