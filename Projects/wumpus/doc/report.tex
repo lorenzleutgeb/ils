@@ -255,18 +255,18 @@ The output --- an answer set, containing a unique atom for the predicate \emph{d
 
 \subsection{Autopilot}
 
-One optimization that was employed to decrease the overall run time of the agent in the course of a game is what we call the autopilot. In this section we motivate the reason for introducing this component and describe it and its interaction with the rest of the implementation briefly.
+One optimization that was employed to decrease the overall run time of the agent in the course of a game is what we call the \emph{autopilot}. In this section we motivate the reason for introducing this component and describe it and its interaction with the rest of the implementation briefly.
 
-It is obvious that most of the run time is spent computing a stable model by the ASP solver, since both the world simulator as well as the Python host program do not solve hard computational problems. With this in mind, the motivation to call the ASP solver as rarely as possible is apparent. In particular, since the ASP program is deterministic, the resulting answer sets only change with new input.
+It is obvious that most of the run time is spent computing the optimal stable model by the ASP solver, since both the world simulator as well as the Python host program do not solve hard computational problems. With this in mind, the motivation to invoke the ASP solver as rarely as possible is apparent. In particular, since the ASP program is deterministic, the resulting answer sets only change with new input.
 
-Choice of the goal is influenced by past perceptions and the current location and orientation of the agent. However, as long as the goal is not reached, the ASP program \enquote{steers} towards it: The cost to reach the goal gradually gets smaller, until finally it is reached. As long as no new room is explored, goal selection remains stable.
+Choice of the goal is influenced by past perceptions and the current location and orientation of the agent. However, as long as the goal is not reached, the ASP program \enquote{steers} towards it: The cost to reach the goal gradually decreases, until finally it is reached. As long as no new room is explored, goal selection remains stable.
 
 This mechanic is what we exploit with the autopilot. Once a goal is chosen, a path that leads there is planned and forwarded to the world simulator without invoking the solver. This setup requires careful selection rules for the goal and detection of unsafe rooms.
 
-In order to prevent planning of paths that pass through unsafe rooms, all incoming edges to such rooms may be assigned an infinite cost, thus effectively making them unreachable.
+A graph very similar to the one shown in \ref{fig:graph} is used to compute the shortest path to the goal.
+Since the autopilot only navigates through explored rooms, no heuristics are necessary, and we employ a variant of breadth first search to find the shortest path.
 
 % TODO Mention how we keep the search space for cost function small
-%TODO: ciaone, we need to update this. We are using DFS now. Why?
 
 \subsection{Auxiliary tools}
 
