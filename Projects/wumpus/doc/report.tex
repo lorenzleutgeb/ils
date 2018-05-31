@@ -123,11 +123,11 @@ For the purpose of this project, we decided to implement a logic-based agent, th
 
 The environment in which the agent is playing is \emph{discrete} and \emph{static}, since the wumpus, the gold and the pits do not move throughout the world.
 Therefore, the knowledge inferred by the agent at each point in time can be accumulated to circumscribe the search space in further moments in time.
-Initially, the agent's \emph{knowledge base} is populated with basic geometric knowledge (e.g. relation between directions), what is percepted in its initial position and what are the known world sizes.
+Initially, the agent's \emph{knowledge base} is populated with basic geometric knowledge (e.g. relation between directions), what is perceived in its initial position and what are the known world sizes.
 
 \paragraph{Incomplete knowledge.} One of the challenges of \htw is that a non-omniscient player starts the game with an incomplete knowledge of the world.
 By exploring the world and perceiving what is in each new explored room, an agent can obtain additional insights about the state of the world and reshape its strategy according to it.
-As we want to be able to model non-monotonic reasoning --- if a room, previously thought to contain a pit, turns out to be safe, the agent should be able to infer this --- and to generalise statements by writing non-ground schematas, our system of choice is Answer Set Programming, which allows to model the problem in a logic fashion and achieves non-monotonic reasoning through \emph{closed-world assumption} (CWA).
+As we want to be able to model non-monotonic reasoning --- if a room, previously thought to contain a pit, turns out to be safe, the agent should be able to infer this --- and to generalise statements by writing non-ground schemata, our system of choice is Answer Set Programming, which allows to model the problem in a logic fashion and achieves non-monotonic reasoning through \emph{closed-world assumption} (CWA).
 We preferred this formalism over others that have been studied in our course, like propositional SAT or SMT, because of these motivations; moreover, the previous knowledge of the ASP language came into play as a positive factor.
 
 In particular, the DLV solver~\cite{DLV-system} has been embedded in the architecture of the agent, to be called at every point in time to infer the additional knowledge obtained by the agent, after grounding its knowledge base.
@@ -139,7 +139,7 @@ This, together with the other perceived information, allows the agent to ``draw'
 
 \paragraph{Size of the world.} The agent proceeds by assuming that the world has a certain size, initially set to $1 \times 1$.
 Every time the agent succeeds to move to a room which coordinates exceed the assumed size of the world, for example $N \times N$, the knowledge base is updated to assume that the world has size $N+1 \times N+1$.
-Otherwise, if a \emph{bump} is percepted, it infers the real size of the world and this is not modified afterwards.
+Otherwise, if a \emph{bump} is perceived, it infers the real size of the world and this is not modified afterwards.
 
 \paragraph{Unsafety.} The agent's policy for unsafe situations is the following:
 \begin{itemize}
@@ -152,7 +152,7 @@ Otherwise, if a \emph{bump} is percepted, it infers the real size of the world a
 
 \subsection{Agent Modes and Strategies}
 
-In order to simplify the implementation of the agent and the way it choses its next action we introduce four different modes of playing in which the agent can be at any time. This helps to abstract and in different modes enable and disable different possible actions. It also made it easier for developing the code. 
+In order to simplify the implementation of the agent and the way it chooses its next action we introduce four different modes of playing in which the agent can be at any time. This helps to abstract and in different modes enable and disable different possible actions. It also made it easier for developing the code. 
 While playing, our agent can be in exactly one from four available modes.
 
 \paragraph{\enquote{Grab}.} The agent enters the \emph{grab} mode as soon as the \emph{glitter} is perceived. In this mode, the agent grabs the gold.
@@ -381,7 +381,7 @@ In later stages of the development, we managed to improve the performance of our
 This hybrid approach, together with other implementational choices, allowed us to produce an agent that completed the tested instances in a reasonable amount of time, by maximising the score obtainable by avoiding any risk.
 The empirical evaluation of the agent required the creation of an appropriate testing suite, to take into account the possible aspects of the world and of the agent that could influence the results of each run of the game, and the collection of data that could highlight some relevant problems of the implementation (execution time, non-optimal behaviour).
 
-\paragraph{Future Work} The behaviour of Hakuna --- not taking any risk in the exploration of the world --- is a double-edged sword, since in several instances the unsafeness of the rooms separating the agent from the gold is only apparent.
+\paragraph{Future Work} The behaviour of Hakuna --- not taking any risk in the exploration of the world --- is a double-edged sword, since in several instances the unsafety of the rooms separating the agent from the gold is only apparent.
 A possible enhancement that goes beyond the scope of this project would be to incorporate a probabilistic component into the architecture of the agent.
 Such a feature might be implemented into an appropriate structure, for example a Markov chain, that allows the agent to choose to \enquote{risk} in presence of a breeze with probability $1 - p$, where $p = 0.2$ is the probability of a pit being in a room.
 To support the claim that this would bring improvement to the outcoming results, a thorough statistical evaluation would then be needed.
@@ -392,7 +392,7 @@ Room for change can also be found, by considering several variants of \htw, incl
 	\item[Continuum.] What if the space was \emph{continuous} and not discrete?
 	\item[Oracle.] What if the agent was given the possibility to know the content of a single room without exploring it?
 \end{description}
-All these extensions require a rethinking of the behavioural principles of the agent, in order to accomodate the new elements of the game and try to achieve an optimal result in these settings.
+All these extensions require a rethinking of the behavioural principles of the agent, in order to accommodate the new elements of the game and try to achieve an optimal result in these settings.
 
 \bibliography{ref}
 
