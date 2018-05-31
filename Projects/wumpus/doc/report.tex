@@ -85,8 +85,8 @@
 \begin{abstract}
   The assigned task is to develop an intelligent agent that plays the \htw game, by using a logic-based approach in its implementation.
   In order to complete a run of the game, this agent has to be able to face several challenges, like the incompleteness of the available information about the state of the world or the search for the best strategy to employ.
-  The chosen approach is to develop a hybrid agent that relies on an ASP core to actuate its strategy and on graph-theory techniques to obtain additional insights on how to proceed in the exploration of a dungeon.
-  To assess the performance of our agent, we implemented an omniscient agent that obtains an optimal score for a given dungeon and we ranked our agent against it.
+  The chosen approach is to develop a hybrid agent that relies on an ASP core to actuate its strategy and on graph-theory techniques to obtain additional insights on how to proceed in the exploration of the world.
+  To assess the performance of our agent, we implemented an omniscient agent that obtains an optimal score for a given world and we ranked our agent against it.
   In this report, we introduce our solution to this task, by detailing the architecture of the agent and describing the chosen strategy, the heuristics and the obtained results.
 \end{abstract}
 
@@ -97,8 +97,8 @@
 \htw is a single player computer game, first released in 1975.
 It is best known as a toy-problem in the field of Artificial Intelligence and has been thoroughly analysed by Russell and Norvig in~\cite{book:aima}, where it has been used to introduce the reader to a logic-based approach to \emph{Knowledge Representation}.
 
-The game is set in the world of Wumpus, a square, grid-shaped dungeon: each room of the grid is connected by passageways with the orthogonally adjacent rooms.
-The main goal of the player is to find the gold, hidden in one of the rooms, and leave the dungeon alive. 
+The game is set in the square, grid-shaped world of the Wumpus: each room of the grid is connected by passageways with the orthogonally adjacent rooms.
+The main goal of the player is to find the gold, hidden in one of the rooms, and leave the world alive. 
 In this world there are some challenges for the player.
 In one of these rooms there is Wumpus, a beast that eats the player if he enters the room. The player has only one arrow, that is, one opportunity to kill the Wumpus. In addition, some of the rooms are bottomless pits and if the player wanders in these rooms it will stay trapped. At the beginning of the game, the player is always positioned on room $(1,1)$, facing to the right and has $0$ points. From here it can use three moves : \emph{Forward}, \emph{TurnLeft}, \emph{TurnRight} for discovering its environment and three actions \emph{Shoot}, \emph{Grab} and \emph{Climb} for shooting the arrow, grabbing the gold and climbing out of the cave respectively. For each of the moves and actions the player loses one point and it loses 10 points when using the arrow. When eaten by the Wumpus or trapped in pit, it loses 1000 points, and for climbing out of the cave with the gold it gains 1000 points. Whenever the player goes to a new room, it has five sensors that give information about:
 \begin{description}
@@ -121,17 +121,17 @@ For the purpose of this project, we decided to implement a logic-based agent, th
 
 \subsection{ASP and World Knowledge}
 
-The environment in which the agent is playing is \emph{discrete} and \emph{static}, since the wumpus, the gold and the pits do not move throughout the dungeon.
+The environment in which the agent is playing is \emph{discrete} and \emph{static}, since the wumpus, the gold and the pits do not move throughout the world.
 Therefore, the knowledge inferred by the agent at each point in time can be accumulated to circumscribe the search space in further moments in time.
 Initially, the agent's \emph{knowledge base} (KB) is populated with basic geometric knowledge (e.g. relation between directions), what is percepted in its initial position and what are the known world sizes.
 
 \paragraph{Incomplete knowledge.} One of the challenges of \htw is that a non-omniscient player starts the game with an incomplete knowledge of the world.
-By exploring the dungeon and perceiving what is in each new explored room, an agent can obtain additional insights about the state of the world and reshape its strategy according to it.
+By exploring the world and perceiving what is in each new explored room, an agent can obtain additional insights about the state of the world and reshape its strategy according to it.
 As we want to be able to model non-monotonic reasoning --- if a room, previously thought to contain a pit, turns out to be safe, the agent should be able to infer this --- and to generalise statements by writing non-ground schematas, our system of choice is Answer Set Programming, which allows to model the problem in a logic fashion and achieves non-monotonic reasoning through \emph{closed-world assumption} (CWA).
 We preferred this formalism over others that have been studied in our course, like propositional SAT or SMT, because of these motivations; moreover, the previous knowledge of the ASP language came into play as a positive factor.
 % DONE? explicitly refer to SAT and SMT.
 In particular, the DLV solver~\cite{DLV-system} has been embedded in the architecture of the agent, to be called at every point in time to infer the additional knowledge obtained by the agent, after grounding its KB.
-This approach allows the agent to correctly derive what is logically right from it's knowledge base. Moreover DLV is able to process incomplete knowledge which the agent has while overcoming its initial ignorance with logical reasoning.
+This approach allows the agent to correctly derive what is logically right from its knowledge base. Moreover DLV is able to process incomplete knowledge which the agent has while overcoming its initial ignorance with logical reasoning.
 
 \paragraph{Safety.} As the Hakuna agents tries to maximise its score by minimising its death chances, the need of a concept of \emph{safety} arises.
 Namely, the agent moves towards some room if it is not aware of any danger lying in it (this is an application example of CWA) and marks as certainly \emph{safe} each room that he enters without dying.
@@ -159,8 +159,8 @@ While playing, our agent can be in exactly one from four available modes.
 
 \paragraph{\enquote{Grab}.} The agent enters the \emph{grab} mode as soon as the \emph{glitter} is perceived. In this mode, the agent grabs the gold.
 
-\paragraph{\enquote{Explore}.} The agent is in \emph{explore} mode whenever the position of the gold is unknown and safe rooms that are reachable and have not been explored are in the dungeon.
-In this mode, the agent moves throughout the dungeon, according to a specific search strategy.
+\paragraph{\enquote{Explore}.} The agent is in \emph{explore} mode whenever the position of the gold is unknown and safe rooms that are reachable and have not been explored are in the world.
+In this mode, the agent moves throughout the world, according to a specific search strategy.
 
 \paragraph{\enquote{Kill}.} The agent enters the \emph{kill} mode only if some conditions are met, while in \emph{explore} mode:
 \begin{itemize}
@@ -173,7 +173,7 @@ If the gold has been grabbed, it would only come at a loss; similarly, if the ex
 
 \paragraph{\enquote{Escape}.} The last available mode is \emph{escape}.
 This mode is entered by the agent if the gold has been grabbed or if no further exploration can be done.
-In this case, the agent heads back to the initial position to climb up from the dungeon, to end the game.
+In this case, the agent heads back to the initial position to climb up from the world, to end the game.
 
 \subsection{$A^{\star}$ Search and World Exploration}
 
@@ -216,7 +216,7 @@ If more candidates require the least cost, tie-breaking constraints rule out a u
 % For better exploration of the world, we build a graph that represents reachability (with cost) for all cells. Then we use \emph{Manhattan distance}~\cite{Manhattan} as a cost function for calculating the cost for moving from a cell to a cell. We also consider the rotation cost  when the agent reasons about the number of moves it needs to make in order to move from a cell to another cell. To calculate this cost, first the cost of all turns on the way from current cell to a destination cell is calculated and to this is added the cost of departing the current cell (whether the agent needs to turn before leaving).
 % To compute the minimal cost needed to reach the target room the agent performs an .%s : \(f(n) = g(n) + h(n)\). \
 % In order to efficiently use this algorithm next and goal cell must be known. 
-% First the goal cell is calculated and based on this result, the next cell is decided.  The choice of a goal cell depends on the current mode of the agent. If it's in mode \emph{explore}, goal is a reachable cell which is safe and hasn't been explored yet. If the agent's mode is \emph{kill}, then the goal is a cell which is safe and from which the wumpus can be shot.
+% First the goal cell is calculated and based on this result, the next cell is decided.  The choice of a goal cell depends on the current mode of the agent. If it is in mode \emph{explore}, goal is a reachable cell which is safe and hasn't been explored yet. If the agent's mode is \emph{kill}, then the goal is a cell which is safe and from which the wumpus can be shot.
 % In our program \(g(n)\) represents the cost of the path from the current cell to the next cell \(n\), and \(h(n)\) represents the heuristic estimated cost of the cheapest path from cell \(n\) to the goal cell. 
 
 %DONE? How does our agent explore the world (A*-search)
@@ -328,10 +328,10 @@ To produce a satisfying evaluation, we generated a testing suite and, in order t
 
 \subsection{Testing Suite}
 
-The implementation of the agent Hakuna has been continuously refined by testing it against a suite of dungeons.
+The implementation of the agent Hakuna has been continuously refined by testing it against a suite of worlds.
 The instances contained in the suite have been randomly generated using the Wumpus World Simulator~\cite{WWS} provided in the assignment.
-This prevented the suite from containing building biases, like non-uniform distribution of the pits and non-overlapping entities in the dungeon.
-Each entry of this suite, bundled together with our implementation of the agent, is characterized by the \emph{size} of the dungeon and the \emph{seed} used to generate it; this allows one to reproduce the creation of each dungeon collected in the suite.
+This prevented the suite from containing building biases, like non-uniform distribution of the pits and non-overlapping entities in the world.
+Each entry of this suite, bundled together with our implementation of the agent, is characterized by the \emph{size} of the world and the \emph{seed} used to generate it; this allows one to reproduce the creation of each world collected in the suite.
 In Table~\ref{tbl:test}, the composition of the testing suite is outlined.
 
 \begin{table}[t]
@@ -357,7 +357,7 @@ In Table~\ref{tbl:test}, the composition of the testing suite is outlined.
 	\caption{Some aggregated results obtained by assessing Hakuna against our testing suite. Here, $n$ is the size of the world, $N_n$ the number of tested instances, $\Delta$ is the gap between the score of the two agents.}
 \end{table}
 
-Each world has been generated by taking into account the rules of \htw: indeed, each instance has a squared shape, it contains only one wumpus, one unit of gold and it may contain several pits, sparse through the dungeon.
+Each world has been generated by taking into account the rules of \htw: indeed, each instance has a squared shape, it contains only one wumpus, one unit of gold and it may contain several pits, sparse through the world.
 
 \subsection{An omniscient agent}
 
@@ -370,7 +370,7 @@ In this setting, the search for the optimal solution can be reduced to the compu
 	\item Two configurations are linked by an edge if one can be reached by the other.
 	\item The weight of each edge is $1$ if the target is not a configuration in the same position as the Wumpus's, $10$ otherwise; this reflects the need to kill the Wumpus in order to pass through it.
 \end{itemize}
-A shortest path over this graph reflects the shortest path in the dungeon from a configuration to another.
+A shortest path over this graph reflects the shortest path in the world from a configuration to another.
 Here, the cost function is the same that has been previously employed.
 
 Then, the perfect agent behaves as follows: if the gold is unreachable, thus it lies in a pit, it immediately climbs; otherwise, he takes the shortest path to the room containing the gold, grabs it and comes back to the initial position from the same path, to finally climb.
@@ -384,7 +384,7 @@ From the collected data, the gap between the results scored by the two agents in
 After data collection, we investigated those instances where the the perfect agent outperformed Hakuna, to understand the possible causes and search for plausible improvements.
 What we have found out can be summarised as the following:
 \begin{itemize}
-	\item Hakuna performed similarly to the agent in those instances where the gold was reachable by just exploring the dungeon and in those where killing the Wumpus led to the discovery of a safe path to the gold.
+	\item Hakuna performed similarly to the agent in those instances where the gold was reachable by just exploring the world and in those where killing the Wumpus led to the discovery of a safe path to the gold.
 	\item On the other hand, Hakuna was outperformed in those instances where the phenomenon of \emph{breeze walls} happened: the location of the breezes brought the agent to infer a disposition of possible pits that blocked its way to the gold, even though there were no pits between it and the reward.
 	\item On instances where gold was unreachable, the agent lost on average a small amount of points before concluding that the search was useless and climbing back to the exit.
 \end{itemize}
@@ -392,8 +392,8 @@ What we have found out can be summarised as the following:
 With increasing sizes, the gap between the score of the omniscient agent and the one obtained by Hakuna tends to increase: this might be caused by the greater amount of rooms that Hakuna has to visit, while it is in \emph{explore} mode. 
 
 During the development stage, the execution time of the agent on each instance has been collected.
-This allowed us to effectively evince that the introduction of the autopilot brought significant time savings in several instances, for example, the ones where most of the time was spent in exploring the dungeon.
-The collected data are displayed in Table~\ref{tbl:test}. Information about mean execution time for samples drawn for dungeon size greater than 10 might be misleading, because of the small size of the samples.
+This allowed us to effectively evince that the introduction of the autopilot brought significant time savings in several instances, for example, the ones where most of the time was spent in exploring the world.
+The collected data are displayed in Table~\ref{tbl:test}. Information about mean execution time for samples drawn for world size greater than 10 might be misleading, because of the small size of the samples.
 
 \section{Conclusion}
 
@@ -412,7 +412,7 @@ Such a feature might be implemented into an appropriate structure, for example a
 To support the claim that this would bring improvement to the outcoming results, a thorough statistical evaluation would then be needed.
 Room for change can also be found, by considering several variants of \htw, including the following:
 \begin{description}
-	\item[Multiagent] What if the Wumpus was able to move, or bats where moving in the dungeon?
+	\item[Multiagent] What if the Wumpus was able to move, or bats where moving in the world?
 	\item[Topology] What if the space was shaped in a different way?
 	\item[Continuum] What if the space was \emph{continuous} and not discrete?
 	\item[Oracle] What if the agent was given the possibility to know the content of a single room without exploring it?
