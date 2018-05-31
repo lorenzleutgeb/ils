@@ -23,7 +23,7 @@
 %    3. Software
 %     - application and required libraries/software DONE
 %     - brief installation notes (README file) DONE
-%    4. Final Presentation 
+%    4. Final Presentation
 %     - description of your approach DONE
 %     - strengths and weaknesses DONE
 %     - empirical evaluation DONE
@@ -56,6 +56,7 @@
 \usepackage{rotating}
 \usepackage{amssymb}
 \usepackage{amsmath}
+\usepackage{xspace}
 
 \bibliographystyle{splncs03}
 
@@ -72,7 +73,7 @@
 
 \setlength{\columnseprule}{0.2pt}
 
-\newcommand{\htw}{\emph{Hunt the Wumpus }}
+\newcommand{\htw}{\emph{Hunt the Wumpus}\xspace}
 
 \title{Hakuna Matata: A Logic-Based Agent for the \htw Game}
 \subtitle{Project Report}
@@ -97,20 +98,20 @@
 \htw is a single player computer game, first released in 1975.
 It is best known as a toy-problem in the field of Artificial Intelligence and has been thoroughly analysed by Russell and Norvig in~\cite{book:aima}, where it has been used to introduce the reader to a logic-based approach to \emph{Knowledge Representation}.
 
-The game is set in the square, grid-shaped world (a cave) of the Wumpus: each room of the grid is connected by passageways with the orthogonally adjacent rooms.
-The main goal of the player is to find the gold, hidden in one of the rooms, and leave the world alive. 
+The game is set in the square, grid-shaped world (a cave) of the wumpus: each room of the grid is connected by passageways with the orthogonally adjacent rooms.
+The main goal of the player is to find the gold, hidden in one of the rooms, and leave the world alive.
 In this world there are some challenges for the player.
-In one of these rooms there is Wumpus, a beast that eats the player if he enters the room. The player has only one arrow, that is, one opportunity to kill the Wumpus. In addition, some of the rooms are bottomless pits and if the player wanders in these rooms it stays trapped. At the beginning of the game, the player is always positioned on room $(1,1)$, facing to the right and has zero points. From here it can use the actions \emph{Forward}, \emph{TurnLeft}, \emph{TurnRight} to discover the surrounding environment and \emph{Shoot}, \emph{Grab} and \emph{Climb} to shoot the arrow, grab the gold and climb out of the cave respectively. For each of the moves and actions the player loses one point and it loses ten points when using the arrow. When eaten by the Wumpus or trapped in pit, it loses 1000 points, and for climbing out of the cave with the gold it gains 1000 points. Whenever the player goes to a new room, it has five sensors that give information about:
+In one of these rooms there is the wumpus, a beast that eats the player if he enters the room. The player has only one arrow, that is, one opportunity to kill the wumpus. In addition, some of the rooms are bottomless pits and if the player wanders in these rooms it stays trapped. At the beginning of the game, the player is always positioned on room $(1,1)$, facing to the right and has zero points. From here it can use the actions \emph{Forward}, \emph{TurnLeft}, \emph{TurnRight} to discover the surrounding environment and \emph{Shoot}, \emph{Grab} and \emph{Climb} to shoot the arrow, grab the gold and climb out of the cave respectively. For each of the moves and actions the player loses one point and it loses ten points when using the arrow. When eaten by the wumpus or trapped in pit, it loses 1000 points, and for climbing out of the cave with the gold it gains 1000 points. Whenever the player goes to a new room, it has five sensors that give information about:
 \begin{description}
-	\item[Stench]{whether the Wumpus is in adjacent room;}
+	\item[Stench]{whether the wumpus is in adjacent room;}
 	\item[Breeze]{whether there is a pit in adjacent room;}
 	\item[Glitter]{when the gold is in the current room;}
 	\item[Bump]{whether the player has hit a border;}
-	\item[Scream]{whether the Wumpus is hit by the arrow.}
+	\item[Scream]{whether the wumpus is hit by the arrow.}
 \end{description}
-The locations of the gold and the Wumpus are randomly chosen with uniform distribution in each room other than the start. Additionally each room can be a pit with probability 0.2.
+The locations of the gold and the wumpus are randomly chosen with uniform distribution in each room other than the start. Additionally each room can be a pit with probability 0.2.
 
-In~\cite{book:aima}, the environment which represents the Wumpus World is described as \emph{discrete}, \emph{static}, \emph{single-agent} and \emph{partly-observable}. For an agent in such environment, its initial ignorance of the configuration of the world constitutes the main challenge, and logical reasoning is helpful to overcome such a restrain. 
+In~\cite{book:aima}, the environment which represents the Wumpus World is described as \emph{discrete}, \emph{static}, \emph{single-agent} and \emph{partly-observable}. For an agent in such environment, its initial ignorance of the configuration of the world constitutes the main challenge, and logical reasoning is helpful to overcome such a restrain.
 
 \section{Approach}
 
@@ -147,12 +148,12 @@ Otherwise, if a \emph{bump} is perceived, it infers the real size of the world a
 	\item If the location of two stenches lying on a same axis is known, the wumpus is evinced to lie between them.
 	\item If the location of two stenches lying on a same diagonal is known and one of the common neighbours is known to be safe, the other neighbouring room is inferred to contain the wumpus.
 	\item If a breeze is found, all the unexplored neighbours are marked as rooms possibly containing a pit.
-	\item If a room without breezes is found nearby one marked as a possible pit, the knowledge base is updated to state that such a room is instead not containing any pit. 
+	\item If a room without breezes is found nearby one marked as a possible pit, the knowledge base is updated to state that such a room is instead not containing any pit.
 \end{itemize}
 
 \subsection{Agent Modes and Strategies}
 
-In order to simplify the implementation of the agent and the way it chooses its next action we introduce four different modes of playing in which the agent can be at any time. This helps to abstract and in different modes enable and disable different possible actions. It also made it easier for developing the code. 
+In order to simplify the implementation of the agent and the way it chooses its next action we introduce four different modes of playing in which the agent can be at any time. This helps to abstract and in different modes enable and disable different possible actions. It also made it easier for developing the code.
 While playing, our agent can be in exactly one from four available modes.
 
 \paragraph{\enquote{Grab}.} The agent enters the \emph{grab} mode as soon as the \emph{glitter} is perceived. In this mode, the agent grabs the gold.
@@ -162,9 +163,9 @@ In this mode, the agent moves throughout the world, according to a specific sear
 
 \paragraph{\enquote{Kill}.} The agent enters the \emph{kill} mode only if some conditions are met, while in \emph{explore} mode:
 \begin{itemize}
-	\item The agent is unable to continue the exploration --- due to all the safe rooms being explored ---, the location of the Wumpus is known and the gold has not been grabbed: in this situation, killing the Wumpus is a necessary condition to pursue further exploration to find the gold.
-	\item The agent is unable to continue the exploration (as before), the gold has not been grabbed and the location of at least one stench with no possible overlapping pits is known: in this case, the agent can \emph{try} to kill the Wumpus by shooting at an unexplored room near the stench.
-	The agent can either kill the Wumpus or miss it, inferring that the shoot room is safe (and therefore can be explored).
+	\item The agent is unable to continue the exploration --- due to all the safe rooms being explored ---, the location of the wumpus is known and the gold has not been grabbed: in this situation, killing the wumpus is a necessary condition to pursue further exploration to find the gold.
+	\item The agent is unable to continue the exploration (as before), the gold has not been grabbed and the location of at least one stench with no possible overlapping pits is known: in this case, the agent can \emph{try} to kill the wumpus by shooting at an unexplored room near the stench.
+	The agent can either kill the wumpus or miss it, inferring that the shoot room is safe (and therefore can be explored).
 \end{itemize}
 The shooting happens only in case where it is absolutely necessary.
 If the gold has been grabbed, it would only come at a loss; similarly, if the exploration is only blocked by the presence of possible pits, shooting the arrow would cause an unnecessary loss of points.
@@ -177,18 +178,18 @@ In this case, the agent heads back to the initial position to climb up from the 
 
 The exploration phase is carried out in two steps: first, a \emph{goal} (here, the goal is a room) is selected; then, by using the goal as a reference, the \emph{next} room to explore is chosen.
 
-\paragraph{Cost function.} The cost of moving from the room $s$ with orientation $o$ to the room $t$ is computed according to the function 
-\begin{equation}	
+\paragraph{Cost function.} The cost of moving from the room $s$ with orientation $o$ to the room $t$ is computed according to the function
+\begin{equation}
 	cost((s,o),t) := taxicab(s,t) + turns((s,o),t)
 \end{equation}
-where $taxicab$ represents the \emph{Manhattan distance}~\cite{Manhattan} between the two rooms and $turns$ is the least number of turns needed by the agent to reach $t$ from $s$.
+where $taxicab$ represents the sum absolute difference of both components (coincides with the \emph{Manhattan distance}~\cite{Manhattan}) between the two rooms and $turns$ is the least number of turns needed by the agent to reach $t$ from $s$.
 This function is used to choose the goal and later as a heuristic to select the next room to reach.
 In Figure~\ref{fig:graph}, a representation of how the computation of $cost$ works is shown.
 
 \paragraph{Goal choice.} The search of a goal is also dictated by the mode of the agent:
 \begin{itemize}
 	\item in the \emph{explore} mode, the goal is chosen among the rooms belonging to the \emph{frontier}, which is the set of safe rooms that are reachable and yet to be explored.
-	\item in the \emph{kill} mode, the goal can be any room that allows the agent to shoot at the Wumpus (or at the possible location of the Wumpus).
+	\item in the \emph{kill} mode, the goal can be any room that allows the agent to shoot at the wumpus (or at the possible location of the wumpus).
 	\item in the \emph{escape} mode, the goal is the initial room.
 \end{itemize}
 Once the candidates have been established, the goal is selected by taking the candidate $g$ that minimises $cost(0,g)$, where $0$ is the actual location (orientation included).
@@ -278,13 +279,8 @@ During the development stage, we deployed some strategies to overcome some troub
 	In this graph, positive and negative dependencies between atoms are visualized.
 	The visual aid became useful in removing redundant portions of code and refactoring the program to get a more coherent flow.
 	\item As a way to make the logic of our agent more understandable to ourselves and to users of the program, we decided to adopt a \emph{literate programming} approach in writing down the ASP code and to employ an alternate syntax, called \emph{ASP Lite}, that helps the reader in understanding the relationships between logic variables in the rules of the program.
-	Then, we built a script to generate a DLV-readable file from it. 
+	Then, we built a script to generate a DLV-readable file from it.
 \end{itemize}
-
-%\begin{sidewaysfigure}[ht]
-%\includegraphics[width=1\textwidth]{dep}
-%\caption[Dependency Graph of the Logic Program]{Dependency Graph of the Logic Program. }
-%\end{sidewaysfigure}
 
 \section{Evaluation}
 
@@ -307,17 +303,17 @@ In Table~\ref{tbl:test}, the composition of the testing suite is outlined.
 	\toprule
 	\multicolumn{1}{c}{$n$} & \multicolumn{1}{c}{$N_n$} & \multicolumn{1}{c}{$\bar{\Delta}$} & \multicolumn{1}{c}{$\sigma(\Delta)$} & \multicolumn{1}{c}{$\bar{t} [s]$}\\
 	\midrule
-	4 & 160	& 419 & 488 & 0.1440 \\
-	5 & 80  & 464 & 493 & 0.2656 \\
-	6 & 80  & 634 & 474 & 0.4600 \\
-	7 & 40  & 630 & 468 & 2.8005 \\
-	8 & 40  & 653 & 471 & 3.8736 \\
-	9 & 20  & 557 & 490 & 4.7723 \\
-	10 & 20 & 714 & 452 & 11.3828 \\
-	11 & 10 & 785 & 414 & 0.1573 \\
-	12 & 10 & 595 & 498 & 0.5594 \\
-	13 & 5  & 383 & 524 & 0.0158 \\
-	14 & 5  & 600 & 506 & 11.8238 \\
+	 4 & 160 & 419 & 488 &  0.1440 \\
+	 5 &  80 & 464 & 493 &  0.2656 \\
+	 6 &  80 & 634 & 474 &  0.4600 \\
+	 7 &  40 & 630 & 468 &  2.8005 \\
+	 8 &  40 & 653 & 471 &  3.8736 \\
+	 9 &  20 & 557 & 490 &  4.7723 \\
+	10 &  20 & 714 & 452 & 11.3828 \\
+	11 &  10 & 785 & 414 &  0.1573 \\
+	12 &  10 & 595 & 498 &  0.5594 \\
+	13 &   5 & 383 & 524 &  0.0158 \\
+	14 &   5 & 600 & 506 & 11.8238 \\
 	\bottomrule\\
 	\end{tabular}
 	\caption{Some aggregated results obtained by assessing Hakuna against our testing suite. Here, $n$ is the size of the world, $N_n$ the number of tested instances, $\Delta$ is the gap between the score of the two agents and $t$ is the execution wall-time. The sample mean and standard deviation of $\Delta$ have been reported.}
@@ -335,9 +331,9 @@ In this setting, the search for the optimal solution can be reduced to the compu
 	\item Each vertex is a location $(x,y,o)$ that one can assume in the world.
 	\item Two locations are linked by an edge if one can be reached by the other.
 	\item The edges are weighted according to the following cost function $c$:
-	$$	
+	$$
 	c((x, y, o), (x', y', o')) :=
-	\begin{cases} 
+	\begin{cases}
 		\infty & (x', y') \text{ is a pit} \\
 		10 & \text{the wumpus is in } (x,y) \text{ and } (x,y) \neq (x',y') \\
 		1 & \text{otherwise}
@@ -358,12 +354,12 @@ From the collected data, the gap between the results scored by the two agents in
 After data collection, we investigated those instances where the the perfect agent outperformed the other, to understand the possible causes and search for plausible improvements.
 What we have found out can be summarised as the following:
 \begin{itemize}
-	\item Hakuna performed similarly to the agent in those instances where the gold was reachable by just exploring the world and in those where killing the Wumpus led to the discovery of a safe path to the gold.
+	\item Hakuna performed similarly to the agent in those instances where the gold was reachable by just exploring the world and in those where killing the y1 led to the discovery of a safe path to the gold.
 	\item On the other hand, Hakuna was outperformed in those instances where the phenomenon of \emph{breeze walls} happened: the location of the breezes brought the agent to infer a disposition of possible pits that blocked its way to the gold, even though there were no pits between it and the reward.
 	\item On instances where gold was unreachable, the agent lost on average a small amount of points before concluding that the search was useless and climbing back to the exit.
 \end{itemize}
 
-With increasing sizes, the gap between the score of the perfect agent and the one obtained by Hakuna tends to increase: this might be caused by the greater amount of rooms that Hakuna has to visit, while it is in \emph{explore} mode. 
+With increasing sizes, the gap between the score of the perfect agent and the one obtained by Hakuna tends to increase: this might be caused by the greater amount of rooms that Hakuna has to visit, while it is in \emph{explore} mode.
 
 During the development stage, the execution time of the agent on each instance has been collected.
 This allowed us to effectively evince that the introduction of the autopilot brought significant time savings in several instances, for example, the ones where most of the time was spent in exploring the world.
@@ -378,16 +374,16 @@ ASP, as a technique, has been chosen because of some of its strength points, nam
 Drawbacks of a pure logic-based solution include the hardness of searching the goal space, which accounts for most of the runtime of the agent.
 The component of Hakuna delegated to search has thus been implemented in Python, employing graph-theory techniques like $A^{\star}$ search.
 In later stages of the development, we managed to improve the performance of our agent by pruning the search space and introducing an autopilot modality.
-This hybrid approach, together with other implementational choices, allowed us to produce an agent that completed the tested instances in a reasonable amount of time, by maximising the score obtainable by avoiding any risk.
+This hybrid approach, together with other engineering choices, allowed us to produce an agent that completed the tested instances in a reasonable amount of time, by maximising the score obtainable by avoiding any risk.
 The empirical evaluation of the agent required the creation of an appropriate testing suite, to take into account the possible aspects of the world and of the agent that could influence the results of each run of the game, and the collection of data that could highlight some relevant problems of the implementation (execution time, non-optimal behaviour).
 
 \paragraph{Future Work} The behaviour of Hakuna --- not taking any risk in the exploration of the world --- is a double-edged sword, since in several instances the unsafety of the rooms separating the agent from the gold is only apparent.
 A possible enhancement that goes beyond the scope of this project would be to incorporate a probabilistic component into the architecture of the agent.
 Such a feature might be implemented into an appropriate structure, for example a Markov chain, that allows the agent to choose to \enquote{risk} in presence of a breeze with probability $1 - p$, where $p = 0.2$ is the probability of a pit being in a room.
-To support the claim that this would bring improvement to the outcoming results, a thorough statistical evaluation would then be needed.
+To support the claim that this would bring improve results, a thorough statistical evaluation would then be needed.
 Room for change can also be found, by considering several variants of \htw, including the following:
 \begin{description}
-	\item[Multiagent.] What if the Wumpus was able to move, or bats where moving in the world?
+	\item[Multiagent.] What if the y1 was able to move, or bats where moving in the world?
 	\item[Topology.] What if the space was shaped in a different way?
 	\item[Continuum.] What if the space was \emph{continuous} and not discrete?
 	\item[Oracle.] What if the agent was given the possibility to know the content of a single room without exploring it?
@@ -398,10 +394,10 @@ All these extensions require a rethinking of the behavioural principles of the a
 
 \newpage
 \newgeometry{
-  left=1cm,  % llncs has 12.2cm
-  right=1cm,
-  top=1cm, % llncs has 19.3cm
-  bottom=2cm,
+	left=1cm,  % llncs has 12.2cm
+	right=1cm,
+	top=1cm, % llncs has 19.3cm
+	bottom=2cm,
 }
 \appendix
 \footnotesize
