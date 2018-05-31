@@ -2,32 +2,32 @@
 
 % A. Objectives
 %    1. You should apply one of the techniques studied in the course to
-%       solve this problem.
-%    2. Devise and perform an empirical evaluation of your system.
-%    3. Report your work.
+%       solve this problem. DONE
+%    2. Devise and perform an empirical evaluation of your system. DONE
+%    3. Report your work. DONE-
 %    4. All your documentation and source code should be available on your GitLab
 %       project repository, as well as tasks and milestones. This will be part of
-%       the evaluation.
+%       the evaluation. DONE-
 %
 % B. Deliverables
-%    1. Progress report (by the end of May) describing
-%     - selected approach and
-%     - general project work plan
-%     - group presentation of the report
+%    1. Progress report (by the end of May) describing DONE?
+%     - selected approach and DONE
+%     - general project work plan DONE
+%     - group presentation of the report DONE?
 %    2. Project report
-%     - description of the problem
-%     - updated material from the progress report
-%     - description of your approach
-%     - description of the software: installation, requirements and usage notes
-%     - empirical evaluation
+%     - description of the problem DONE
+%     - updated material from the progress report DONE?
+%     - description of your approach DONE
+%     - description of the software: installation, requirements and usage notes DONE?
+%     - empirical evaluation DONE
 %    3. Software
-%     - application and required libraries/software
-%     - brief installation notes (README file)
-%    4. Final Presentation
-%     - description of your approach
-%     - strengths and weaknesses
-%     - empirical evaluation
-%     - contribution of team members
+%     - application and required libraries/software DONE
+%     - brief installation notes (README file) DONE?
+%    4. Final Presentation 
+%     - description of your approach DONE
+%     - strengths and weaknesses DONE
+%     - empirical evaluation DONE
+%     - contribution of team members DONE?
 %
 % C. Timeline
 %    1. 2018-05-30 Progress report and presentation
@@ -91,30 +91,33 @@
 \end{abstract}
 
 \section{Problem Statement}
-%TODO Define what \htw is, all its rules and constraints.
-%TODO Mention that it is also an example in the standard textbook AIMA and thus suited as an exercise in logic-based AI.
+%DONE Define what \htw is, all its rules and constraints.
+%DONE Mention that it is also an example in the standard textbook AIMA and thus suited as an exercise in logic-based AI.
 
 \htw is a single player computer game, first released in 1975.
-It is best known as a toy-problem in the field of Artificial Intelligence and has been thoroughly analysed by Russell and Norvig in~\cite{book:aima}, where it has been used to introduce the reader to a logic-based approach to \emph{Knowledge Representation} (KR). 
+It is best known as a toy-problem in the field of Artificial Intelligence and has been thoroughly analysed by Russell and Norvig in~\cite{book:aima}, where it has been used to introduce the reader to a logic-based approach to \emph{Knowledge Representation}.
 
-The game is played in the wumpus world(a cave) which is represented as a grid (default size 4x4) and in this world there are few challenges for the player. Each cell on the grid is a room which is connected by passageways with its orthogonally adjacent cell and in one of these cells there is wumpus, a beast that eats the player if he enters the room. The player has only one arrow, that's one opportunity for shooting the wumpus. In addition, some of the rooms are bottomless pits and if the player wanders in these rooms it will stay trapped. The main goal of the player is while facing these challenges, to find the hidden gold and leave the cave alive. At the beginning of the game, the player is always positioned on cell [1,1], facing to the right and has 0 points. From here it can use three moves : \emph{Forward}, \emph{TurnLeft}, \emph{TurnRight} for discovering its environment and three actions \emph{Shoot}, \emph{Grab} and \emph{Climb} for shooting the arrow, grabbing the gold and climbing out of the cave respectively. For each of the moves and actions the player loses 1 point and 10 points when using the arrow. When eaten by the wumpus or trapped in pit, loses 1000 points, and for climbing out of the cave with the gold gains 1000 points. Whenever the player goes to a new cell, it has five sensors that give information about:
+The game is set in the world of Wumpus, a square, grid-shaped dungeon: each room of the grid is connected by passageways with the orthogonally adjacent rooms.
+The main goal of the player is to find the gold, hidden in one of the rooms, and leave the dungeon alive. 
+In this world there are some challenges for the player.
+In one of these rooms there is Wumpus, a beast that eats the player if he enters the room. The player has only one arrow, that is, one opportunity to kill the Wumpus. In addition, some of the rooms are bottomless pits and if the player wanders in these rooms it will stay trapped. At the beginning of the game, the player is always positioned on room $(1,1)$, facing to the right and has $0$ points. From here it can use three moves : \emph{Forward}, \emph{TurnLeft}, \emph{TurnRight} for discovering its environment and three actions \emph{Shoot}, \emph{Grab} and \emph{Climb} for shooting the arrow, grabbing the gold and climbing out of the cave respectively. For each of the moves and actions the player loses one point and it loses 10 points when using the arrow. When eaten by the Wumpus or trapped in pit, it loses 1000 points, and for climbing out of the cave with the gold it gains 1000 points. Whenever the player goes to a new room, it has five sensors that give information about:
 \begin{description}
-	\item[Stench]{whether the Wumpus is in adjacent cell}
-	\item[Breeze]{whether there is a pit in adjacent cell}
-	\item[Glitter]{when the gold is in the current cell}
+	\item[Stench]{whether the Wumpus is in adjacent room}
+	\item[Breeze]{whether there is a pit in adjacent room}
+	\item[Glitter]{when the gold is in the current room}
 	\item[Bump]{whether the player has hit a border}
 	\item[Scream]{whether the Wumpus is hit by the arrow}
 \end{description}
-The locations of the gold and the wumpus are chosen randomly with uniform distribution in each cell other then the start. Additionally each cell can be a pit with probability 0.2.
+The locations of the gold and the Wumpus are chosen randomly with uniform distribution in each room other then the start. Additionally each room can be a pit with probability 0.2.
 
 In~\cite{book:aima}, the environment which represents the Wumpus World is is described as discrete, static, single-agent and partly-observable. For an agent in such environment the main challenge is its initial ignorance of the configuration of the world and using logical reasoning can be helpful for solving this. 
 
 \section{Approach}
 
 In this section, we describe the ideas and the concepts that underlie our approach to the assigned task.
-In particular, we single out those aspects that are relevant to the understanding of the behaviour that the Hakuna agent shows during a run of the game.
+In particular, we single out those aspects that are relevant to explain the behaviour that the agent shows during the game.
 
-For the purpose of this project, we decided to implement a logic-based agent, that plays \htw employing both Answer Set Programming (ASP, in~\cite{ASPprimer} a detailed introduction is given) and suitable search techniques --- borrowed from graph theory --- to explore the search space and find an optimal strategy to finish the game with the maximum score.
+For the purpose of this project, we decided to implement a logic-based agent, that plays \htw employing both Answer Set Programming (ASP, in~\cite{ASPprimer} a detailed introduction is given) and suitable search techniques , borrowed from graph theory, to explore the search space and devise a strategy to end the game with the maximum possible score.
 
 \subsection{ASP and World Knowledge}
 
@@ -125,7 +128,8 @@ Initially, the agent's \emph{knowledge base} (KB) is populated with basic geomet
 \paragraph{Incomplete knowledge.} One of the challenges of \htw is that a non-omniscient player starts the game with an incomplete knowledge of the world.
 By exploring the dungeon and perceiving what is in each new explored room, an agent can obtain additional insights about the state of the world and reshape its strategy according to it.
 As we want to be able to model non-monotonic reasoning --- if a room, previously thought to contain a pit, turns out to be safe, the agent should be able to infer this --- and to generalise statements by writing non-ground schematas, our system of choice is Answer Set Programming, which allows to model the problem in a logic fashion and achieves non-monotonic reasoning through \emph{closed-world assumption} (CWA).
-% TODO: explicitly refer to SAT and SMT.
+We preferred this formalism over others that have been studied in our course, like propositional SAT or SMT, because of these motivations; moreover, the previous knowledge of the ASP language came into play as a positive factor.
+% DONE? explicitly refer to SAT and SMT.
 In particular, the DLV solver~\cite{DLV-system} has been embedded in the architecture of the agent, to be called at every point in time to infer the additional knowledge obtained by the agent, after grounding its KB.
 This approach allows the agent to correctly derive what is logically right from it's knowledge base. Moreover DLV is able to process incomplete knowledge which the agent has while overcoming its initial ignorance with logical reasoning.
 
@@ -153,15 +157,23 @@ Otherwise, if a \emph{bump} is percepted, it infers the real size of the world a
 In order to simplify the implementation of the agent and the way it choses its next action we introduce four different modes of playing in which the agent can be at any time. This helps to abstract and in different modes enable and disable different possible actions. It also made it easier for developing the code. 
 While playing, our agent can be in exactly one from four available modes.
 
-\paragraph{Explore} The agent is in this mode until it discovers the gold or there are more cells which should be explored. These are cells which are known to be reachable, safe and not yet explored. 
+\paragraph{\enquote{Grab}.} The agent enters the \emph{grab} mode as soon as the \emph{glitter} is perceived. In this mode, the agent grabs the gold.
 
-\paragraph{Grab} Once the agent is in the cell where can perceive glitter, its next action is to grab the gold and in this moment is in mode \emph{grab}. 
+\paragraph{\enquote{Explore}.} The agent is in \emph{explore} mode whenever the position of the gold is unknown and safe rooms that are reachable and have not been explored are in the dungeon.
+In this mode, the agent moves throughout the dungeon, according to a specific search strategy.
 
-\paragraph{Kill} In order for the agent to deduce that is in mode \emph{kill} few conditions need to be satisfied. First it should not be in mode grab or explore and the gold is still not grabbed. Next it should be able to attack the wumpus. A necessary precondition for attacking the wumpus is to deduce that it can try to kill and it should try to do so. Can try to kill the wumpus only if it's on a safe cell, it perceives stench and it's with orientation facing the cell where the wumpus possibly is. 
-Should try to kill can be derived if it's known that it can try to kill the wumpus and none of the preconditions for don't shoot are known to be true. These preconditions for not shooting include: the arrow is not available, the wumpus is in a cell with a pit, the wumpus is already dead and the gold is already grabbed. 
-% TODO: add something about killing to explore.
+\paragraph{\enquote{Kill}.} The agent enters the \emph{kill} mode only if some conditions are met, while in \emph{explore} mode:
+\begin{itemize}
+	\item The agent is unable to continue the exploration --- due to all the safe rooms being explored ---, the location of the Wumpus is known and the gold has not been grabbed: in this situation, killing the Wumpus is a necessary condition to pursue further exploration to find the gold.
+	\item The agent is unable to continue the exploration (as before), the gold has not been grabbed and the location of at least one stench with no possible overlapping pits is known: in this case, the agent can \emph{try} to kill the Wumpus by shooting at an unexplored room near the stench.
+	The agent can either kill the Wumpus or miss it, inferring that the shoot room is safe (and therefore can be explored).
+\end{itemize}
+The shooting happens only in case where it is absolutely necessary.
+If the gold has been grabbed, it would only come at a loss; similarly, if the exploration is only blocked by the presence of possible pits, shooting the arrow would cause an unnecessary loss of points.
 
-\paragraph{Escape} The last available mode is \emph{escape}, in which the agent is if it's not in any of the other three modes. The agent is in this mode after grabbing the gold or after not being able to explore any other cells and leaves the cave empty handed.
+\paragraph{\enquote{Escape}.} The last available mode is \emph{escape}.
+This mode is entered by the agent if the gold has been grabbed or if no further exploration can be done.
+In this case, the agent heads back to the initial position to climb up from the dungeon, to end the game.
 
 \subsection{$A^{\star}$ Search and World Exploration}
 
@@ -189,9 +201,9 @@ If more candidates require the least cost, tie-breaking constraints rule out a u
 	\item If the goal is a neighbouring room, the choice is trivially that room.
 	\item Otherwise, the agent performs an \emph{$A^{\star}$ search} (as first introduced in~\cite{AStar}), where the function that is being minimized is
 	$$
-	f(X,Y) := g(X,Y) + h_G(X,Y).
+	f(X,Y) := h_0(X,Y) + h_G(X,Y).
 	$$
-	Here, $g(X,Y)$ represents the cost required to reach the neighbour $(X,Y)$ from the actual room, while $h_G(X,Y) := h(X,Y,O,X_G,Y_G)$, where $(X_G,Y_G)$ is the location of the goal, $O$ is the orientation that the agent has when reaching $(X,Y)$ from the actual location and $h$ is the function defined in~\ref{eqn:heur}.
+	Here, $(X_0,Y_0)$ is the actual location, $h_0(X,Y) := h(X_0,Y_0,O,X,Y)$ represents the cost required to reach the neighbour $(X,Y)$ from the actual room with the actual orientation $O$, while $h_G(X,Y) := h(X,Y,O,X_G,Y_G)$, where $(X_G,Y_G)$ is the location of the goal and $h$ is the function defined in~\ref{eqn:heur}.
 \end{itemize}
 
 % As a way to exploit the partial knowledge of the world and improve the subsequent planning, the agent builds an internal representation of a reachability graph.
@@ -207,7 +219,7 @@ If more candidates require the least cost, tie-breaking constraints rule out a u
 % First the goal cell is calculated and based on this result, the next cell is decided.  The choice of a goal cell depends on the current mode of the agent. If it's in mode \emph{explore}, goal is a reachable cell which is safe and hasn't been explored yet. If the agent's mode is \emph{kill}, then the goal is a cell which is safe and from which the wumpus can be shot.
 % In our program \(g(n)\) represents the cost of the path from the current cell to the next cell \(n\), and \(h(n)\) represents the heuristic estimated cost of the cheapest path from cell \(n\) to the goal cell. 
 
-%TODO How does our agent explore the world (A*-search)
+%DONE? How does our agent explore the world (A*-search)
 %not sure if here should be explained the purpose of pathTurnCost,
 %departureTurnCost and rotCost or leave that for implementation
 % @filippo-23:20 28/05/2018: I think that details can be left for Implementation, but if they are used to define cost/heuristic, I would briefly mention them here. 
@@ -231,7 +243,7 @@ Such a feature could be exploited to introduce a form of ``don't know'' non-dete
 If not properly handled, though, this might lead to a loss of some desired properties of our agent, for example, the minimization of the costs in the \emph{explore} mode.
 
 \subsection{Taking Risks}
-Equipped with above notion of safety, the agent is able to navigate the network of rooms without failing. However, in some scenarios, this implies that the gold is not found, e.g.\ because it is obstructed by the perception of breezes, even though it could be reached. We generously call the action of going forward into a cell that might contain a pit or the wumpus \emph{taking a risk}. The connection to incomplete knowledge about the game is apparent, i.e.\ in a game with perfect knowledge, there are no risks of this character, since the outcome of every action is certain.
+Equipped with above notion of safety, the agent is able to navigate the network of rooms without failing. However, in some scenarios, this implies that the gold is not found, e.g.\ because it is obstructed by the perception of breezes, even though it could be reached. We generously call the action of going forward into a room that might contain a pit or the wumpus \emph{taking a risk}. The connection to incomplete knowledge about the game is apparent, i.e.\ in a game with perfect knowledge, there are no risks of this character, since the outcome of every action is certain.
 
 In early phases of designing our approach, we also considered how risk taking fits in. We investigated into approaches that may yield a quantification and finally a probabilistic decision procedure for the agent. However our conclusion is that necessary theoretic foundations like Markov processes and Bayesian models (or possibly others, unknown to us) would mean departing from a logic based agent.
 
@@ -244,7 +256,7 @@ In early phases of designing our approach, we also considered how risk taking fi
 %DONE Autopilot (if it works at some point)
 %TODO Refer to usage file for actually running the system.
 %TODO mention WSU.
-%TODO mention ASP-Lite
+%DONE mention ASP-Lite
 
 In this section, we briefly describe how the agent described in the previous section was implemented. Note, however that for the implementation in its full detail we refer to Appendix \ref{hunt-the-wumpus}. Further, for the Python code that hosts the ASP based implementation and usage notes we refer to the project repository.
 
@@ -272,8 +284,22 @@ In order to prevent planning of paths that pass through unsafe rooms, all incomi
 
 % TODO Mentionhow we keep the search space for cost function small
 
-% TODO Mention that we digressed into dependency graphs, alternate syntax
-% TODO Mention bad/1 and why we introduced it instead of looking at an inconsistent program
+\subsection{Auxiliary tools}
+
+During the development stage, we deployed some strategies to overcome some troubles with ASP coding. In particular, we adopted techniques and built tools mentioned in the following list.
+
+\begin{itemize}
+	\item To improve our debugging capabilities, a \emph{bad} predicate, highlighting some logical inconsistencies, has been used.
+	This allowed us to obtain meaningful information about the fallacies in the reasoning of the agent: indeed, DLV is not providing motivations for inconsistencies at runtime and this caused a hard time in solving some important issues with our program.
+	\item To understand the flow of the reasoning process, as well as to pinpoint inconsistency issues within the ASP specification, we built a tool to display the \emph{dependency graph} of the program.
+	In this graph, positive and negative dependencies between atoms are visualized.
+	The visual aid became useful in removing redundant portions of code and refactoring the program to get a more coherent flow.
+	\item As a way to make the logic of our agent more understandable to ourselves and to users of the program, we decided to adopt a \emph{literate programming} approach in writing down the ASP code and to employ an alternate syntax, called \emph{ASP Lite}, that helps the reader in understanding the relationships between logic variables in the rules of the program.
+	Then, we built a script to generate a DLV-readable file from it. 
+\end{itemize}
+
+% DONE Mention that we digressed into dependency graphs, alternate syntax
+% DONE Mention bad/1 and why we introduced it instead of looking at an inconsistent program
 
 %\begin{sidewaysfigure}[ht]
 %\includegraphics[width=1\textwidth]{dep}
@@ -313,7 +339,7 @@ In Table~\ref{tbl:test}, the composition of the testing suite is outlined.
 	\centering
 	\begin{tabular}{rrrrr}
 	\toprule
-	\multicolumn{1}{c}{World size} & \multicolumn{1}{c}{instances} & \multicolumn{1}{c}{avg. gap} & \multicolumn{1}{c}{stddev gap} & \multicolumn{1}{c}{avg. wall-time (s)}\\
+	\multicolumn{1}{c}{$n$} & \multicolumn{1}{c}{$N_n$} & \multicolumn{1}{c}{$\bar{\Delta}$} & \multicolumn{1}{c}{$\sigma(\Delta)$} & \multicolumn{1}{c}{avg. wall-time (s)}\\
 	\midrule
 	4 & 160	& 419 & 488 & 0.1440 \\
 	5 & 80  & 464 & 493 & 0.2656 \\
@@ -328,7 +354,7 @@ In Table~\ref{tbl:test}, the composition of the testing suite is outlined.
 	14 & 5  & 600 & 506 & 11.8238 \\
 	\bottomrule\\
 	\end{tabular}
-	\caption{Some aggregated results obtained by assessing Hakuna against our testing suite.}
+	\caption{Some aggregated results obtained by assessing Hakuna against our testing suite. Here, $n$ is the size of the world, $N_n$ the number of tested instances, $\Delta$ is the gap between the score of the two agents.}
 \end{table}
 
 Each world has been generated by taking into account the rules of \htw: indeed, each instance has a squared shape, it contains only one wumpus, one unit of gold and it may contain several pits, sparse through the dungeon.
@@ -337,7 +363,7 @@ Each world has been generated by taking into account the rules of \htw: indeed, 
 
 In order to assess the performance of our Hakuna agent, we built another agent, whose score has then been referenced in evaluating our results.
 
-The particularity of this other agent is \emph{omnisciency}: indeed, our assumption is that it has complete knowledge of the world, of the exact location of the unsafe cells and of the gold.
+The particularity of this other agent is \emph{omnisciency}: indeed, our assumption is that it has complete knowledge of the world, of the exact location of the unsafe rooms and of the gold.
 In this setting, the search for the optimal solution can be reduced to the computation of the shortest path from the initial point over an \emph{action graph} built in the following way:
 \begin{itemize}
 	\item Each node is a configuration $(X,Y,O)$ that the agent can assume.
@@ -347,7 +373,7 @@ In this setting, the search for the optimal solution can be reduced to the compu
 A shortest path over this graph reflects the shortest path in the dungeon from a configuration to another.
 Here, the cost function is the same that has been previously employed.
 
-Then, the perfect agent behaves as follows: if the gold is unreachable, thus it lies in a pit, it immediately climbs; otherwise, he takes the shortest path to the cell containing the gold, grabs it and comes back to the initial position from the same path, to finally climb.
+Then, the perfect agent behaves as follows: if the gold is unreachable, thus it lies in a pit, it immediately climbs; otherwise, he takes the shortest path to the room containing the gold, grabs it and comes back to the initial position from the same path, to finally climb.
 
 \subsection{Performance assessment}
 
@@ -393,6 +419,8 @@ Room for change can also be found, by considering several variants of \htw, incl
 \end{description}
 All these extensions require a rethinking of the behavioural principles of the agent, in order to accomodate the new elements of the game and try to achieve an optimal result.
 
+\bibliography{ref}
+
 \newpage
 \newgeometry{
   left=1cm,  % llncs has 12.2cm
@@ -406,7 +434,5 @@ All these extensions require a rethinking of the behavioural principles of the a
 \begin{multicols}{2}
 \include{appendix}
 \end{multicols}
-
-\bibliography{ref}
 
 \end{document}
