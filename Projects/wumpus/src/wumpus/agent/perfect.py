@@ -1,12 +1,5 @@
-from functools import reduce
-from itertools import product
-
-import networkx as nx
-
-# The following two imports are only necessary for plotting,
-# if you want them pip install -r plotting-requirements.txt
-#import matplotlib.pyplot as plt
-#from networkx.drawing.nx_agraph import write_dot
+from heapq     import heappush, heappop
+from itertools import count
 
 from ..common    import Action, Location, Orientation
 from ..simulator import World
@@ -17,76 +10,46 @@ class PerfectAgent():
             self.plan = [Action.CLIMB]
             return
 
-        # NOTE: In the following, all code that generates human-readable
-        # labels is commented out to save memory. In case you want to
-        # debug and/or print the graph, you should un-comment these lines.
+        source, target = (Location(1, 1), Orientation.RIGHT), None
+        paths, dist, seen, c = {source: []}, {}, {source: 0}, count()
+        fringe = [(0, next(c), source)]
 
-        r = range(1, world.worldSize + 1)
+        while fringe:
+            (d, _, v) = heappop(fringe)
+            if v in dist:
+                continue
 
-        # We build a graph that respresents reachability (with cost) for all cells.
-        g = nx.DiGraph()
+            dist[v] = d
+            if v[0] == world.gold:
+                target = v
+                break
 
-        # Sheesh, this is in O(n² · 4)!
-        for x, y, o in product(r, r, Orientation):
-            lo = Location(x, y)
-            #la = label=' '.join(map(str,
-            #    (['G'] if lo == world.gold else []) +
-            #    (['W'] if lo == world.wumpus else []) +
-            #    [lo, o]
-            #))
-            #g.add_node((lo, o), location=lo, orientation=o), label=la)
+            l, o = v
+            neighbours = [([a], (l, o.turn(a)), 1) for a in {Action.TURNLEFT, Action.TURNRIGHT}]
 
-            # Case 1: We go in the direction that we are facing (represented by o):
-            a = lo.getAdjacent(o, world.worldSize)
+            adj = l.getAdjacent(o, world.worldSize)
+            if adj != None and adj not in world.pits:
+                shoot = adj == world.wumpus
+                actions = [Action.SHOOT] if shoot else []
+                actions += [Action.GOFORWARD]
+                neighbours.append((actions, (adj, o), 1 if not shoot else 10))
 
-            # Avoid bumping and falling down into a pit.
-            if a != None and a not in world.pits:
-                noWumpusThere = a != world.wumpus
-                g.add_edge(
-                    (lo, o),
-                    (a, o),
-                    cost=1 if noWumpusThere else 10,
-                    action=[Action.GOFORWARD] if noWumpusThere else [Action.SHOOT, Action.GOFORWARD]
-                )#, label=str(cost) + " G " + ("S" if wumpusThere else ""))
+            for actions, u, cost in neighbours:
+                vu_dist = dist[v] + cost
+                # Cut off paths that are too costly.
+                if vu_dist > 500:
+                    continue
+                if u not in seen or vu_dist < seen[u]:
+                    seen[u] = vu_dist
+                    heappush(fringe, (vu_dist, next(c), u))
+                    paths[u] = paths[v] + actions
 
-            # Case 2: We turn ourselves.
-            for action in {Action.TURNLEFT, Action.TURNRIGHT}:
-                # Case 2a: We turn once.
-                oa = o.turn(action)
-                g.add_edge((lo, o), (lo, oa), cost=1, action=[action])#, label="1 " + str(action))
+        # Gold not reachable.
+        if target == None:
+                 self.plan = [Action.CLIMB]
+                 return
 
-                # Case 2b: We turn twice.
-                ob = oa.turn(action)
-                g.add_edge((lo, oa), (lo, ob), cost=1, action=[action])#, label="1 " + str(action))
-
-        # Here is some code to plot the graph for debuging. Use it in
-        # combination with labels.
-        #pos = nx.spring_layout(g, scale=3, k=0.05, iterations=20)
-        #nx.draw_networkx(g, pos=pos, arrows=True, labels=labels)
-        #edge_labels = nx.get_edge_attributes(g, 'label')
-        #nx.draw_networkx_edge_labels(g, pos, edge_labels=edge_labels)
-        #plt.draw()
-        #plt.show()
-        #write_dot(g, 'perfect.gv')
-
-        paths = []
-        for o in Orientation:
-            try:
-                paths += list(nx.all_shortest_paths(g, (Location(1, 1), Orientation.RIGHT), (world.gold, o), weight='cost'))
-            except nx.exception.NetworkXNoPath:
-                # This means that the gold is actually not rechable.
-                self.plan = [Action.CLIMB]
-                return
-
-        # Handy function to compute the cost of a whole path.
-        def costs(path):
-            return reduce(lambda c, e: c + g.get_edge_data(*e)['cost'], zip(path, path[1:]), 0)
-
-        # Handy function to derive a list of actions from a path.
-        def actions(path):
-            return reduce(lambda c, e: c + g.get_edge_data(*e)['action'], zip(path, path[1:]), [])
-
-        goThere = actions(min(map(lambda x: (x, costs(x)), paths), key=lambda x: x[1])[0])
+        goThere = paths[target]
         pickUpThatShiny = [Action.GRAB]
         turnAround = [Action.TURNLEFT, Action.TURNLEFT]
         comeBack = list(map(lambda x: x.mirror(), filter(lambda x: x != Action.SHOOT, goThere[::-1])))
