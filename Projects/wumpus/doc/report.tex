@@ -4,25 +4,25 @@
 %    1. You should apply one of the techniques studied in the course to
 %       solve this problem. DONE
 %    2. Devise and perform an empirical evaluation of your system. DONE
-%    3. Report your work. DONE-
+%    3. Report your work. DONE
 %    4. All your documentation and source code should be available on your GitLab
 %       project repository, as well as tasks and milestones. This will be part of
-%       the evaluation. DONE-
+%       the evaluation. DONE?
 %
 % B. Deliverables
 %    1. Progress report (by the end of May) describing DONE?
 %     - selected approach and DONE
 %     - general project work plan DONE
-%     - group presentation of the report DONE?
+%     - group presentation of the report DONE
 %    2. Project report
 %     - description of the problem DONE
-%     - updated material from the progress report DONE?
+%     - updated material from the progress report DONE
 %     - description of your approach DONE
-%     - description of the software: installation, requirements and usage notes DONE?
+%     - description of the software: installation, requirements and usage notes DONE
 %     - empirical evaluation DONE
 %    3. Software
 %     - application and required libraries/software DONE
-%     - brief installation notes (README file) DONE?
+%     - brief installation notes (README file) DONE
 %    4. Final Presentation 
 %     - description of your approach DONE
 %     - strengths and weaknesses DONE
@@ -97,25 +97,25 @@
 \htw is a single player computer game, first released in 1975.
 It is best known as a toy-problem in the field of Artificial Intelligence and has been thoroughly analysed by Russell and Norvig in~\cite{book:aima}, where it has been used to introduce the reader to a logic-based approach to \emph{Knowledge Representation}.
 
-The game is set in the square, grid-shaped world of the Wumpus: each room of the grid is connected by passageways with the orthogonally adjacent rooms.
+The game is set in the square, grid-shaped world (a cave) of the Wumpus: each room of the grid is connected by passageways with the orthogonally adjacent rooms.
 The main goal of the player is to find the gold, hidden in one of the rooms, and leave the world alive. 
 In this world there are some challenges for the player.
-In one of these rooms there is Wumpus, a beast that eats the player if he enters the room. The player has only one arrow, that is, one opportunity to kill the Wumpus. In addition, some of the rooms are bottomless pits and if the player wanders in these rooms it will stay trapped. At the beginning of the game, the player is always positioned on room $(1,1)$, facing to the right and has $0$ points. From here it can use three moves : \emph{Forward}, \emph{TurnLeft}, \emph{TurnRight} for discovering its environment and three actions \emph{Shoot}, \emph{Grab} and \emph{Climb} for shooting the arrow, grabbing the gold and climbing out of the cave respectively. For each of the moves and actions the player loses one point and it loses 10 points when using the arrow. When eaten by the Wumpus or trapped in pit, it loses 1000 points, and for climbing out of the cave with the gold it gains 1000 points. Whenever the player goes to a new room, it has five sensors that give information about:
+In one of these rooms there is Wumpus, a beast that eats the player if he enters the room. The player has only one arrow, that is, one opportunity to kill the Wumpus. In addition, some of the rooms are bottomless pits and if the player wanders in these rooms it stays trapped. At the beginning of the game, the player is always positioned on room $(1,1)$, facing to the right and has zero points. From here it can use the actions \emph{Forward}, \emph{TurnLeft}, \emph{TurnRight} to discover the surrounding environment and \emph{Shoot}, \emph{Grab} and \emph{Climb} to shoot the arrow, grab the gold and climb out of the cave respectively. For each of the moves and actions the player loses one point and it loses ten points when using the arrow. When eaten by the Wumpus or trapped in pit, it loses 1000 points, and for climbing out of the cave with the gold it gains 1000 points. Whenever the player goes to a new room, it has five sensors that give information about:
 \begin{description}
-	\item[Stench]{whether the Wumpus is in adjacent room}
-	\item[Breeze]{whether there is a pit in adjacent room}
-	\item[Glitter]{when the gold is in the current room}
-	\item[Bump]{whether the player has hit a border}
-	\item[Scream]{whether the Wumpus is hit by the arrow}
+	\item[Stench]{whether the Wumpus is in adjacent room;}
+	\item[Breeze]{whether there is a pit in adjacent room;}
+	\item[Glitter]{when the gold is in the current room;}
+	\item[Bump]{whether the player has hit a border;}
+	\item[Scream]{whether the Wumpus is hit by the arrow.}
 \end{description}
-The locations of the gold and the Wumpus are chosen randomly with uniform distribution in each room other then the start. Additionally each room can be a pit with probability 0.2.
+The locations of the gold and the Wumpus are randomly chosen with uniform distribution in each room other than the start. Additionally each room can be a pit with probability 0.2.
 
-In~\cite{book:aima}, the environment which represents the Wumpus World is is described as discrete, static, single-agent and partly-observable. For an agent in such environment the main challenge is its initial ignorance of the configuration of the world and using logical reasoning can be helpful for solving this. 
+In~\cite{book:aima}, the environment which represents the Wumpus World is described as \emph{discrete}, \emph{static}, \emph{single-agent} and \emph{partly-observable}. For an agent in such environment, its initial ignorance of the configuration of the world constitutes the main challenge, and logical reasoning is helpful to overcome such a restrain. 
 
 \section{Approach}
 
 In this section, we describe the ideas and the concepts that underlie our approach to the assigned task.
-In particular, we single out those aspects that are relevant to explain the behaviour that the agent shows during the game.
+In particular, we single out those aspects that are relevant to explain the behaviour shown by the agent during the game.
 
 For the purpose of this project, we decided to implement a logic-based agent, that plays \htw employing both Answer Set Programming (ASP, in~\cite{ASPprimer} a detailed introduction is given) and suitable search techniques , borrowed from graph theory, to explore the search space and devise a strategy to end the game with the maximum possible score.
 
@@ -135,11 +135,11 @@ This approach allows the agent to correctly derive what is logically right from 
 
 \paragraph{Safety.} As the Hakuna agents tries to maximise its score by minimising its death chances, the need of a concept of \emph{safety} arises.
 Namely, the agent moves towards some room if it is not aware of any danger lying in it (this is an application example of CWA) and marks as certainly \emph{safe} each room that he enters without dying.
-This, together with the other perceived information, allows the agent to ``draw'' an internal representation of the world that will progressively allow it to move further or search for alternative exploratory routes.
+This, together with the other perceived information, allows the agent to ``draw'' an internal representation of the world that progressively allows it to move further or search for alternative exploratory routes.
 
 \paragraph{Size of the world.} The agent proceeds by assuming that the world has a certain size, initially set to $1 \times 1$.
 Every time the agent succeeds to move to a room which coordinates exceed the assumed size of the world, for example $N \times N$, the knowledge base is updated to assume that the world has size $N+1 \times N+1$.
-Otherwise, if a \emph{bump} is percepted, it infers the real size of the world and this will not be modified afterwards.
+Otherwise, if a \emph{bump} is percepted, it infers the real size of the world and this is not modified afterwards.
 
 \paragraph{Unsafety.} The agent's policy for unsafe situations is the following:
 \begin{itemize}
@@ -223,20 +223,23 @@ Such a feature could be exploited to introduce a form of ``don't know'' non-dete
 If not properly handled, though, this might lead to a loss of some desired properties of our agent, for example, the minimization of the costs in the \emph{explore} mode.
 
 \subsection{Taking Risks}
-Equipped with above notion of safety, the agent is able to navigate the network of rooms without failing. However, in some scenarios, this implies that the gold is not found, e.g.\ because it is obstructed by the perception of breezes, even though it could be reached. We generously call the action of going forward into a room that might contain a pit or the wumpus \emph{taking a risk}. The connection to incomplete knowledge about the game is apparent, i.e.\ in a game with perfect knowledge, there are no risks of this character, since the outcome of every action is certain.
+Equipped with the above notion of safety, the agent is able to navigate the network of rooms without failing. However, in some scenarios, this implies that the gold is not found, e.g.\ because it is obstructed by the perception of breezes, even though it could be reached. We generously call the action of entering a room that might contain a pit or the wumpus \emph{taking a risk}. The connection to incomplete knowledge about the game is apparent, i.e.\ in a game with perfect knowledge, there are no risks of this kind, since the outcome of every action is certain.
 
-In early phases of designing our approach, we also considered how risk taking fits in. We investigated into approaches that may yield a quantification and finally a probabilistic decision procedure for the agent. However our conclusion is that necessary theoretic foundations like Markov processes and Bayesian models (or possibly others, unknown to us) would mean departing from a logic based agent.
+In early design phases, we also considered possible ways to fit risk into our solution.
+We investigated into approaches that may yield a quantification and finally a probabilistic decision procedure for the agent.
+However, our conclusion is that the adoption of a probabilistic approach, by using tools like Markov processes and Bayesian models (or possibly others), would mean departing from a logic-based agent.
 
 %To reason about risk taking, we compare the best possible outcome and the worst possible one. For the sake of simplicity we only consider theOf utmost importance for these considerations is how failure of the agent is scored, and how probable that failure is. The world simulator that we worked with defines a probability of 20\% for any room (except the initial room) to contain a pit or the wumpus, and a score of -1000 pts.\ in this case the agent enters such a room.  Intuitively, risk taking should therefore have at least an average utility of 1000 pts.\ in order to break even for growing sample sizes. We argue that reaching this utility is impossible: Given that the agent is able to safely return to its initial position afterwards, the action with the highest utility is grabbing the gold (999 pts., 1000 for leaving the cave with the gold, and -1 pt.\ for grabbing it). Thus, even if the gold happens to be in the same room that the agent enters as it is taking a risk,   Reaching this utility is impossible, since the action with the highest
 
 \section{Implementation}
-%TODO Generate and include the Dependency Graph
 %TODO Refer to usage file for actually running the system.
 %TODO mention WSU.
 
-In this section, we briefly describe how the agent described in the previous section was implemented. Note, however that for the implementation in its full detail we refer to Appendix \ref{hunt-the-wumpus}. Further, for the Python code that hosts the ASP-based implementation and usage notes we refer to the project repository.
+In this section, we briefly describe how the agent previously specified has then been implemented.
+For full details about the implementation, we refer to Appendix \ref{hunt-the-wumpus}.
+Furthermore, for the Python code that hosts the ASP-based implementation and its usage notes, we refer to the project repository.
 
-The Python host keeps state in memory as the game progresses. This includes perceptions for all visited rooms, from which room and in which orientation the agent has shot the arrow (if applicable), whether the wumpus is dead or alive, and whether the agent has ever performed the \emph{grab} action. All this information is considered the \emph{memory} of the agent, and encoded as facts every time the logic program is invoked for the purpose of reasoning about the next action.
+The Python host interacts with the world simulator and keeps the state of the world in memory, as the game progresses. This includes perceptions for all visited rooms, from which room and in which orientation the agent has shot the arrow (if applicable), whether the wumpus is dead or alive, and whether the agent has ever performed the \emph{grab} action. All this information is considered the \emph{memory} of the agent, and encoded as facts every time the logic program is invoked for the purpose of reasoning about the next action.
 
 The execution of the logic program, together with the facts provided by the memory, is delegated to the ASP solver DLV~\cite{DLV-system}.
 The output --- an answer set, containing a unique atom for the predicate \emph{do/1} --- is used to get the next action that the Python host should communicate to the simulator.
@@ -255,7 +258,7 @@ One optimization that was employed to decrease the overall run time of the agent
 
 It is obvious that most of the run time is spent computing a stable model by the ASP solver, since both the world simulator as well as the Python host program do not solve hard computational problems. With this in mind, the motivation to call the ASP solver as rarely as possible is apparent. In particular, since the ASP program is deterministic, the resulting answer sets only change with new input.
 
-Choice of the goal is influenced by past perceptions and the current location and orientation of the agent. However, as long as the goal is not reached, the ASP program will \enquote{steer} towards it: The cost to reach the goal gradually gets smaller, until finally it is reached. As long as no new room is explored, goal selection remains stable.
+Choice of the goal is influenced by past perceptions and the current location and orientation of the agent. However, as long as the goal is not reached, the ASP program \enquote{steers} towards it: The cost to reach the goal gradually gets smaller, until finally it is reached. As long as no new room is explored, goal selection remains stable.
 
 This mechanic is what we exploit with the autopilot. Once a goal is chosen, a path that leads there is planned and forwarded to the world simulator without invoking the solver. This setup requires careful selection rules for the goal and detection of unsafe rooms.
 
@@ -317,7 +320,7 @@ In Table~\ref{tbl:test}, the composition of the testing suite is outlined.
 	14 & 5  & 600 & 506 & 11.8238 \\
 	\bottomrule\\
 	\end{tabular}
-	\caption{Some aggregated results obtained by assessing Hakuna against our testing suite. Here, $n$ is the size of the world, $N_n$ the number of tested instances, $\Delta$ is the gap between the score of the two agents.}
+	\caption{Some aggregated results obtained by assessing Hakuna against our testing suite. Here, $n$ is the size of the world, $N_n$ the number of tested instances, $\Delta$ is the gap between the score of the two agents and $t$ is the execution wall-time. The sample mean and standard deviation of $\Delta$ have been reported.}
 \end{table}
 
 Each world has been generated by taking into account the rules of \htw: indeed, each instance has a squared shape, it contains only one wumpus, one unit of gold and it may contain several pits, sparse through the world.
@@ -342,10 +345,9 @@ In this setting, the search for the optimal solution can be reduced to the compu
 	$$
 
 \end{itemize}
-A shortest path over this graph reflects the shortest path in the world from a configuration to another.
-Here, the cost function is the same that has been previously employed.
+A shortest path over this graph reflects the shortest path in the world from a location to another.
 
-Then, the perfect agent behaves as follows: if the gold is unreachable, thus it lies in a pit, it immediately climbs; otherwise, he takes the shortest path to the room containing the gold, grabs it and comes back to the initial position from the same path, to finally climb.
+Then, the perfect agent behaves as follows: if the gold is unreachable, thus it lies in a pit, it immediately climbs; otherwise, he takes the shortest path to the room containing the gold, grabs it and comes back to the initial position from the same path, to finally climb out.
 
 \subsection{Performance assessment}
 
@@ -365,7 +367,8 @@ With increasing sizes, the gap between the score of the perfect agent and the on
 
 During the development stage, the execution time of the agent on each instance has been collected.
 This allowed us to effectively evince that the introduction of the autopilot brought significant time savings in several instances, for example, the ones where most of the time was spent in exploring the world.
-The collected data are displayed in Table~\ref{tbl:test}. Information about mean execution time for samples drawn for world size greater than 10 might be misleading, because of the small size of the samples.
+The collected data are displayed in Table~\ref{tbl:test}.
+The results concerning the execution time, for $n > 10$, might be misleading, due to the small size of the samples.
 
 \section{Conclusion}
 
@@ -384,12 +387,12 @@ Such a feature might be implemented into an appropriate structure, for example a
 To support the claim that this would bring improvement to the outcoming results, a thorough statistical evaluation would then be needed.
 Room for change can also be found, by considering several variants of \htw, including the following:
 \begin{description}
-	\item[Multiagent] What if the Wumpus was able to move, or bats where moving in the world?
-	\item[Topology] What if the space was shaped in a different way?
-	\item[Continuum] What if the space was \emph{continuous} and not discrete?
-	\item[Oracle] What if the agent was given the possibility to know the content of a single room without exploring it?
+	\item[Multiagent.] What if the Wumpus was able to move, or bats where moving in the world?
+	\item[Topology.] What if the space was shaped in a different way?
+	\item[Continuum.] What if the space was \emph{continuous} and not discrete?
+	\item[Oracle.] What if the agent was given the possibility to know the content of a single room without exploring it?
 \end{description}
-All these extensions require a rethinking of the behavioural principles of the agent, in order to accomodate the new elements of the game and try to achieve an optimal result.
+All these extensions require a rethinking of the behavioural principles of the agent, in order to accomodate the new elements of the game and try to achieve an optimal result in these settings.
 
 \bibliography{ref}
 
