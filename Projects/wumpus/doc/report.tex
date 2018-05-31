@@ -123,14 +123,14 @@ For the purpose of this project, we decided to implement a logic-based agent, th
 
 The environment in which the agent is playing is \emph{discrete} and \emph{static}, since the wumpus, the gold and the pits do not move throughout the world.
 Therefore, the knowledge inferred by the agent at each point in time can be accumulated to circumscribe the search space in further moments in time.
-Initially, the agent's \emph{knowledge base} (KB) is populated with basic geometric knowledge (e.g. relation between directions), what is percepted in its initial position and what are the known world sizes.
+Initially, the agent's \emph{knowledge base} is populated with basic geometric knowledge (e.g. relation between directions), what is percepted in its initial position and what are the known world sizes.
 
 \paragraph{Incomplete knowledge.} One of the challenges of \htw is that a non-omniscient player starts the game with an incomplete knowledge of the world.
 By exploring the world and perceiving what is in each new explored room, an agent can obtain additional insights about the state of the world and reshape its strategy according to it.
 As we want to be able to model non-monotonic reasoning --- if a room, previously thought to contain a pit, turns out to be safe, the agent should be able to infer this --- and to generalise statements by writing non-ground schematas, our system of choice is Answer Set Programming, which allows to model the problem in a logic fashion and achieves non-monotonic reasoning through \emph{closed-world assumption} (CWA).
 We preferred this formalism over others that have been studied in our course, like propositional SAT or SMT, because of these motivations; moreover, the previous knowledge of the ASP language came into play as a positive factor.
 
-In particular, the DLV solver~\cite{DLV-system} has been embedded in the architecture of the agent, to be called at every point in time to infer the additional knowledge obtained by the agent, after grounding its KB.
+In particular, the DLV solver~\cite{DLV-system} has been embedded in the architecture of the agent, to be called at every point in time to infer the additional knowledge obtained by the agent, after grounding its knowledge base.
 This approach allows the agent to correctly derive what is logically right from its knowledge base. Moreover DLV is able to process incomplete knowledge which the agent has while overcoming its initial ignorance with logical reasoning.
 
 \paragraph{Safety.} As the Hakuna agents tries to maximise its score by minimising its death chances, the need of a concept of \emph{safety} arises.
@@ -138,7 +138,7 @@ Namely, the agent moves towards some room if it is not aware of any danger lying
 This, together with the other perceived information, allows the agent to ``draw'' an internal representation of the world that will progressively allow it to move further or search for alternative exploratory routes.
 
 \paragraph{Size of the world.} The agent proceeds by assuming that the world has a certain size, initially set to $1 \times 1$.
-Every time the agent succeeds to move to a room which coordinates exceed the assumed size of the world, for example $N \times N$, the KB is updated to assume that the world has size $N+1 \times N+1$.
+Every time the agent succeeds to move to a room which coordinates exceed the assumed size of the world, for example $N \times N$, the knowledge base is updated to assume that the world has size $N+1 \times N+1$.
 Otherwise, if a \emph{bump} is percepted, it infers the real size of the world and this will not be modified afterwards.
 
 \paragraph{Unsafety.} The agent's policy for unsafe situations is the following:
@@ -147,7 +147,7 @@ Otherwise, if a \emph{bump} is percepted, it infers the real size of the world a
 	\item If the location of two stenches lying on a same axis is known, the wumpus is evinced to lie between them.
 	\item If the location of two stenches lying on a same diagonal is known and one of the common neighbours is known to be safe, the other neighbouring room is inferred to contain the wumpus.
 	\item If a breeze is found, all the unexplored neighbours are marked as rooms possibly containing a pit.
-	\item If a room without breezes is found nearby one marked as a possible pit, the KB is updated to state that such a room is instead not containing any pit. 
+	\item If a room without breezes is found nearby one marked as a possible pit, the knowledge base is updated to state that such a room is instead not containing any pit. 
 \end{itemize}
 
 \subsection{Agent Modes and Strategies}
@@ -230,15 +230,16 @@ In early phases of designing our approach, we also considered how risk taking fi
 %To reason about risk taking, we compare the best possible outcome and the worst possible one. For the sake of simplicity we only consider theOf utmost importance for these considerations is how failure of the agent is scored, and how probable that failure is. The world simulator that we worked with defines a probability of 20\% for any room (except the initial room) to contain a pit or the wumpus, and a score of -1000 pts.\ in this case the agent enters such a room.  Intuitively, risk taking should therefore have at least an average utility of 1000 pts.\ in order to break even for growing sample sizes. We argue that reaching this utility is impossible: Given that the agent is able to safely return to its initial position afterwards, the action with the highest utility is grabbing the gold (999 pts., 1000 for leaving the cave with the gold, and -1 pt.\ for grabbing it). Thus, even if the gold happens to be in the same room that the agent enters as it is taking a risk,   Reaching this utility is impossible, since the action with the highest
 
 \section{Implementation}
-%DONE? Short section where we describe the system, referring to the appendix (see below)
-%TODO as well as that we used DLV.
 %TODO Generate and include the Dependency Graph
 %TODO Refer to usage file for actually running the system.
 %TODO mention WSU.
 
-In this section, we briefly describe how the agent described in the previous section was implemented. Note, however that for the implementation in its full detail we refer to Appendix \ref{hunt-the-wumpus}. Further, for the Python code that hosts the ASP based implementation and usage notes we refer to the project repository.
+In this section, we briefly describe how the agent described in the previous section was implemented. Note, however that for the implementation in its full detail we refer to Appendix \ref{hunt-the-wumpus}. Further, for the Python code that hosts the ASP-based implementation and usage notes we refer to the project repository.
 
 The Python host keeps state in memory as the game progresses. This includes perceptions for all visited rooms, from which room and in which orientation the agent has shot the arrow (if applicable), whether the wumpus is dead or alive, and whether the agent has ever performed the \emph{grab} action. All this information is considered the \emph{memory} of the agent, and encoded as facts every time the logic program is invoked for the purpose of reasoning about the next action.
+
+The execution of the logic program, together with the facts provided by the memory, is delegated to the ASP solver DLV~\cite{DLV-system}.
+The output --- an answer set, containing a unique atom for the predicate \emph{do/1} --- is used to get the next action that the Python host should communicate to the simulator.
 
 \begin{figure}
 \begin{center}
@@ -276,18 +277,6 @@ During the development stage, we deployed some strategies to overcome some troub
 	\item As a way to make the logic of our agent more understandable to ourselves and to users of the program, we decided to adopt a \emph{literate programming} approach in writing down the ASP code and to employ an alternate syntax, called \emph{ASP Lite}, that helps the reader in understanding the relationships between logic variables in the rules of the program.
 	Then, we built a script to generate a DLV-readable file from it. 
 \end{itemize}
-
-% An enhancement that has been found to effectively impact the execution time of the agent is the introduction of an \emph{autopilot}.
-% The autopilot is activated when the following requirements are met:
-% \begin{itemize}
-% 	\item The agent is either in \emph{explore} or \emph{escape} mode;
-% 	\item No priorities are in place, that is, the agent is not trying to grab, shoot, aim or climb.
-% \end{itemize}
-% Given these conditions, the Python agent host takes control, performs an $A^{\star}$ search over the graph to find the best path to reach the next goal, by assigning an additional cost of $1$ to those rooms that are yet unknown to be safe.
-% Then, the game will be executed without calling the ASP solver, as long as the selected goal has not been reached.
-% Once the goal room has been reached, the Python host calls again the ASP solver, to infer the next move.
-
-% This approach brings a relevant decrease in the execution time: indeed, every time the autopilot is activated, the execution cost required by the calls to DLV is saved.
 
 %\begin{sidewaysfigure}[ht]
 %\includegraphics[width=1\textwidth]{dep}
