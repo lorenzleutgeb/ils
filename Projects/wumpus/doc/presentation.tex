@@ -1,4 +1,4 @@
-\documentclass[smaller,dvipsnames,ratio=169]{beamer}
+\documentclass[smaller,dvipsnames,ratio=169,10pt]{beamer}
 
 \usetheme[numbering=fraction,%
           block=fill,%
@@ -14,13 +14,12 @@
 \usepackage{amssymb}
 \usepackage{listings}
 \usepackage{todonotes}
+\usepackage{csquotes}
 
 \usepackage{tikz,comment}
 \usetikzlibrary{shapes.multipart,shapes.geometric,positioning,backgrounds,fit,calc,arrows.meta}
 
-
-
-\newcommand{\htw}{\emph{Hunt the Wumpus }}
+\newcommand{\htw}{\emph{Hunt the Wumpus}\xspace}
 
 \title{Hakuna Matata: A Logic-Based Agent for the \htw Game}
 \subtitle{Team White}
@@ -36,98 +35,88 @@
     \tableofcontents
   \end{frame}
 
-  \section{Introduction}
-
   \begin{frame}{Task}
     \begin{enumerate}
-      \item Develop an intelligent agent that plays the game \htw.
-      \item Implement a strategy to complete the knowledge about the state of the world and to be able to reason with respect to it. 
-      \item Find an optimal strategy, i.e.\ maximize score.
+      \item Develop a logic-based intelligent \alert{agent} that plays the game {\htw}.
+      \item The game poses challenges of reasoning with \alert{incomplete information}.
+      \item By the nature of the game, the agent must \alert{draw inferences} about the world.
+      \item The implemented strategy should \alert{maximize} the achieved \alert{score}.
     \end{enumerate}
   \end{frame}
-%not sure if a slide with explanation of the game is needed
+  
+% Explicit explanation of the game is not needed, since the audience is limited and very
+% aware of the rules of the game.
 
-  \begin{frame}{Tools of the Trade}
-  \begin{enumerate}
-    %\item Pragmatic choices to avoid any confusions
-    %\item Keeping it DRY (Don't Repeat Yourself)
-    %\item Avoid reinvention
-    \item Simulator rewritten in Python 3.6 (removes C dependency)
-  \end{enumerate}
-
-  \begin{center}
-  \begin{tabular}{lll}
-    \textbf{Tool/Library} & \textbf{Version} & \textbf{Purpose} \\
-    Python & 3.6 & Runtime \\
-    DLV & Dec 2012 & ASP solver \\
-    NetworkX & 2.1 & Graph algorithms \\
-  \end{tabular}
-  \end{center}
-  \end{frame}
-
-  \section{Ideas and used concepts}
-	 \begin{frame}{World Knowledge}
-	
+  \section{Approach}
+	 \begin{frame}{Knowledge About the World}
 	  \begin{itemize}
-		\item Static, partly-observable environment.
-		\item Incomplete initial knowledge.
+		\item Static, partly-observable.
+		\item Initially incomplete, and in many cases always incomplete!
 		\item Safety first!
-		\item The agent discovers size of the world when it bumps. 
-		\item Unsafe rooms and how to reason to avoid them. 
+		\item Size of the grid also must be inferred by bumping. 
+		\item Safety of rooms is governed by a handful rules.
 	  \end{itemize}
 	 \end{frame}
 
- \begin{frame}{Why ASP and DLV?}
+ \begin{frame}{Answer Set Programming}
 	\begin{itemize}
-		\item Previous experience with ASP.
+		\item Previous experience!
 		\item Allows to model non-monotonic reasoning through CWA. 
-		\item Combines a high-level
-		logic with grounding and solving. 
-		\item ASP allows processing of incomplete knowledge. 
-		\item At each time step, DLV called after perception has been caught.
-		
+		\item Combines a high-level logic with grounding and solving.
+		\item Suitable for processing of incomplete knowledge. 
+		\item At each time step, formalize perceptions and knowledge, model of a logic program should yield the next action.
 	\end{itemize}
  \end{frame}
 
-  \begin{frame}{$A^{\star}$ Search and World Exploration}
+  \begin{frame}{World Exploration}  
 	 \begin{itemize}
-	 	\item Build a reachability graph such that:
-		 	\begin{itemize}
-				 \item Vertices are all the safe and reachable rooms that still haven't been explored.
-				 \item Edges are the connections between these rooms.
-		    \end{itemize}
-	    \item Calculate the weights using the cost function: 
-	    $$
-	    	g(C,C^\prime) := M((X,Y),(X^\prime,Y^\prime)) + R((X,Y),O,(X^\prime,Y^\prime))
-	    $$
-	    \item Compute the minimal cost of reaching the target room using \emph{$A^{\star}$ search} : 
-	    \(f(n) = g(n) + h(n)\)
-	    \item Deciding a goal room depending on the current mode of the agent.
-	    \item Choosing next room depending on the goal.
-		 
+	 	\item Two rooms $a, b$ are \alert{adjacent} if $b$ can be entered from a by \emph{goforward}.
+	 	\item \alert{Reachable} are those rooms that are (a) explored, \alert{or} (b) adjacent to an explored room.
+	 	\item Unsafety of rooms is inferred from perceptions, and any room that is not unsafe is \alert{safe}.
+	 	\item Candidates for exploration are (a) reachable, \alert{and} (b) safe.
 	 \end{itemize}
+	 
+	 But, \ldots\ which candidate is the best, i.e.\ the \alert{goal}?
+  \end{frame}
+  
+  \begin{frame}[allowframebreaks]{A\textsuperscript{$\star$} Search}
+	\small{Optimistically estimate number of actions \enquote{between} two rooms:}
+	$$\mathsf{cost}\big((s, o), t\big) := \mathsf{taxicab}(s,t) + \mathsf{turns}\big((s, o), t\big)$$ 	    %where $(x, y, o) \in [1;n]^2 \times \{ u, d, l, r\}$ and $t \in [1;n]^2$.
+    \begin{center}\vspace{-5mm}\resizebox{0.7\textheight}{0.7\textheight}{\input{graph}}\vspace{-10mm}\end{center}
+	\framebreak
+	Given $$\mathsf{cost}\big((s, o), t\big) := \mathsf{taxicab}(s,t) + \mathsf{turns}\big((s, o), t\big)$$\vspace{-5mm}\begin{enumerate}
+	    \item Let 0 denote the current location and orientation of the agent.
+		\item Choose a \alert{goal} room $g$ s.t.\ $\mathsf{cost}(0, g)$ is minimal.
+	    \item Choose the \alert{next} room $n$ s.t.\ $f(n)$ is minimal (A\textsuperscript{$\star$} search): 
+	    $$f(n) = f_1(n) + f_2(n)$$ \vspace{-2mm} where
+	    \begin{itemize}
+	    	\item $f_1(n) := \mathsf{cost}(0, n)$
+	    	\item $f_2(n) := \mathsf{cost}((n, o_n), g)$
+	    	\item $o_n$ is the orientation the agent would have moving from 0 to $n$.
+	    \end{itemize}
+	    \item Select an action that will move the agent from 0 closer to $n$.
+	\end{enumerate}
   \end{frame}
 
-\begin{frame}{Visualization of a Cost Graph}
-	\begin{center}
-		\resizebox{8cm}{8cm}{
-		\input{graph} }
-	\end{center}
-\end{frame}
-
-
-  \begin{frame}{Different Modes}
-   \begin{enumerate}
-   	\item Explore - until the gold is discovered or there are more unexplored rooms 
-   	\item Grab - when glitter is perceived
-   	\item Kill - not in any other mode and the gold is still up for grabs
+  \begin{frame}[allowframebreaks]{Modes}
+  \begin{center}
+  {\large
+   OK, exploration is solved, but how to orchestrate all other actions?\\[2cm]
+   Introduce \emph{modes} to have better control over the high-level phases of the game!}
+   \end{center}
+   \framebreak
+   \begin{description}
+   	\item[Explore]{as long as there are rooms to \alert{explore} and the gold as not been \alert{grabbed}.}
+   	\item[Grab]{when \alert{glitter} is perceived.}
+   	\item[Kill]{if there are no rooms to \alert{explore}, the gold has not been \alert{grabbed}, and the \alert{arrow} is available, consider: Is the location of the \alert{wumpus} known?
 		   	\begin{itemize}
-		   		\item can try to kill the wumpus?
-		   		\item should it try to kill the wumpus?
-		   		\item can it shoot?
+		   		\item Yes. Kill it.
+		   		\item No. Attempt to kill it if its location can be inferred from the shot.
 		   	\end{itemize}
-   	\item Escape - not in any other mode.
-   \end{enumerate}
+		   	$\rightarrow$ Let \alert{goal} $:=$ room to shoot from.
+    }
+   	\item[Escape]{if no other mode is applicable.\newline $\rightarrow$ Let \alert{goal} $:=$ initial room.}
+   \end{description}
   \end{frame}
 
 \iffalse
@@ -148,51 +137,83 @@
   \end{frame}
 \fi
   \section{Implementation}
+  
+
+  \begin{frame}{Tools of the Trade}
+  \emph{Wumpus World Simulator}\footnote{\url{http://www.eecs.wsu.edu/~holder/courses/AI/wumpus/}} translated to Python (C++ optional).
+
+  \begin{center}
+  \begin{tabular}{llll}
+    \textbf{Tool} & \textbf{Version} & \textbf{Category} & \textbf{Component} \\
+    Python & 3.6 & Runtime & Host, Simulator \\
+    DLV & 2012-12 & ASP System & Agent\\
+    NetworkX & 2.1 & Graph Algorithms & Autopilot\\
+  \end{tabular}
+  \end{center}
+  \end{frame}  
+  
 	%something more here maybe? it's a section with one slide (diagram)
-  \begin{frame}{Architecture of the implementation}
-  	\begin{figure}\centering
-  		\include{architecture}
-  		\caption{Architecture }
-  	\end{figure}	
+  \begin{frame}{Architecture of the Implementation}
+		\resizebox{1.0\textwidth}{0.55\textheight}{
+			\input{architecture}
+		}
   \end{frame}
 
   \begin{frame}{Autopilot}
   	\begin{itemize}
-  		\item Careful selected rules for the goal and detection of unsafe rooms.
-  		\item Prevent planning of paths that pass thorough unsafe rooms.		  		
-		\item Decreases the overall run time of the agent.
-
+  		\item Reasoning takes the most time.
+  		\item Goal room remains stable until it is reached.
+  		\item Allow agent to signal activation of autopilot.
+  		\item Method: \begin{enumerate}
+  		\item Pass safety of rooms to the host.
+  		\item Construct graph that reflects the cost function.
+  		\item Run BFS to plan a path.
+  		\item Execute that path and \enquote{wake up} the agent once arrived.
+  		\end{enumerate}
+  		\item Prevent planning of paths that pass through unsafe rooms.		  		
+		\item Decreases the overall run-time of the agent!
   	\end{itemize}
-  	
   \end{frame}
-
+  
+  \section{Demonstration}
+  
+	\begin{frame}[standout]
+	\end{frame}
 
   \section{Evaluation}
   
-  \begin{frame}{Perfect Agent}
-    
+  \begin{frame}[allowframebreaks]{Perfect Agent}
     \begin{itemize}
-      \item Omniscience, i.e. complete knowledge of the world. 
-      \item Optimal solution as shortest path over the action graph:
+      \item Has complete knowledge of the world.
+      \item Let $s$ be the initial location and $w$, $t$ the location of wumpus and gold, and $P$ be the set of locations of the pits.
+      \item Let $A = \{ turnleft, turnright, goforward, shoot \}$.
+      \item Build action graph $G = (V, E, c : E \rightarrow \mathbb{N}_{\infty}, l : E \rightarrow A^+)$:
       \begin{itemize}
-      	\item Nodes - room with orientation (X,Y,O)
-      	\item Edges - connections between neighboring rooms
-      	\item Weight = 1 - if the target is not in the same room where the Wumpus is 
-      	\item Weight = 10 - otherwise
+      	\item $V := \big\{ (x, y, o) \mid 1 \leq x, y \leq n, \: o \in \{ u, d, l, r\} \big\}$
+      	\item $E$ according to horizontal/vertical reachability (as before).
+      	\item $c{\big(}(x, y, o), (x', y', o'){\big)} := \begin{cases} \infty & (x', y') \in P \\ 10 & (x,y) = w \text{ and } (x,y) \neq (x',y') \\ 1 & \text{otherwise} \end{cases}$
+      	\item For each $e \in E$ introduce a label $l(e)$ as a sequence of actions.
       \end{itemize}
-	  \item If the gold is unreachable, climbs out immediately.
-      \item Score of this agent taken as reference for a dungeon.
+
+	  \framebreak      
+      
+      \item Search for shortest path of cost less than 500 from $s$ to $t$.
+      \item Does such a path exist? \begin{description}
+      	\item[Yes]{Reconstruct and apply actions from $l$, pick up the gold, apply the actions in reverse (minus shooting the arrow), climb.}
+      	\item[No]{Climb immediately.}
+      \end{description}
+      \item Much easier to implement and faster to compute!
+      \item Score of this agent as reference for a world.
     \end{itemize}
   \end{frame}
 
 
-  \begin{frame}{The Test Suite and Results}
-    \begin{table}[t]
-      	\label{tbl:test}
-      	\centering
+  \begin{frame}[allowframebreaks]{Evaluation}
+  	Logic-based agent vs.\ perfect agent scores:
+  	\begin{center}
       	\begin{tabular}{rrrrr}
       		\toprule
-      		\multicolumn{1}{c}{World size} & \multicolumn{1}{c}{instances} & \multicolumn{1}{c}{avg. gap} & \multicolumn{1}{c}{stddev gap} & \multicolumn{1}{c}{avg. wall-time (s)}\\
+      		\multicolumn{1}{c}{$n$} & \multicolumn{1}{c}{$N_n$} & \multicolumn{1}{c}{$\bar{\Delta}$} & \multicolumn{1}{c}{$\sigma(\Delta)$} & \multicolumn{1}{c}{$\bar{t} \: [s]$}\\
       		\midrule
       		4 & 160	& 419 & 488 & 0.1440 \\
       		5 & 80  & 464 & 493 & 0.2656 \\
@@ -207,32 +228,26 @@
       		14 & 5  & 600 & 506 & 11.8238 \\
       		\bottomrule\\
       	\end{tabular}
-      	\caption{Some aggregated results obtained by assessing Hakuna against our testing suite.}
-      \end{table}
-   \end{frame}
-
-	\begin{frame}{Performance Assessment}
-		\begin{itemize}
-			\item Performance of the agent compared against the perfect agent.
-			\item Reasons for Hakuna's under-performing: 
-			\begin{itemize}
-				\item Possible pits blocking its way to the gold.
-				\item Checks all possible rooms before giving up when the gold is unreachable.
-			
-			\end{itemize}
-		\end{itemize}
+	\end{center}      
+      
+      \framebreak
+      
+      Reasons for $\Delta$: 
+      \begin{itemize}
+        \item Incomplete information!
+        \item Possible pits blocking all paths to the gold.
+        \item Explores all safely reachable rooms before inferring that the gold is unreachable.
+      \end{itemize}
 	\end{frame}
-
-	
 
   \section{Conclusion}
 
   \begin{frame}{Conclusion}
   	\begin{itemize}
-  		\item Developed an intelligent agent that plays the \htw game. 
-  		\item Developed an additional agent - for evaluation of performance.
-  		\item  Additionally, an autopilot was employed for improving the overall time and score of the agent. 
-  		\item Successfully carried out an empirical evaluation. 
+  		\item Developed an intelligent, logic-based agent that plays the \htw game. 
+  		\item Developed an additional agent for evaluation of performance.
+  		\item  Additionally, an autopilot component improves the overall run-time of the agent. 
+  		\item Successfully carried out a	n empirical evaluation. 
   	\end{itemize}
     
   \end{frame}
@@ -241,18 +256,18 @@
   
   	\begin{itemize}
 	  	 \item Use probability when calculating the next move.
-		 \item Variants of the \htw
-  	  \begin{itemize}
-  		\item \textbf{Multiagent} What if the Wumpus was able to move, or bats where moving in the dungeon?
-	  	\item \textbf{Topology} What if the space was shaped in a different way?
-	  	\item \textbf{Continuum} What if the space was \emph{continuous} and not discrete?
-	  	\item \textbf{Oracle} What if the agent was given the possibility to know the content of a single room without exploring it?
-  	  \end{itemize}
+		 \item Variants of \htw
+  	  \begin{description}
+  		\item[Multiagent]{What if the Wumpus was able to move, or bats where moving in the world?}
+	  	\item[Topology]{What if the space was shaped in a different way?}
+	  	\item[Continuum]{What if the space was \emph{continuous} and not discrete?}
+	  	\item[Oracle]{What if the agent was given the possibility to know the content of a single room without exploring it?}
+  	  \end{description}
   	\end{itemize}
   \end{frame}
 
   \begin{frame}[standout]
-    Thank you!
+    Thank you! Questions?
   \end{frame}
 
 \end{document}
