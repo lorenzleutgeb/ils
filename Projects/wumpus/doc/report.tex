@@ -165,19 +165,47 @@ Should try to kill can be derived if it's known that it can try to kill the wump
 
 \subsection{$A^{\star}$ Search and World Exploration}
 
-As a way to exploit the partial knowledge of the world and improve the subsequent planning, the agent builds an internal representation of a reachability graph.
-The vertexes of such a graph represent those configuration lying in the \emph{frontier} of the agent, that is, safe and reachable rooms that are yet to be explored.
-The edges of the graph represent the reachability of a configuration from another.
-The edges are weighted according to the following cost function: given the actual configuration $C = (X,Y,O)$ and a target configuration $C^\prime = (X^\prime,Y^\prime,O^\prime)$,
-$$
-	g(C,C^\prime) := M((X,Y),(X^\prime,Y^\prime)) + R((X,Y),O,(X^\prime,Y^\prime))
-$$
+The exploration phase is carried out in two steps: first, a \emph{goal} (here, the goal is a room) is selected; then, by using the goal as a reference, the \emph{next} room to explore is chosen.
+
+\paragraph{Cost function.} The cost of moving from the room $(X,Y)$ with orientation $O$ to the room $(X^\prime,Y^\prime)$ is computed according to the function 
+\begin{equation}	
+	h((X,Y),O,(X^\prime,Y^\prime)) := M((X,Y),(X^\prime,Y^\prime)) + R((X,Y),O,(X^\prime,Y^\prime))\label{eqn:heur}
+\end{equation}
 where $M$ represents the \emph{Manhattan distance}~\cite{Manhattan} between the two rooms and $R$ is the least number of turns needed by the agent to reach $(X^\prime,Y^\prime)$ from $(X,Y)$.
+This function is used to choose the goal and later as a heuristic to select the next room to reach.
+In Figure~\ref{fig:graph}, a partial representation of the \emph{reachability graph} used by the agent is shown.
+
+\paragraph{Goal choice.} The search of a goal is also dictated by the mode of the agent:
+\begin{itemize}
+	\item in the \emph{explore} mode, the goal is chosen among the rooms belonging to the \emph{frontier}, which is the set of safe rooms that are reachable and yet to be explored.
+	\item in the \emph{kill} mode, the goal can be any room that allows the agent to shoot at the Wumpus (or at the possible location of the Wumpus).
+	\item in the \emph{escape} mode, the goal is the initial room.
+\end{itemize}
+Once the candidates have been established, the goal is selected by taking the candidate that requires the least cost to be reached.
+If more candidates require the least cost, tie-breaking constraints rule out a unique choice, according to a lexicographic ordering over $(X,Y,O)$.
+
+\paragraph{Next choice.} Once the goal has been selected, the next room to reach is chosen by using the following criteria:
+\begin{itemize}
+	\item If the goal is a neighbouring room, the choice is trivially that room.
+	\item Otherwise, the agent performs an \emph{$A^{\star}$ search} (as first introduced in~\cite{AStar}), where the function that is being minimized is
+	$$
+	f(X,Y) := g(X,Y) + h_G(X,Y).
+	$$
+	Here, $g(X,Y)$ represents the cost required to reach the neighbour $(X,Y)$ from the actual room, while $h_G(X,Y) := h(X,Y,O,X_G,Y_G)$, where $(X_G,Y_G)$ is the location of the goal, $O$ is the orientation that the agent has when reaching $(X,Y)$ from the actual location and $h$ is the function defined in~\ref{eqn:heur}.
+\end{itemize}
+
+% As a way to exploit the partial knowledge of the world and improve the subsequent planning, the agent builds an internal representation of a reachability graph.
+% The vertexes of such a graph represent those rooms lying in the \emph{frontier} of the agent, that is, safe and reachable rooms that are yet to be explored; the edges represent direct connections between rooms.
+% The edges are weighted according to the following cost function: given the actual configuration $C = (X,Y,O)$ and a target configuration $C^\prime = (X^\prime,Y^\prime,O^\prime)$,
+% $$
+% 	g(C,C^\prime) := M((X,Y),(X^\prime,Y^\prime)) + R((X,Y),O,(X^\prime,Y^\prime))
+% $$
+% where $M$ represents the \emph{Manhattan distance}~\cite{Manhattan} between the two rooms and $R$ is the least number of turns needed by the agent to reach $(X^\prime,Y^\prime)$ from $(X,Y)$.
 % For better exploration of the world, we build a graph that represents reachability (with cost) for all cells. Then we use \emph{Manhattan distance}~\cite{Manhattan} as a cost function for calculating the cost for moving from a cell to a cell. We also consider the rotation cost  when the agent reasons about the number of moves it needs to make in order to move from a cell to another cell. To calculate this cost, first the cost of all turns on the way from current cell to a destination cell is calculated and to this is added the cost of departing the current cell (whether the agent needs to turn before leaving).
-To compute the minimal cost needed to reach the target room the agent performs an \emph{$A^{\star}$ search} (as first introduced in~\cite{AStar}).%s : \(f(n) = g(n) + h(n)\). \
-In order to efficiently use this algorithm next and goal cell must be known. 
-First the goal cell is calculated and based on this result, the next cell is decided.  The choice of a goal cell depends on the current mode of the agent. If it's in mode \emph{explore}, goal is a reachable cell which is safe and hasn't been explored yet. If the agent's mode is \emph{kill}, then the goal is a cell which is safe and from which the wumpus can be shot.
-In our program \(g(n)\) represents the cost of the path from the current cell to the next cell \(n\), and \(h(n)\) represents the heuristic estimated cost of the cheapest path from cell \(n\) to the goal cell. 
+% To compute the minimal cost needed to reach the target room the agent performs an .%s : \(f(n) = g(n) + h(n)\). \
+% In order to efficiently use this algorithm next and goal cell must be known. 
+% First the goal cell is calculated and based on this result, the next cell is decided.  The choice of a goal cell depends on the current mode of the agent. If it's in mode \emph{explore}, goal is a reachable cell which is safe and hasn't been explored yet. If the agent's mode is \emph{kill}, then the goal is a cell which is safe and from which the wumpus can be shot.
+% In our program \(g(n)\) represents the cost of the path from the current cell to the next cell \(n\), and \(h(n)\) represents the heuristic estimated cost of the cheapest path from cell \(n\) to the goal cell. 
 
 %TODO How does our agent explore the world (A*-search)
 %not sure if here should be explained the purpose of pathTurnCost,
@@ -210,10 +238,10 @@ In early phases of designing our approach, we also considered how risk taking fi
 %To reason about risk taking, we compare the best possible outcome and the worst possible one. For the sake of simplicity we only consider theOf utmost importance for these considerations is how failure of the agent is scored, and how probable that failure is. The world simulator that we worked with defines a probability of 20\% for any room (except the initial room) to contain a pit or the wumpus, and a score of -1000 pts.\ in this case the agent enters such a room.  Intuitively, risk taking should therefore have at least an average utility of 1000 pts.\ in order to break even for growing sample sizes. We argue that reaching this utility is impossible: Given that the agent is able to safely return to its initial position afterwards, the action with the highest utility is grabbing the gold (999 pts., 1000 for leaving the cave with the gold, and -1 pt.\ for grabbing it). Thus, even if the gold happens to be in the same room that the agent enters as it is taking a risk,   Reaching this utility is impossible, since the action with the highest
 
 \section{Implementation}
-%TODO Short section where we describe the system, referring to the appendix (see below)
+%DONE? Short section where we describe the system, referring to the appendix (see below)
 %TODO as well as that we used DLV.
 %TODO Generate and include the Dependency Graph
-%TODO Autopilot (if it works at some point)
+%DONE Autopilot (if it works at some point)
 %TODO Refer to usage file for actually running the system.
 %TODO mention WSU.
 %TODO mention ASP-Lite
