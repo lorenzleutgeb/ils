@@ -7,59 +7,9 @@ from time    import time
 
 import logging
 
-from wumpus.common import *
-from wumpus.simulator import World
-from wumpus.agent import *
-
-def main():
-    worldSize = 4
-    seedV = None
-    worldFile = None
-    agentName = 'proxy'
-    generationMode = False
-    base = None
-    bench = None
-
-    for arg, val in zip(argv[1:], argv[2:]):
-        if arg == "-size":
-            worldSize = max(2, int(val))
-        elif arg == "-seed":
-            seedV = bytes.fromhex(val)
-        elif arg == "-world":
-            worldFile = val
-        elif arg == "-agent":
-            agentName = val
-        elif arg == '-generate':
-            base = val
-        elif arg == '-benchmark':
-            bench = val
-
-    if seedV != None:
-        seed(seedV)
-    else:
-        seedV = urandom(4)
-        seed(seedV)
-
-    seedV = seedV.hex()
-
-    if bench != None:
-        benchmark(bench, agentName)
-    elif base != None:
-        generate(worldSize, seedV, base)
-    else:
-        logging.basicConfig(level=logging.DEBUG, format='')
-
-        world = None
-        if worldFile != None:
-            world = World.readFrom(worldFile)
-        else:
-            print("World " + seedV)
-            world = World(worldSize)
-
-        play(
-            world,
-            agentName
-        )
+from ..common import *
+from ..simulator import World
+from ..agent import *
 
 def generate(worldSize, seedV, base):
     fname = join(base, 'world-{}-{}.txt'.format(worldSize, seedV))
@@ -113,5 +63,51 @@ def benchmark(bglob, agentName):
         elapsed = '{:7.4f}'.format(end - start)
         print('\t'.join([instance, numPits, optimum, result, elapsed]))
 
-if __name__ == "__main__":
-    main()
+worldSize = 4
+seedV = None
+worldFile = None
+agentName = 'proxy'
+generationMode = False
+base = None
+bench = None
+
+for arg, val in zip(argv[1:], argv[2:]):
+    if arg == "-size":
+        worldSize = max(2, int(val))
+    elif arg == "-seed":
+        seedV = bytes.fromhex(val)
+    elif arg == "-world":
+        worldFile = val
+    elif arg == "-agent":
+        agentName = val
+    elif arg == '-generate':
+        base = val
+    elif arg == '-benchmark':
+        bench = val
+
+if seedV != None:
+    seed(seedV)
+else:
+    seedV = urandom(4)
+    seed(seedV)
+
+seedV = seedV.hex()
+
+if bench != None:
+    benchmark(bench, agentName)
+elif base != None:
+    generate(worldSize, seedV, base)
+else:
+    logging.basicConfig(level=logging.DEBUG, format='')
+
+    world = None
+    if worldFile != None:
+        world = World.readFrom(worldFile)
+    else:
+        print("World " + seedV)
+        world = World(worldSize)
+
+    play(
+        world,
+        agentName
+    )

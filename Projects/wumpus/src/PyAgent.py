@@ -1,5 +1,5 @@
-from wumpus.agent  import ASPAgent
-from wumpus.common import Percept
+from hakuna_matata.agent  import ASPAgent
+from hakuna_matata.common import Percept
 
 agent = None
 
