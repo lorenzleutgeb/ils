@@ -86,11 +86,9 @@
 \thispagestyle{plain}
 
 \begin{abstract}
-  The assigned task is to develop an intelligent agent that plays the \htw game, by using a logic-based approach in its implementation.
-  In order to complete a run of the game, this agent has to be able to face several challenges, like the incompleteness of the available information about the state of the world or the search for the best strategy to employ.
-  The chosen approach is to develop a hybrid agent that relies on an ASP core to actuate its strategy and on graph-theory techniques to obtain additional insights on how to proceed in the exploration of the world.
-  To assess the performance of our agent, we implemented an perfect agent that obtains an optimal score for a given world and we ranked our agent against it.
-  In this report, we introduce our solution to this task, by detailing the architecture of the agent and describing the chosen strategy, the heuristics and the obtained results.
+We present our work on an artificial agent \emph{Hakuna Matata} that plays the \htw game, implemented in Answer Set Programming (ASP):
+reasoning under incomplete information, heuristic function for navigation, modes to represent higher-level tasks of the agent, architecture of our implementation, optimizations.
+The agent's performance is evaluated in comparison to another agent that has perfect information about the game.
 \end{abstract}
 
 \section{Problem Statement}
@@ -101,13 +99,13 @@ It is best known as a toy-problem in the field of Artificial Intelligence and ha
 The game is set in the square, grid-shaped world (a cave) of the wumpus: each room of the grid is connected by passageways with the orthogonally adjacent rooms.
 The main goal of the player is to find the gold, hidden in one of the rooms, and leave the world alive.
 In this world there are some challenges for the player.
-In one of these rooms there is the wumpus, a beast that eats the player if he enters the room. The player has only one arrow, that is, one opportunity to kill the wumpus. In addition, some of the rooms are bottomless pits and if the player wanders in these rooms it stays trapped. At the beginning of the game, the player is always positioned on room $(1,1)$, facing to the right and has zero points. From here it can use the actions \emph{Forward}, \emph{TurnLeft}, \emph{TurnRight} to discover the surrounding environment and \emph{Shoot}, \emph{Grab} and \emph{Climb} to shoot the arrow, grab the gold and climb out of the cave respectively. For each of the moves and actions the player loses one point and it loses ten points when using the arrow. When eaten by the wumpus or trapped in pit, it loses 1000 points, and for climbing out of the cave with the gold it gains 1000 points. Whenever the player goes to a new room, it has five sensors that give information about:
+In one of these rooms there is the wumpus, a beast that eats the player if he enters the room. The player has only one arrow, that is, one opportunity to kill the wumpus. In addition, some of the rooms are bottomless pits and if the player wanders in these rooms it stays trapped. At the beginning of the game, the player is always positioned on room $(1,1)$, facing to the right and has zero points. From here it can use the actions \emph{goforward}, \emph{turnleft}, \emph{turnright} to discover the surrounding environment and \emph{shoot}, \emph{grab} and \emph{climb} to shoot the arrow, grab the gold and climb out of the cave respectively. For each of the moves and actions the player loses one point and it loses ten points when using the arrow. When eaten by the wumpus or trapped in pit, it loses 1000 points, and for climbing out of the cave with the gold it gains 1000 points. Whenever the player goes to a new room, it has five sensors that give information about:
 \begin{description}
-	\item[Stench]{whether the wumpus is in adjacent room;}
-	\item[Breeze]{whether there is a pit in adjacent room;}
-	\item[Glitter]{when the gold is in the current room;}
-	\item[Bump]{whether the player has hit a border;}
-	\item[Scream]{whether the wumpus is hit by the arrow.}
+	\item[Stench]{the wumpus is in an adjacent room;}
+	\item[Breeze]{there is a pit in an adjacent room;}
+	\item[Glitter]{the gold is in the current room;}
+	\item[Bump]{the player has hit a border;}
+	\item[Scream]{the wumpus was hit by the arrow.}
 \end{description}
 The locations of the gold and the wumpus are randomly chosen with uniform distribution in each room other than the start. Additionally each room can be a pit with probability 0.2.
 
@@ -240,10 +238,10 @@ In this section, we briefly describe how the agent previously specified has then
 For full details about the implementation, we refer to Appendix \ref{hunt-the-wumpus}.
 Furthermore, for the Python code that hosts the ASP-based implementation and its usage notes, we refer to the project repository.
 
-The Python host interacts with the world simulator and keeps the state of the world in memory, as the game progresses. This includes perceptions for all visited rooms, from which room and in which orientation the agent has shot the arrow (if applicable), whether the wumpus is dead or alive, and whether the agent has ever performed the \emph{grab} action. All this information is considered the \emph{memory} of the agent, and encoded as facts every time the logic program is invoked for the purpose of reasoning about the next action.
+The Python host program interacts with the world simulator and keeps the state of the world in memory, as the game progresses. This includes perceptions for all visited rooms, from which room and in which orientation the agent has shot the arrow (if applicable), whether the wumpus is dead or alive, and whether the agent has ever performed the \emph{grab} action. All this information is considered the \emph{memory} of the agent, and encoded as facts every time the logic program is invoked for the purpose of reasoning about the next action.
 
-The execution of the logic program, together with the facts provided by the memory, is delegated to the ASP solver DLV~\cite{DLV-system}.
-The output --- an answer set, containing a unique atom for the predicate \emph{do/1} --- is used to get the next action that the Python host should communicate to the simulator.
+The execution of the logic program, together with the memory encoded as facts, is delegated to the ASP solver DLV~\cite{DLV-system}.
+The output answer set is parsed and a unique atom for the predicate \emph{do/1} represents the action that should be communicated to the world simulator next.
 
 \begin{figure}
 \begin{center}
@@ -268,18 +266,23 @@ Since the autopilot only navigates through explored rooms, no heuristics are nec
 
 % TODO Mention how we keep the search space for cost function small
 
-\subsection{Auxiliary tools}
+\subsection{Auxiliary Tools}
 
-During the development stage, we deployed some strategies to overcome some troubles with ASP coding. In particular, we adopted techniques and built tools mentioned in the following list.
+During development, we employed some interesting tactics and crafted our own tools to ease ASP programming and reasoning about our code. In particular, we adopted the following techniques and tools:
 
 \begin{itemize}
-	\item To improve our debugging capabilities, a \emph{bad} predicate, highlighting some logical inconsistencies, has been used.
-	This allowed us to obtain meaningful information about the fallacies in the reasoning of the agent: indeed, DLV is not providing motivations for inconsistencies at runtime and this caused a hard time in solving some important issues with our program.
-	\item To understand the flow of the reasoning process, as well as to pinpoint inconsistency issues within the ASP specification, we built a tool to display the \emph{dependency graph} of the program.
+	\item Instead of using the Wumpus World Simulator~\cite{WWS} for development, we decided to translate it to Python in order to avoid issues that arise from the interoperation of Python and C++ at runtime. Also, this allowed us to experiment with the simulator without much hassle and the need to recompile. Anyway, compatiblity with the Wumpus World Simulator is still guaranteed (refer to \texttt{README.md} for more details).
+	\item When iteratively developing the ASP program that controls the agent, we sometimes made errors that lead to our program being inconsistent (for some inputs).
+	Without any further strategy, debugging these errors is quite cumbersome, since DLV does not provide any facilities that highlight which rules give rise to the inconsistency (analogous to an unsatisfiable core).
+	To overcome this and restore development speed, we decided to trade off the formal property of the program being inconsistent.
+	Instead of hard constraints, we introduced a predicate \emph{bad/1} which would be derived instead of a hard constraint being hit.
+	This way, the ASP system still yields an an answer set, which can then be filtered for \emph{bad/1}.
+	For many kinds of errors special instances of \emph{bad/1} would then be derived, pinpointing those rules that were faulty.
+	\item To understand the flow of the reasoning process, as well as to analyse inconsistency issues within the ASP specification, we built a tool to render the \emph{dependency graph} of the program.
 	In this graph, positive and negative dependencies between atoms are visualized.
 	The visual aid became useful in removing redundant portions of code and refactoring the program to get a more coherent flow.
 	\item As a way to make the logic of our agent more understandable to ourselves and to users of the program, we decided to adopt a \emph{literate programming} approach in writing down the ASP code and to employ an alternate syntax, called \emph{ASP Lite}, that helps the reader in understanding the relationships between logic variables in the rules of the program.
-	Then, we built a script to generate a DLV-readable file from it.
+	Then, we implemented a transpilter that translates ASP Lite into ASP Core, which can be input to DLV.
 \end{itemize}
 
 \section{Evaluation}
