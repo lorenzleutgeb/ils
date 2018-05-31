@@ -6,15 +6,13 @@ class Location():
         self.y = y
 
     def isAdjacent(self, other):
-        X1 = self.x
-        X2 = other.x
-        Y1 = self.y
-        Y2 = other.y
+        x1, y1 = self
+        x2, y2 = other
 
-        isBelow = ((X1 == X2) and (Y1 == (Y2 - 1)))
-        isAbove = ((X1 == X2) and (Y1 == (Y2 + 1)))
-        isLeft  = ((X1 == (X2 - 1)) and (Y1 == Y2))
-        isRight = ((X1 == (X2 + 1)) and (Y1 == Y2))
+        isBelow = ((x1 == x2) and (y1 == (y2 - 1)))
+        isAbove = ((x1 == x2) and (y1 == (y2 + 1)))
+        isLeft  = ((x1 == (x2 - 1)) and (y1 == y2))
+        isRight = ((x1 == (x2 + 1)) and (y1 == y2))
 
         return isAbove or isBelow or isLeft or isRight
 
@@ -27,12 +25,6 @@ class Location():
             return Location(self.x - 1, self.y) if self.x > 1 else None
         elif orientation == Orientation.RIGHT:
             return Location(self.x + 1, self.y) if self.x < n else None
-
-    def neighbors(self, n):
-        return filter(lambda x: x != None, [self.getAdjacent(o, n) for o in Orientation])
-
-    def isAt(self, x, y):
-        return self.x == x and self.y == y
 
     def __str__(self):
         return '({}, {})'.format(self.x, self.y)
@@ -52,13 +44,7 @@ class Location():
             return False
 
         if type(other) != Location:
-            raise ValueError('Why are you giving me this? ' + str(other))
-
-        # if type(other) == tuple and len(other) == 2:
-        #     return self.x == other[0] and self.y == other[1]
-
-        if type(other) != Location:
-            return False
+            raise ValueError('Cannot compare ' + str(type(other)) + ' to Location!')
 
         return self.x == other.x and self.y == other.y
 

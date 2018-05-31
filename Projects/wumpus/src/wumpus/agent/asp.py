@@ -94,7 +94,7 @@ class ASPAgent():
     def facts(self):
         # now/3 and killed/0 are certain.
         result = [
-            fact(True, 'now', [self.position.x, self.position.y, self.orientation.toSymbol()]),
+            fact(True, 'now', [*self.position, int(self.orientation)]),
             fact(self.killed, 'killed'),
         ]
 
@@ -102,7 +102,7 @@ class ASPAgent():
             result.append(fact(True, 'bumped', self.bumped))
 
         if self.shot != None:
-            result.append(fact(True, 'shot', [self.shot[0].x, self.shot[0].y, self.shot[1].toSymbol()]))
+            result.append(fact(True, 'shot', [*self.shot[0], int(self.shot[1])]))
 
         if self.grabbed != None:
             result.append(fact(True, 'grabbed', self.grabbed))

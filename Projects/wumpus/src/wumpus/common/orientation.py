@@ -9,30 +9,24 @@ class Orientation(Enum):
     DOWN  = 3
 
     def turn(self, action: Action):
-        return {
-            Action.TURNLEFT: {
-                Orientation.RIGHT: Orientation.UP,
-                Orientation.UP   : Orientation.LEFT,
-                Orientation.LEFT : Orientation.DOWN,
-                Orientation.DOWN : Orientation.RIGHT,
-            },
-            Action.TURNRIGHT: {
-                Orientation.RIGHT: Orientation.DOWN,
-                Orientation.UP   : Orientation.RIGHT,
-                Orientation.LEFT : Orientation.UP,
-                Orientation.DOWN : Orientation.LEFT,
-            },
-        }[action][self]
-
-    def mirror(self):
-        if self == Orientation.RIGHT:
-            return Orientation.LEFT
-        elif self == Orientation.UP:
-            return Orientation.DOWN
-        elif self == Orientation.LEFT:
-            return Orientation.RIGHT
-        elif self == Orientation.DOWN:
-            return Orientation.UP
+        if action == Action.TURNLEFT:
+            if self == Orientation.RIGHT:
+                return Orientation.UP
+            elif self == Orientation.UP:
+                return Orientation.LEFT
+            elif self == Orientation.LEFT:
+                return Orientation.DOWN
+            elif self == Orientation.DOWN:
+                return Orientation.RIGHT
+        elif action == Action.TURNRIGHT:
+            if self == Orientation.RIGHT:
+                return Orientation.DOWN
+            elif self == Orientation.UP:
+                return Orientation.RIGHT
+            elif self == Orientation.LEFT:
+                return Orientation.UP
+            elif self == Orientation.DOWN:
+                return Orientation.LEFT
         else:
             return None
 
@@ -59,15 +53,3 @@ class Orientation(Enum):
             return 3
         else:
             return None
-
-    def toSymbol(self):
-        if self == Orientation.RIGHT:
-            return 'right'#'R'
-        elif self == Orientation.UP:
-            return 'up'#'U'
-        elif self == Orientation.LEFT:
-            return 'left'#'L'
-        elif self == Orientation.DOWN:
-            return 'down'#'D'
-        else:
-            return '?'
