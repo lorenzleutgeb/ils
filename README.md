@@ -24,6 +24,6 @@ for Integrated Logic Systems at Free University of Bozen-Bolzano in the summer t
 
 An optimizing compiler that translates a logic language with standard connectives and quantification over finite domains into conjunctive normal form and interfaces with a solver (SAT4J).
 
-### Hakuna Matata (in `projects/hakuna_matata`)
+### Hakuna Matata (in `Projects/hakuna_matata`)
 
 A logic-based agent for *Hunt the Wumpus*.
