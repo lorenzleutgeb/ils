@@ -13,9 +13,17 @@ for Integrated Logic Systems at Free University of Bozen-Bolzano in the summer t
 | `Labs/2018-03-28` | Ordered Binary Decision Diagrams   | Finite Transition Systems         |
 | `Labs/2018-04-04` | Quantified Boolean Formulae        | DepQBF                            |
 | `Labs/2018-04-11` | Pseudo Boolean Satisfaction        |                                   |
+| `Labs/2018-05-09` | Using a SMT Solver                 | z3                                |
+| `Labs/2018-05-16` | Assignment Problem and SMT         | z3                                |
+| `Labs/2018-05-23` | Problem Solving with ASP           | clasp                             |
+| `Labs/2018-05-30` | Metric Temporal Logic              | NuSMV                             |
 
 ## Projects
 
 ### Prisma (in `Projects/prisma`)
 
 An optimizing compiler that translates a logic language with standard connectives and quantification over finite domains into conjunctive normal form and interfaces with a solver (SAT4J).
+
+### Hakuna Matata (in `projects/hakuna_matata`)
+
+A logic-based agent for *Hunt the Wumpus*.
