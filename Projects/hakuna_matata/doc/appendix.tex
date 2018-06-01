@@ -1,21 +1,17 @@
-\hypertarget{hunt-the-wumpus}{%
-\section{Hunt the Wumpus}\label{hunt-the-wumpus}}
+\hypertarget{hakuna-matata-the-wumpus-hunter}{%
+\section{Hakuna Matata the Wumpus
+Hunter}\label{hakuna-matata-the-wumpus-hunter}}
 
 This is an implementation of an agent that plays ``Hunt the Wumpus''.
-
-Input should be given as follows:
-
-\begin{verbatim}
-#maxint = 1000.
-\end{verbatim}
 
 \hypertarget{constants}{%
 \subsection{Constants}\label{constants}}
 
 We use constants to encode concrete orientations, actions and modes, and
-one corresponding predicate to all of them respectively.
+one corresponding predicate to represent all of them respectively.
 
-According to \texttt{wumpus.common.Orientation} we define orientations.
+According to \texttt{wumpus.common.Orientation} and
+\texttt{.../wsu/Orientation.py} we define orientations.
 
 \begin{verbatim}
 #const right = 0.
@@ -26,7 +22,8 @@ According to \texttt{wumpus.common.Orientation} we define orientations.
 isOrientation 0..3
 \end{verbatim}
 
-According to \texttt{wumpus.common.Action} we define actions.
+According to \texttt{wumpus.common.Action} and
+\texttt{.../wsu/Action.py} we define actions.
 
 \begin{verbatim}
 #const goforward = 0.
@@ -39,7 +36,8 @@ According to \texttt{wumpus.common.Action} we define actions.
 isAction 0..5
 \end{verbatim}
 
-According to \texttt{wumpus.agent.Mode} we define modes.
+According to \texttt{wumpus.agent.Mode} (not present in
+\texttt{.../wsu}) we define modes.
 
 \begin{verbatim}
 #const explore = 0.
@@ -61,6 +59,11 @@ Being able to mirror orientations/turns will come in handy.
 \begin{verbatim}
 mirror         left right
 mirror         up   down
+\end{verbatim}
+
+And of course, our mirror is symmetric :)
+
+\begin{verbatim}
 mirror         O2   O1
         mirror O1   O2
 \end{verbatim}
@@ -73,11 +76,12 @@ the size of the world.
 
 \begin{verbatim}
 sizeKnown
-        bump _ _
+        bumped _ _
 \end{verbatim}
 
 We will therefore derive the size of the world from something already
-known.
+known. We derive the maximum coordinate we have seen from the explored
+rooms we know about.
 
 \begin{verbatim}
 exploredSize     X
@@ -87,7 +91,7 @@ exploredSize       Y
         explored X Y
 \end{verbatim}
 
-Since any cell we already explored certainly is part of the world, we
+Since any room we already explored certainly is part of the world, we
 can use this information and guess that the world is ``just a little''
 bigger than we already know.
 
@@ -103,24 +107,24 @@ Of course, if the agent bumped, the size can be directly inferred.
 
 \begin{verbatim}
 size               S
-        bump  Sm Y
+        bumped  Sm Y
         >     Sm Y
         #prec Sm   S
 
 size               S
-        bump  X Sm
+        bumped  X Sm
         <=    X Sm
         #prec   Sm S
 \end{verbatim}
 
-\hypertarget{cells-neighbors-facing-and-bumps}{%
-\subsection{Cells, Neighbors, Facing And
-Bumps}\label{cells-neighbors-facing-and-bumps}}
+\hypertarget{rooms-neighbors-facing-and-bumps}{%
+\subsection{Rooms, Neighbors, Facing and
+Bumps}\label{rooms-neighbors-facing-and-bumps}}
 
-Span the space of cells.
+Span the space of rooms.
 
 \begin{verbatim}
-cell         X Y
+room         X Y
         #int X
         #int   Y
         >      Y 0
@@ -132,40 +136,40 @@ cell         X Y
 corner 1 1
 
 corner       X 1
-        cell X 1
+        room X 1
         size X
         sizeKnown
 
 corner       1 Y
-        cell 1 Y
+        room 1 Y
         size   Y
         sizeKnown
 
 corner       S S
-        cell S S
+        room S S
         size S
         sizeKnown
 \end{verbatim}
 
-Two cells are different if any of the components X, Y are unequal.
+Two rooms are different if any of the components X, Y are unequal.
 
 \begin{verbatim}
 diff         X1 Y1 X2 Y2
-        cell X1 Y1
-        cell       X2 Y2
+        room X1 Y1
+        room       X2 Y2
         !=   X1    X2
 
 diff         X1 Y1 X2 Y2
-        cell X1 Y1
-        cell       X2 Y2
+        room X1 Y1
+        room       X2 Y2
         !=      Y1    Y2
 \end{verbatim}
 
 \hypertarget{distances-and-costs}{%
 \subsubsection{Distances and Costs}\label{distances-and-costs}}
 
-The two predicates \texttt{outgoing} and \texttt{incoming} will help us
-to keep the space for which we have to compute costs small.
+The two predicates \texttt{outgoing/2} and \texttt{incoming/2} will help
+us to keep the space for which we have to compute costs small.
 
 \begin{verbatim}
 neighborhood              X2 Y2
@@ -187,67 +191,24 @@ We define distance along axes
 
 \begin{verbatim}
 distAlong        X1 Y1 X2 Y2 right D
-        cell     X1 Y1
-        cell           X2 Y2
+        room     X1 Y1
+        room           X2 Y2
         #absdiff       X1 X2       D
 
 distAlong        X1 Y1 X2 Y2 up D
         #absdiff       Y1 Y2    D
-        cell     X1 Y1
-        cell           X2 Y2
+        room     X1 Y1
+        room           X2 Y2
 \end{verbatim}
 
 And using that, manhattan/taxicab distance is a charm.
 
 \begin{verbatim}
-manhattan            X1 Y1 X2 Y2             M
-        outgoing     X1 Y1
-        distAlong    X1 Y1 X2 Y2 right D1
-        distAlong    X1 Y1 X2 Y2 up    D2
-        +                              D1 D2 M
-
-pathTurnCost          X Y O X Y 0
-        outgoing  X Y
-        isOrientation     O
-
-pathTurnCost          X1 Y1 O1 X2 Y2 0
-        isOrientation       O1
-        facing        X1 Y1 _ X2 Y2
-        diff          X1 Y1   X2 Y2
-
-pathTurnCost             X1 Y1 O1 X2 Y2 1
-        outgoing         X1 Y1
-        isOrientation          O1
-        incoming                  X2 Y2
-        not pathTurnCost X1 Y1 O1 X2 Y2 0
-
-departureTurnCost        X1 Y1 O1 X2 Y2    C
-        outgoing     X1 Y1
-        isOrientation          O1
-        incoming                  X2 Y2
-        #min                               C Cm
-                reach    X1 Y1    X2 Y2 O2
-                turnCost       O1       O2   Cm
-
-rotCost                   X1 Y1 O1 X2 Y2       C
-        outgoing          X1 Y1
-        isOrientation           O1
-        incoming                   X2 Y2
-        pathTurnCost      X1 Y1 O1 X2 Y2 Cp
-        departureTurnCost X1 Y1 O1 X2 Y2    Cd
-        +                                Cp Cd C
-\end{verbatim}
-
-We use the Manhattan distance as cost function.
-
-\begin{verbatim}
-cost                      X1 Y1 O1 X2 Y2 C
-        outgoing          X1 Y1
-        isOrientation           O1
-        incoming                   X2 Y2
-        rotCost           X1 Y1 O1 X2 Y2 Cr
-        manhattan         X1 Y1    X2 Y2    Cm
-        +                                Cr Cm C
+manhattan         X1 Y1 X2 Y2             M
+        outgoing  X1 Y1
+        distAlong X1 Y1 X2 Y2 right D1
+        distAlong X1 Y1 X2 Y2 up       D2
+        +                           D1 D2 M
 \end{verbatim}
 
 The turn predicate associates two orientations with the action that must
@@ -264,33 +225,109 @@ turn up    right turnright
 turn down  left  turnright
 turn left  up    turnright
 turn right down  turnright
+\end{verbatim}
 
-turnCost              O O 0
+From here, we abstract towards a cost function. We are interested in the
+number of turns that need to be performed in order to change from one
+orientation to another.
+
+Of course, no change in orientation is free.
+
+\begin{verbatim}
+turns                 O O 0
         isOrientation O
+\end{verbatim}
 
-turnCost                  O1 O2 1
+Left and right turns, i.e.~ones that do not mirror orientation take
+exactly one turn.
+
+\begin{verbatim}
+turns                     O1 O2 1
             isOrientation O1
-            isOrientation     O2
+            isOrientation    O2
             !=            O1 O2
         not mirror        O1 O2
+\end{verbatim}
 
-turnCost               O1 O2 2
+The worst case is when the orientations are mirrored.
+
+\begin{verbatim}
+turns                  O1 O2 2
         isOrientation  O1
         isOrientation     O2
         mirror         O1 O2
 \end{verbatim}
 
-Neighboring cells along the horizontal and vertical axis.
+With this simple counts for turns we go further and compute how many
+turns are needed along the way from one room to another.
+
+Again, staying in the same room is free.
+
+\begin{verbatim}
+turnsTo               X Y O X Y 0
+        outgoing      X Y
+        isOrientation     O
+\end{verbatim}
+
+Rooms that are faced also need no turns, one can just go straight
+forward.
+
+\begin{verbatim}
+turnsTo               X1 Y1 O1 X2 Y2 0
+        isOrientation       O1
+        facing        X1 Y1 _  X2 Y2
+        diff          X1 Y1    X2 Y2
+\end{verbatim}
+
+All other cases require at most one turn since two components are off.
+
+\begin{verbatim}
+turnsTo               X1 Y1 O1 X2 Y2 1
+        outgoing      X1 Y1
+        isOrientation       O1
+        incoming               X2 Y2
+        not turnsTo   X1 Y1 O1 X2 Y2 0
+
+turnsFrom                X1 Y1 O1 X2 Y2    C
+        outgoing         X1 Y1
+        isOrientation          O1
+        incoming                  X2 Y2
+        #min                               C Cm
+                reach    X1 Y1    X2 Y2 O2
+                turns          O1       O2   Cm
+
+turnCost              X1 Y1 O1 X2 Y2       C
+        outgoing      X1 Y1
+        isOrientation       O1
+        incoming               X2 Y2
+        turnsTo       X1 Y1 O1 X2 Y2 Cp
+        turnsFrom     X1 Y1 O1 X2 Y2    Cd
+        +                            Cp Cd C
+\end{verbatim}
+
+We combine turn cost and Manhattan distance as high level cost function.
+
+\begin{verbatim}
+cost                      X1 Y1 O1 X2 Y2       C3
+        outgoing          X1 Y1
+        isOrientation           O1
+        incoming                   X2 Y2
+        turnCost          X1 Y1 O1 X2 Y2 C1
+        manhattan         X1 Y1    X2 Y2    C2
+        +                                C1 C2 C3
+\end{verbatim}
+
+Neighboring rooms along the horizontal and vertical axis.
 
 \begin{verbatim}
 neighbor      X1 Y X2 Y right
-        cell  X1 Y
-        cell       X2 Y
+        room  X1 Y
+        room       X2 Y
         #succ X1   X2
 
 neighbor      X Y1 X Y2 up
-        cell  X Y1
-        cell       X Y2
+        room  X Y1
+        room       X Y2
         #succ   Y1   Y2
 
 neighbor         X1 Y1 X2 Y2 O2
@@ -318,41 +355,41 @@ triple           X1 Y1 X2 Y2 X3 Y3
         axis                       A
 \end{verbatim}
 
-Cells that agree on one component.
+Rooms that agree on one component.
 
 \begin{verbatim}
 facing       X Z up X Y
-        cell X Z
+        room X Z
         <      Z      Y
-        cell X        Y
+        room X        Y
 
 facing       Z Y right X Y
-        cell           X Y
+        room           X Y
         <    Z         X
-        cell Z           Y
+        room Z           Y
 
 facing         X2 Y2    O2 X1 Y1
         facing X1 Y1 O1    X2 Y2
         mirror       O1 O2
 
 reach        X1 Y1 X2 Y2 right
-        cell X1 Y1
-        cell       X2 Y2
+        room X1 Y1
+        room       X2 Y2
         <    X1    X2
 
 reach        X1 Y1 X2 Y2 up
-        cell X1 Y1
-        cell       X2 Y2
+        room X1 Y1
+        room       X2 Y2
         <       Y1    Y2
 
 reach        X1 Y1 X2 Y2 left
-        cell X1 Y1
-        cell       X2 Y2
+        room X1 Y1
+        room       X2 Y2
         >    X1    X2
 
 reach        X1 Y1 X2 Y2 down
-        cell X1 Y1
-        cell       X2 Y2
+        room X1 Y1
+        room       X2 Y2
         >       Y1    Y2
 \end{verbatim}
 
@@ -361,7 +398,7 @@ Python since we might have assumed a size.
 
 \begin{verbatim}
 -explored            X Y
-        cell         X Y
+        room         X Y
         not explored X Y
 \end{verbatim}
 
@@ -403,16 +440,27 @@ shouldShoot
         attack X Y O
 \end{verbatim}
 
-Pick gold if there's some in the cell, independently of the current
+We restrict ourselves to only grab once.
+
+\begin{verbatim}
+-canGrab
+        grabbed _ _
+
+canGrab
+        not -canGrab
+\end{verbatim}
+
+Pick gold if there's some in the room, independently of the current
 mode.
 
 \begin{verbatim}
 shouldGrab
         now     X Y O
         glitter X Y
+        canGrab
 \end{verbatim}
 
-Climb if gold is picked and back to initial cell.
+Climb if gold is picked and back to initial room.
 
 \begin{verbatim}
 shouldClimb
@@ -449,7 +497,9 @@ towards         A
         not towards goforward
 \end{verbatim}
 
-TODO: Can we turn in a better way?
+If the agent cannot go forward towards next and also cannot face it by
+turning once it needs to turn around. We currently implement this as
+left turns always. There might be better ways to sort this out\ldots{}
 
 \begin{verbatim}
 towards turnleft
@@ -461,53 +511,53 @@ towards turnleft
 \subsection{Detection Of Wumpus}\label{detection-of-wumpus}}
 
 \begin{verbatim}
-wumpus         X1 Y1
-        square X1 Y1 X2 Y2 X3 Y3 X4 Y4
-        stench       X2 Y2
-        stench             X3 Y3
-        explored                 X4 Y4
-        -wumpusDead
+wumpus            X1 Y1
+         square   X1 Y1 X2 Y2 X3 Y3 X4 Y4
+         stench         X2 Y2
+         stench               X3 Y3
+         explored                   X4 Y4
+        -killed
 \end{verbatim}
 
 Antipodal matching.
 
 \begin{verbatim}
-wumpus               X2 Y2
-        triple X1 Y1 X2 Y2 X3 Y3
-        stench X1 Y1
-        stench             X3 Y3
-        -wumpusDead
+wumpus                X2 Y2
+         triple X1 Y1 X2 Y2 X3 Y3
+         stench X1 Y1
+         stench             X3 Y3
+        -killed
 \end{verbatim}
 
 Corner case.
 
 \begin{verbatim}
-wumpus                     XW YW
-        twoNeighbors XC YC XW YW XE YE
-        stench       XC YC
-        corner       XC YC
-        explored                 XE YE
-        -wumpusDead
+wumpus                      XW YW
+         twoNeighbors XC YC XW YW XE YE
+         stench       XC YC
+         corner       XC YC
+         explored                 XE YE
+        -killed
 \end{verbatim}
 
 Auxiliary flag to signal detection of wumpus.
 
 \begin{verbatim}
 wumpusDetected
-        cell  X Y
+        room   X Y
         wumpus X Y
 \end{verbatim}
 
-If wumpus is not certainly detected, we must exclude other cells where
+If wumpus is not certainly detected, we must exclude other rooms where
 it might be.
 
 \begin{verbatim}
-possibleWumpus            X2 Y2
-        anyNeighbor X1 Y1 X2 Y2
-        stench      X1 Y1
-        -explored         X2 Y2
-        not shotAt        X2 Y2
-        -wumpusDead
+possibleWumpus                X2 Y2
+            anyNeighbor X1 Y1 X2 Y2
+            -explored         X2 Y2
+            stench      X1 Y1
+        not shotAt            X2 Y2
+            -killed
         not wumpusDetected
 
 shotAt                  X Y
@@ -527,7 +577,7 @@ possiblePit         XB YB XP YP
         not -pit          XP YP
 \end{verbatim}
 
-Any explored cell certainly cannot be a pit, otherwise we would be dead
+Any explored room certainly cannot be a pit, otherwise we would be dead
 by now.
 
 \begin{verbatim}
@@ -535,7 +585,7 @@ by now.
         explored X Y
 \end{verbatim}
 
-If we have explored a cell already and felt no brezee, then no neighbor
+If we have explored a room already and felt no brezee, then no neighbor
 can be a pit.
 
 \begin{verbatim}
@@ -552,10 +602,10 @@ pit                     X Y
         possiblePit _ _ X Y
 \end{verbatim}
 
-\hypertarget{safety-of-cells}{%
-\subsection{Safety Of Cells}\label{safety-of-cells}}
+\hypertarget{safety-of-rooms}{%
+\subsection{Safety Of Rooms}\label{safety-of-rooms}}
 
-Any cell where the wumpus is is not safe.
+Any room where the wumpus is is not safe.
 
 \begin{verbatim}
 safe             X Y
@@ -570,9 +620,9 @@ safe             X Y
 -safe       X Y
         pit X Y
 
-safe              X Y
-        reachable X Y
-        not -safe X Y
+safe                   X Y
+             reachable X Y
+        not -safe      X Y
 \end{verbatim}
 
 \hypertarget{explore-mode}{%
@@ -590,10 +640,10 @@ reachable        X Y
 Auxiliary flag to signal whether we can still explore further.
 
 \begin{verbatim}
-frontier          X Y
-        reachable X Y
-        safe      X Y
-        -explored X Y
+frontier           X Y
+         reachable X Y
+         safe      X Y
+        -explored  X Y
 
 shouldExplore
         frontier X Y
@@ -602,33 +652,77 @@ shouldExplore
 \hypertarget{kill-mode}{%
 \subsection{Kill Mode}\label{kill-mode}}
 
+This mode is concerned with killing, or trying to kill, the wumpus.
+Killing the wumpus makes sense if this allows to further explore the
+world. Trying to kill it may still allow us to infer where the wumpus
+is, even though it might still be alive.
+
+First, we identify cases where we certainly should not (attempt to) kill
+the wumpus.
+
+If the wumpus is in a room where there might also be a pit, then we will
+not be able to pass safely even if we manage to kill it.
+
+\begin{verbatim}
+dontShoot
+        wumpus X Y
+        pit    X Y
+\end{verbatim}
+
+The same holds for uncertainty of the wumpus' location. Note that this
+constraint may be relaxed, since in the case we miss the wumpus, we
+might deduce that we can pass through another room.
+
 \begin{verbatim}
 dontShoot
         possibleWumpus X Y
         pit            X Y
+\end{verbatim}
 
+Certainly, we cannot (and will not) shoot if we already used our arrow.
+
+\begin{verbatim}
 dontShoot
-        wumpus X Y
-        pit    X Y
+        shot _ _ _
+\end{verbatim}
 
+Also, if the wumpus is already killed, we will not shoot again.
+
+\begin{verbatim}
 dontShoot
-        not haveArrow
+        killed
+\end{verbatim}
 
+If we already have the gold, we should be on our way out of the cave,
+and leave the wumpus alone.
+
+\begin{verbatim}
 dontShoot
-        wumpusDead
+        grabbed _ _
+\end{verbatim}
 
-dontShoot
-        grabbed
+We can kill the wumpus if we know where it is, and there is a safe room
+from which it can be faced.
 
+\begin{verbatim}
 canKill        XS YS OS
         facing XS YS OS XW YW
         wumpus          XW YW
         safe   XS YS
+\end{verbatim}
 
+We should actually kill the wumpus if it is possible, and if none of our
+special cases above tells us not to.
+
+\begin{verbatim}
 shouldKill
-        canKill _ _ _
+            canKill   _ _ _
         not dontShoot
+\end{verbatim}
 
+Analogously, we might \emph{try} to kill it.
+
+\begin{verbatim}
 canTryKill       X Y O
         facing   X Y O XC YC
         safe     X Y
@@ -638,13 +732,18 @@ shouldTryKill
             canTryKill _ _ _
         not shouldKill
         not dontShoot
+\end{verbatim}
 
-attack             X Y O
-        canTryKill X Y O
+We generalize from trying to kill and actually killing to an attack,
+which streamlines the actions that need to be done in both cases.
+
+\begin{verbatim}
+attack                X Y O
+        canTryKill    X Y O
         shouldTryKill
 
-attack          X Y O
-        canKill X Y O
+attack             X Y O
+        canKill    X Y O
         shouldKill
 
 shouldAttack
@@ -656,10 +755,10 @@ aim                        OS
         not attack XS YS O
             now    XS YS O
 
-canAim                A
-        turn    O1 O2 A
-        aim        O2
-        now _ _ O1
+canAim                  A
+        turn      O1 O2 A
+        aim          O2
+        now   _ _ O1
 
 -cannotAim
         canAim _
@@ -671,96 +770,153 @@ succAim        A
         canAim A
         mode   kill
 
-succAim turnleft
-        aim _
+succAim           turnleft
+        aim       _
         cannotAim
-        mode kill
+        mode      kill
 
 shouldAim
         succAim A
 \end{verbatim}
 
-\hypertarget{optimization-for-goal}{%
-\subsection{Optimization For Goal}\label{optimization-for-goal}}
+\hypertarget{a-search}{%
+\subsection{A*-Search}\label{a-search}}
+
+This section is concerned with selection of the goal room, and
+consequently the next room to move to.
+
+We will use weak constraints in two levels. The first level is concerned
+with finding out the optimal goal while the second level is then about
+choosing the next room.
 
 \begin{verbatim}
-h                     X2 Y2 C
+level 1
+level 2
+\end{verbatim}
+
+\hypertarget{candidate-rooms}{%
+\subsubsection{Candidate Rooms}\label{candidate-rooms}}
+
+For both levels we will define candidate sets in the following
+subsections.
+
+\hypertarget{goal-room}{%
+\paragraph{Goal Room}\label{goal-room}}
+
+For convenience we define a selection on the cost function that fixes
+the current location and orientation of the agent.
+
+\begin{verbatim}
+costFromNow           X2 Y2 C
         cost X1 Y1 O1 X2 Y2 C
         now  X1 Y1 O1
 \end{verbatim}
 
-Interesting candidates are those cells that we have not yet explored and
-we know that they are safe.
+Now, for the three modes that require goals, we define candidate sets.
+
+In the explore mode, interesting candidates are those rooms that we have
+not yet explored and for which we know that they are safe.
 
 \begin{verbatim}
-candidate 1      X Y C
-        h        X Y C
-        frontier X Y
-        mode     explore
+candidate 1         X Y C
+        costFromNow X Y C
+        frontier    X Y
+        mode        explore
+\end{verbatim}
 
-candidate 1    X Y C
-        h      X Y C
-        attack X Y _
-        mode   kill
+The goal is a room from which we can attack the wumpus.
 
-candidate 1 1 1 C
-        h   1 1 C
+\begin{verbatim}
+candidate 1         X Y C
+        costFromNow X Y C
+        attack      X Y _
+        mode        kill
+\end{verbatim}
+
+When escaping, the only candidate is the starting point.
+
+\begin{verbatim}
+candidate 1 1 1 1
         mode escape
+\end{verbatim}
 
-candidate 2                     X Y         C
-        now         XN YN ON
-        anyNeighbor XN YN   X Y
-        safe                X Y
-        goal                      XG YG
-        cost                X Y O XG YG C2
-        reach       XN YN X Y O
-        + C1 C2 C
-        + Cr 1 C1
-        departureTurnCost XN YN ON X Y Cr
-        not easyGoal
+\hypertarget{next-room}{%
+\paragraph{Next Room}\label{next-room}}
 
-candidate      2 X Y C
-        choice 1 X Y C
-        easyGoal
+Choosing the next room is trivial if the goal room is adjacent to the
+one that the agent is currently in: Just move there.
 
-level 1
-level 2
-
-next X Y
-        choice 2 X Y C
-
-goal X Y
-        choice 1 X Y C
-
+\begin{verbatim}
 easyGoal
-        now         XN YN _
+        now         XN YN       _
         anyNeighbor XN YN XG YG
         goal              XG YG
 
-foundNext
-        next _ _
+candidate 2      X Y C
+        choice 1 X Y C
+        easyGoal
 \end{verbatim}
 
-TODO: Inconsistent? - foundGoal not foundNext
+Otherwise, choose an adjacent room.
 
 \begin{verbatim}
-foundGoal
-        goal _ _
+candidate 2                      X2 Y2                C
+            now         X1 Y1 O1
+            anyNeighbor X1 Y1    X2 Y2
+            reach       X1 Y1    X2 Y2 O2
+            safe                 X2 Y2
+            cost                 X2 Y2 O2 XG YG    C2
+            goal                          XG YG
+            turnsFrom   X1 Y1 O1 X2 Y2          C1
+            +                                   C1 C2 C
+        not easyGoal
 \end{verbatim}
 
-TODO: Inconsistent? - not foundGoal not priority
+\hypertarget{weak-constraints}{%
+\subsubsection{Weak Constraints}\label{weak-constraints}}
+
+Now, any candidate is either our choice or it is not. Span the search
+space.
 
 \begin{verbatim}
 choice L X Y C | -choice L X Y C
         level     L
         candidate L X Y C
+\end{verbatim}
 
+Of course we want to minimize cost.
+
+\begin{verbatim}
 ~
         level     L
         candidate L X1 Y1 C1
         candidate L          X2 Y2 C2
         choice    L          X2 Y2 C2
         <=                C1       C2
+\end{verbatim}
+
+Give more explicit names to the choices.
+
+\begin{verbatim}
+next X Y
+        choice 2 X Y C
+
+goal X Y
+        choice 1 X Y C
+
+foundNext
+        next _ _
+
+-
+            foundGoal
+        not foundNext
+
+foundGoal
+        goal _ _
+
+-
+        not foundGoal
+        not priority
 \end{verbatim}
 
 \hypertarget{autopilot}{%
@@ -787,15 +943,15 @@ mode grab
         shouldGrab
 
 mode explore
-         not mode grab
-        shouldExplore
-        -grabbed
+            shouldExplore
+            canGrab
+        not mode grab
 
 mode kill
-        not mode grab
-        not mode explore
-        shouldAttack
-        -grabbed
+            canGrab
+            shouldAttack
+        not mode         grab
+        not mode         explore
 
 mode escape
         not mode grab
