@@ -95,12 +95,16 @@ The agent's performance is evaluated in comparison to another agent that has per
 \section{Problem Statement}
 
 \htw is a single player computer game, first released in 1975.
-It is best known as a toy-problem in the field of Artificial Intelligence and has been thoroughly analysed by Russell and Norvig in~\cite{book:aima}, where it has been used to introduce the reader to a logic-based approach to \emph{Knowledge Representation}.
+It is best known as a toy-problem in the field of artificial intelligence and has been thoroughly analysed by Russell and Norvig in~\cite{book:aima}, where it serves to introduce the reader to a logic-based approach to \emph{Knowledge Representation}.
 
-The game is set in the square, grid-shaped world (a cave) of the wumpus: each room of the grid is connected by passageways with the orthogonally adjacent rooms.
+The game is set in the square grid world (a cave): each room of the grid is connected by passageways with the orthogonally adjacent rooms. This topology, suggests to identify the rooms using coordinates of the form $(x, y)$.
 The main goal of the player is to find the gold, hidden in one of the rooms, and leave the world alive.
-In this world there are some challenges for the player.
-In one of these rooms there is the wumpus, a beast that eats the player if it enters the room. The player has only one arrow, that is, one opportunity to kill the wumpus. In addition, some of the rooms are bottomless pits and if the player wanders in these rooms it stays trapped. At the beginning of the game, the player is always positioned on room $(1,1)$, facing to the right and has zero points. From here it can use the actions \emph{goforward}, \emph{turnleft}, \emph{turnright} to discover the surrounding environment and \emph{shoot}, \emph{grab} and \emph{climb} to shoot the arrow, grab the gold and climb out of the cave respectively. For each of the moves and actions the player loses one point and it loses ten points when using the arrow. When eaten by the wumpus or trapped in pit, it loses 1000 points, and for climbing out of the cave with the gold it gains 1000 points. Whenever the player goes to a new room, it has five sensors that give information about:
+Of course, some obstacles challenge the player in achieving that objective.
+In one of rooms there is the wumpus, a beast that eats the player if it enters the room. The player has only one arrow, i.e.\ one opportunity to kill the wumpus.
+In addition, some of the rooms are bottomless pits and if the player wanders in these rooms it stays trapped.
+At the beginning of the game, the player is always located in room $(1,1)$, oriented to the right, and has zero points. From here it can use the actions \emph{goforward}, \emph{turnleft}, and \emph{turnright} to discover the surrounding environment as well as \emph{shoot}, \emph{grab}, and \emph{climb} to shoot the arrow, grab the gold, and climb out of the cave respectively.
+Each action costs the player one point, with the exception of shooting the arrow which costs ten points. When eaten by the wumpus or trapped in a pit, the player loses 1000 points. To achieve a positive score, the player must pick up the gold and leave the cave, for which it gains 1000 points.
+Whenever the player enters a room, five sensors reveal some information about this room:
 \begin{description}
 	\item[Stench]{the wumpus is in an adjacent room;}
 	\item[Breeze]{there is a pit in an adjacent room;}
@@ -108,9 +112,9 @@ In one of these rooms there is the wumpus, a beast that eats the player if it en
 	\item[Bump]{the player has hit a border;}
 	\item[Scream]{the wumpus was hit by the arrow.}
 \end{description}
-The locations of the gold and the wumpus are randomly chosen with uniform distribution in each room other than the start. Additionally each room can be a pit with probability 0.2.
+The locations of the gold and the wumpus are chosen randomly, uniformly distribution among all rooms except the initial room. Additionally each room can be a pit with probability of $0.2$.
 
-In~\cite{book:aima}, the environment which represents the Wumpus World is described as \emph{discrete}, \emph{static}, \emph{single-agent} and \emph{partly-observable}. For an agent in such environment, its initial ignorance of the configuration of the world constitutes the main challenge, and logical reasoning is helpful to overcome such a restrain.
+In~\cite{book:aima}, the environment which represents the world is described as \emph{discrete} (both in time and space), \emph{static}, \emph{single-agent} and \emph{partly-observable} (see sensors above). For an agent in such an environment, its initial lack of information of the configuration of the world constitutes the main challenge, and logical reasoning is helpful to overcome such a restrain.
 
 \section{Approach}
 
@@ -119,28 +123,25 @@ In particular, we single out those aspects that are relevant to explain the beha
 
 For the purpose of this project, we decided to implement a logic-based agent, that plays \htw employing both Answer Set Programming (ASP, in~\cite{ASPprimer} a detailed introduction is given) and suitable techniques, borrowed from graph theory, to explore the search space and devise a strategy to end the game with the maximum possible score.
 
-\subsection{ASP and World Knowledge}
+\subsection{Answer Set Programming and World Knowledge}
 
 The environment in which the agent is playing is \emph{static}, since the wumpus, the gold and the pits do not move throughout the world.
 Therefore, the knowledge inferred by the agent at each point in time can be accumulated to circumscribe the search space in further moments in time.
-Initially, the agent's \emph{knowledge base} is populated with basic geometric knowledge (e.g. relation between directions), what is perceived in its initial position and what are the known world sizes.
+The agent's \emph{knowledge base} must cover basic geometry sufficiently modeling the world (e.g.\ relation between orientations, rooms, etc.) as well as inference patterns. Over the course of the game, this knowledge base is extended with more information collected in the process of exploration.
 
-\paragraph{Incomplete knowledge.} One of the challenges of \htw is that a non-omniscient player starts the game with an incomplete knowledge of the world.
-By exploring the world and perceiving what is in each new explored room, an agent can obtain additional insights about the state of the world and reshape its strategy according to it.
-As we want to be able to model non-monotonic reasoning --- if a room, previously thought to contain a pit, turns out to be safe, the agent should be able to infer this --- and to generalise statements by writing non-ground schemata, our system of choice is Answer Set Programming, which allows to model the problem in a logical fashion and achieves non-monotonic reasoning through \emph{closed-world assumption} (CWA).
-We preferred this formalism over others that have been studied in our course, like propositional SAT or SMT, because of these motivations; the previous knowledge of the ASP language also came into play as a positive factor for this choice.
+\paragraph{Incomplete knowledge.} One of the challenges of \htw is that the player starts the game with an incomplete knowledge of the world.
+By exploring the world and perceiving what is in each new explored room, an agent can obtain additional insights about the state of the world and reshape its strategy accordingly.
+As we want to be able to model non-monotonic reasoning --- if a room, previously thought to contain a pit, turns out to be safe, the agent should be able to infer this --- and to generalise statements by writing non-ground schemata, our logic of choice is Answer Set Programming, which allows to model the problem in a logical fashion and achieves non-monotonic reasoning through \emph{closed-world assumption} (CWA).
+We prefer this formalism over others that have been studied, like propositional satisfiability (SAT) or satisfiability modulo theories (SMT), because of these motivations. Also, previous knowledge of the ASP formalism suggested to favor it.
 
-In particular, the DLV solver~\cite{DLV-system} has been embedded in the architecture of the agent.
-DLV is invoked at every point in time, to infer the additional knowledge obtained by the agent, after grounding its knowledge base.
-This approach allows the agent to correctly derive what is logically right from its knowledge base. Moreover DLV is able to process incomplete knowledge possessed by the agent, while overcoming its initial ignorance with logical reasoning.
+%In particular, the DLV solver~\cite{DLV-system} has been embedded in the architecture of the agent.
+%DLV is invoked at every point in time, to infer the additional knowledge obtained by the agent, after grounding its knowledge base.
+%This approach allows the agent to correctly derive what is logically right from its knowledge base. Moreover DLV is able to process incomplete knowledge possessed by the agent, while overcoming its initial ignorance with logical reasoning.
 
-\paragraph{Safety.} As \hm tries to maximise its score by minimising its death chances, the need of a concept of \emph{safety} arises.
-Namely, the agent moves towards a room if it is not aware of any danger lying in it (CWA is applied here) and marks as certainly \emph{safe} each room that it enters without dying.
-This, together with the other perceived information, allows the agent to ``draw'' an internal representation of the world that progressively allows it to move further or search for alternative paths.
-
-\paragraph{Size of the world.} The agent proceeds by assuming that the world has a certain size, initially set to $1 \times 1$.
-Every time the agent manages to enter a room which coordinates exceed the assumed size of the world, for example $N \times N$, the knowledge base is updated to assume that the world has size $N+1 \times N+1$.
-Otherwise, if a \emph{bump} is perceived, the agent infers the real size of the world and this is not modified afterwards.
+\paragraph{Safety.} As \hm tries to maximise its score by minimising failure (being eaten by the wumpus or falling into a pit), the need of a concept of \emph{safety} arises.
+Namely, the agent only moves towards a room if it is not aware of any danger inside it (CWA is applied here).
+Clearly, also all previously visited rooms are safe, since otherwise the agent would have already failed at a previous point in time.
+This, together with the other perceived information, allows the agent to \equote{draw} an internal representation of the world that progressively allows it to move further or search for alternative paths.
 
 \paragraph{Unsafety.} The agent's policy for unsafe situations is the following:
 \begin{itemize}
@@ -151,22 +152,24 @@ Otherwise, if a \emph{bump} is perceived, the agent infers the real size of the 
 	\item If a room without breezes is found nearby one marked as a possible pit, the knowledge base is updated to state that such a room is instead not containing any pit.
 \end{itemize}
 
-\subsection{Agent Modes and Strategies}
+\paragraph{Size of the world.} The agent proceeds by assuming that the world has a certain size, initially set to $2 \cdot 2$.
+Every time the agent enters a room for which the coordinates exceed the assumed size of the world, for example $n \cdot n$, the knowledge base is updated to assume that the world has size $n+1 \times n+1$.
+Otherwise, if a \emph{bump} is perceived, the agent infers the actual size of the world (this is not modified afterwards).
 
-In order to simplify the implementation of the agent and the way it chooses its next action we introduce four different modes of playing in which the agent can be at any time.
-This helps to abstract and in different modes enable and disable different possible actions.
-It also eased the development phase.
-While playing, our agent can be in exactly one out of four available modes.
+\subsection{Strategy and Modes}
 
-\paragraph{\enquote{Grab}.} The agent enters the \emph{grab} mode as soon as the \emph{glitter} is perceived. In this mode, the agent grabs the gold.
+In order to simplify the implementation of the agent and the way it chooses its next action we introduce four different \emph{modes}, of which exactly one is applicable at any given time.
+The choice of the applicable mode can be regarded as the strategy, while the actions that are decided within a mode correspond to tactics.
+This helps to abstract, reason about the agents behaviour by fixing a mode, and rule out nonsensical actions on the level of a mode. The modes are:
 
-\paragraph{\enquote{Explore}.} The agent is in \emph{explore} mode whenever the position of the gold is unknown and safe rooms that are reachable and have not been explored are in the world.
-In this mode, the agent moves throughout the world, according to a specific search strategy.
+\paragraph{\enquote{Grab}.} The agent enters this mode if a \emph{glitter} is perceived. In this mode, the agent grabs the gold.
 
-\paragraph{\enquote{Kill}.} The agent enters the \emph{kill} mode only if some conditions are met, while in \emph{explore} mode:
+\paragraph{\enquote{Explore}.} Whenever the gold has not been grabbed and there are safe rooms that are reachable, but not explored, the agent will move throughout the world, according to a specific search strategy (see below).
+
+\paragraph{\enquote{Kill}.} The agent enters the this mode only if is unable to explore further, i.e.\ all reachable, safe rooms are explored, it has not grabbed the gold and one of the follwing two scenarios applies:
 \begin{itemize}
-	\item The agent is unable to continue the exploration --- due to all the safe rooms being explored ---, the location of the wumpus is known and the gold has not been grabbed: in this situation, killing the wumpus is a necessary condition to pursue further exploration to find the gold.
-	\item The agent is unable to continue the exploration (as before), the gold has not been grabbed and the location of at least one stench with no possible overlapping pits is known: in this case, the agent can \emph{try} to kill the wumpus by shooting at an unexplored room near the stench.
+	\item The location of the wumpus is known. Then, killing the wumpus is a necessary to pursue further exploration to find the gold.
+	\item The location of at least one stench with no possible overlapping pits is known. Then, the agent can \emph{try} to kill the wumpus by shooting at an unexplored room near the stench.
 	The agent can either kill the wumpus or miss it, inferring that the shoot room is safe (and therefore can be explored).
 \end{itemize}
 The shooting happens only if it is absolutely necessary.
@@ -176,7 +179,7 @@ If the gold has been grabbed, it would only come at a loss; similarly, if the ex
 This mode is entered by the agent if the gold has been grabbed or if no further exploration can be done.
 In this case, the agent heads back to the initial position to climb up from the world, to end the game.
 
-\subsection{$A^{\star}$ Search and World Exploration}
+\subsection{A\textsuperscript{$\star$} Search and World Exploration}
 
 The exploration phase is carried out in two steps: first, a \emph{goal} (here, the goal is a room) is selected; then, by using the goal as a reference, the \emph{next} room to explore is chosen.
 
@@ -373,6 +376,25 @@ This allowed us to effectively evince that the introduction of the autopilot bro
 The collected data are displayed in Table~\ref{tbl:test}.
 The results concerning the execution time, for $n > 10$, might be misleading, due to the small size of the samples.
 
+% TODO: Consider making the assessment more dependent on the agent's knowledge. For example, compare the performance (as difference to the perfect agent in three cases):
+%  1. Both agents picked the gold:
+%     OK, we managed to achieve the gold, but there will likely be some delta,
+%     which is because the ASP agent needs to explore.
+%  2. Perfect agent picked the gold but ASP agent did not.
+%     In this scenario the perfect agent knows something that the ASP agent does not. For example the "breeze wall".
+%  3. Neither of them picked the gold.
+%     Here, the perfect agent will just have -1 and the ASP agent will spend some moves on finding that out.
+% Questions could then be:
+%  - On average, how many moves worse is the agent in case (1)?
+%  - In how many cases does our agent fail to pick up the gold, when it might actually be possible?
+%  - On average, how many moves does the ASP agent need to make to figure out that the gold is unreachable?
+% This should give a ness noisy impression.
+
+% TODO: For runtime, not only consider the size of the world, but also the size of the world that the agent assumed.
+% The runtime is much more dependent on what the agent (needs to) assume here, than what it actually is. Again we
+% might get lower variances.
+
+% TODO: Generally, we acknowledge that the performance of the agent is clearly limited by its knowledge and inference rules.
 \section{Conclusion}
 
 At the end of this project, our team managed to implement a playing agent for \htw that is compliant with the given specification.
