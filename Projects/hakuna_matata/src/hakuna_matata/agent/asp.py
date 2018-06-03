@@ -79,9 +79,7 @@ class ASPAgent():
         self.killed = False
         self.bumped = None
         self.previousAction = None
-
-        # Assume some large world. Will get adjusted once we bump.
-        self.size = 0xdeadbeef
+        self.size = 2
 
         _, self.prog = mkstemp()
         unlite(join(dirname(__file__), 'agent.md'), self.prog)
@@ -138,7 +136,7 @@ class ASPAgent():
         queue = deque([source])
         while queue:
             node = queue.popleft()
-            if node == target:
+            if node[0] == target:
                 path = []
                 while node is not None:
                     v = visited[node]
@@ -152,7 +150,7 @@ class ASPAgent():
             neighbours = [(a, (l, o.turn(a))) for a in {Action.TURNLEFT, Action.TURNRIGHT}]
 
             adj = l.getAdjacent(o, self.size)
-            if adj != None and (safe.get((adj,), False) or adj == target[0]):
+            if adj != None and (safe.get((adj,), False) or adj == target):
                 neighbours.append((Action.GOFORWARD, (adj, o)))
 
             for act, neighbour in neighbours:
@@ -165,23 +163,16 @@ class ASPAgent():
     def process(self, percept):
         if percept.scream:
             self.killed = True
-
         if percept.bump:
-            self.size = max(self.position.x, self.position.y)
-            if self.bumped != None:
-                logger.debug('We appear to be bumping a second time.')
             self.bumped = self.position.getAdjacent(self.orientation, self.size + 1)
         elif self.previousAction == Action.GOFORWARD:
             self.position = self.position.getAdjacent(self.orientation, self.size)
         elif self.previousAction in {Action.TURNLEFT, Action.TURNRIGHT}:
             self.orientation = self.orientation.turn(self.previousAction)
         elif self.previousAction == Action.SHOOT:
-            if self.shot != None:
-                logger.debug('We appear to be shooting a second time.')
             self.shot = (self.position, self.orientation)
         elif self.previousAction == Action.GRAB:
             self.grabbed = self.position
-
         if self.actions != []:
             self.previousAction = self.actions.pop(0)
             return self.previousAction
@@ -204,9 +195,11 @@ class ASPAgent():
 
         result = AnswerSet.parse(result.strip().split('\n')[0], extract)
 
+        self.size = result.singleton('size')
+
         if self.paint:
             paint(
-                result.singleton('size'),
+                self.size,
                 [(result.tofun(pred),) for pred, _ in painted[0].items()] +
                 [(result.tobfun(pred), symbol) for pred, symbol in painted[1].items()],
                 'agent',
@@ -227,16 +220,16 @@ class ASPAgent():
                         logger.debug('No comment describing bad({}). Add a line starting with \'%{} \' followed by a description.'.format(x, x))
             return None
 
-        if result.proposition('autopilot'):
-            goal = result.singleton('goal')
-            self.actions = min([self.bfs(result['safe'], (goal, o)) for o in Orientation], key=len)
-
-            mode = result.singleton('mode')
-            if mode == Mode.ESCAPE and goal == Location(1, 1) and len(self.actions) > 0:
-                self.actions += [Action.CLIMB]
-
-            self.previousAction = self.actions.pop(0)
+        if not result.proposition('autopilot'):
+            self.previousAction = result.singleton('do')
             return self.previousAction
 
-        self.previousAction = result.singleton('do')
+        goal = result.singleton('goal')
+        self.actions = self.bfs(result['safe'], goal)
+
+        mode = result.singleton('mode')
+        if mode == Mode.ESCAPE and goal == Location(1, 1) and len(self.actions) > 0:
+            self.actions.append(Action.CLIMB)
+
+        self.previousAction = self.actions.pop(0)
         return self.previousAction
