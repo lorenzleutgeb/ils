@@ -91,3 +91,4 @@ def paint(n, painters, fname, notes=[]):
         f.write('\n' * 20)
         f.write('\n'.join(image))
         f.write('\n' * 3)
+        f.flush()

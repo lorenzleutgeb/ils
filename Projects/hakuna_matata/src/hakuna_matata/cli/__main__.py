@@ -51,17 +51,33 @@ def play(world, agentName):
 def benchmark(bglob, agentName):
     for instance in glob(bglob):
         wumpusWorld = World.readFrom(instance)
-        optimum = '{:5}'.format(wumpusWorld.optimum) if wumpusWorld.optimum else '  ?  '
-        numPits = '{:2}'.format(len(wumpusWorld.pits))
         start = time()
-        result = play(
+        play(
+            wumpusWorld,
+            'perfect'
+        )
+        end = time()
+        optimum = wumpusWorld.complexScore()
+        optimumElapsed = '{:7.4f}'.format(end - start)
+
+
+        wumpusWorld = World.readFrom(instance)
+        start = time()
+        play(
             wumpusWorld,
             agentName
         )
         end = time()
-        result = '!' if result is None else '{:5}'.format(result)
+        result = wumpusWorld.complexScore()
         elapsed = '{:7.4f}'.format(end - start)
-        print('\t'.join([instance, numPits, optimum, result, elapsed]))
+
+        if result == None:
+            result = '! ! ! !     !'
+
+        size = '{:2}'.format(wumpusWorld.worldSize)
+        numPits = '{:2}'.format(len(wumpusWorld.pits))
+
+        print('\t'.join([instance, size, numPits + '\t', optimum, optimumElapsed + '\t', result, elapsed]))
 
 worldSize = 4
 seedV = None
@@ -111,3 +127,5 @@ else:
         world,
         agentName
     )
+
+    print(world.getScore())

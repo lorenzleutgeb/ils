@@ -207,6 +207,15 @@ class World():
 
         return score
 
+    def complexScore(self):
+        return '{:1}\t{:1}\t{:1}\t{:1}\t{:5}'.format(
+            int(self.agentHasGold),
+            int(self.agentHasArrow),
+            int(not self.agentInCave),
+            int(self.agentAlive),
+            self.getScore()
+        )
+
     def paint(self):
         if not self.shouldPaint:
             return

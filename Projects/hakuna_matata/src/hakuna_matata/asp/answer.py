@@ -87,5 +87,20 @@ class AnswerSet:
                 return fy[0]
         return f
 
+    def first(self, name):
+        return next(iter([a for a, sign in self.dictionary[name].items() if sign]), None)
+
+    def singleton(self, name):
+        return self.first(name)[0]
+
+    def proposition(self, name):
+        return self.dictionary.get(name, {(): None})[()]
+
+    def true(self, name):
+        return [a for a, sign in self.dictionary[name].items() if sign]
+
+    def false(self, name):
+        return [a for a, sign in self.dictionary[name].items() if not sign]
+
     def __getitem__(self, index):
         return self.dictionary[index]
