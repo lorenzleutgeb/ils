@@ -4,4 +4,3 @@ gold 1 5
 pit 2 2
 pit 3 4
 pit 5 5
-optimum 987

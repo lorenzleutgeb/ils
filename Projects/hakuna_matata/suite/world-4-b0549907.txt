@@ -4,4 +4,3 @@ gold 2 1
 pit 2 1
 pit 2 2
 pit 2 4
-optimum -1

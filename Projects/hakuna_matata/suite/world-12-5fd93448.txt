@@ -35,4 +35,3 @@ pit 12 1
 pit 12 9
 pit 12 11
 pit 12 12
-optimum -1

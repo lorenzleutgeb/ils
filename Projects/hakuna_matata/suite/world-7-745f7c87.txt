@@ -3,4 +3,3 @@ wumpus 5 4
 gold 3 2
 pit 1 6
 pit 5 5
-optimum 988

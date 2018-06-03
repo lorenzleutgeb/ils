@@ -8,4 +8,3 @@ pit 3 2
 pit 3 3
 pit 3 4
 pit 4 1
-optimum -1

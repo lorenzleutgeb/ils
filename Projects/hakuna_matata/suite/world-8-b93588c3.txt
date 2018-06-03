@@ -13,4 +13,3 @@ pit 6 2
 pit 6 5
 pit 8 4
 pit 8 6
-optimum 984
