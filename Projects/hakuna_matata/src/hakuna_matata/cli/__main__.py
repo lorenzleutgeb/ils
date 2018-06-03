@@ -1,4 +1,4 @@
-from sys     import argv, exit
+from sys     import argv, exit, stdout
 from random  import seed
 from os      import urandom
 from os.path import join
@@ -11,10 +11,10 @@ from ..common import *
 from ..simulator import World
 from ..agent import *
 
-def generate(worldSize, seedV, base):
-    fname = join(base, 'world-{}-{}.txt'.format(worldSize, seedV))
+def generate(size, seedV, base):
+    fname = join(base, 'world-{}-{}.txt'.format(size, seedV))
 
-    world = World(worldSize)
+    world = World(size)
     world.writeTo(fname)
     agent = PerfectAgent(world)
 
@@ -51,15 +51,17 @@ def play(world, agentName):
 def benchmark(bglob, agentName):
     for instance in glob(bglob):
         wumpusWorld = World.readFrom(instance)
+        stdout.write('{}\t{:2}\t{:2}\t'.format(instance, wumpusWorld.size, len(wumpusWorld.pits)))
+        stdout.flush()
+
         start = time()
         play(
             wumpusWorld,
             'perfect'
         )
         end = time()
-        optimum = wumpusWorld.complexScore()
-        optimumElapsed = '{:7.4f}'.format(end - start)
-
+        stdout.write('\t{}\t{:7.4f}'.format(wumpusWorld.complexScore(), end - start))
+        stdout.flush()
 
         wumpusWorld = World.readFrom(instance)
         start = time()
@@ -69,17 +71,13 @@ def benchmark(bglob, agentName):
         )
         end = time()
         result = wumpusWorld.complexScore()
-        elapsed = '{:7.4f}'.format(end - start)
-
         if result == None:
             result = '! ! ! !     !'
 
-        size = '{:2}'.format(wumpusWorld.worldSize)
-        numPits = '{:2}'.format(len(wumpusWorld.pits))
+        stdout.write('\t{}\t{:7.4f}\n'.format(result, end - start))
+        stdout.flush()
 
-        print('\t'.join([instance, size, numPits + '\t', optimum, optimumElapsed + '\t', result, elapsed]))
-
-worldSize = 4
+size = 4
 seedV = None
 worldFile = None
 agentName = 'proxy'
@@ -89,7 +87,7 @@ bench = None
 
 for arg, val in zip(argv[1:], argv[2:]):
     if arg == "-size":
-        worldSize = max(2, int(val))
+        size = max(2, int(val))
     elif arg == "-seed":
         seedV = bytes.fromhex(val)
     elif arg == "-world":
@@ -112,7 +110,7 @@ seedV = seedV.hex()
 if bench != None:
     benchmark(bench, agentName)
 elif base != None:
-    generate(worldSize, seedV, base)
+    generate(size, seedV, base)
 else:
     logging.basicConfig(level=logging.DEBUG, format='')
 
@@ -121,7 +119,7 @@ else:
         world = World.readFrom(worldFile)
     else:
         print("World " + seedV)
-        world = World(worldSize)
+        world = World(size)
 
     play(
         world,

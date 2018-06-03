@@ -27,7 +27,7 @@ class PerfectAgent():
             l, o = v
             neighbours = [([a], (l, o.turn(a)), 1) for a in {Action.TURNLEFT, Action.TURNRIGHT}]
 
-            adj = l.getAdjacent(o, world.worldSize)
+            adj = l.getAdjacent(o, world.size)
             if adj != None and adj not in world.pits:
                 shoot = adj == world.wumpus
                 actions = [Action.SHOOT] if shoot else []
