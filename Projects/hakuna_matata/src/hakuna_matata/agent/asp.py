@@ -71,8 +71,6 @@ class ASPAgent():
         self.actions = []
         self.shot = None
         self.grabbed = None
-
-        # Initially we do not know about stench/breeze/glitter anywhere.
         self.world = {}
         self.position = Location(1, 1)
         self.orientation = Orientation.RIGHT
@@ -80,6 +78,7 @@ class ASPAgent():
         self.bumped = None
         self.previousAction = None
         self.size = 2
+        self.paint = exists('agent') and S_ISFIFO(stat('agent').st_mode)
 
         _, self.prog = mkstemp()
         unlite(join(dirname(__file__), 'agent.md'), self.prog)
@@ -87,7 +86,55 @@ class ASPAgent():
         # To look at the ASP-Core compliant version, uncomment this.
         #unlite(join(dirname(__file__), 'agent.md'), 'agent.asp')
 
-        self.paint = exists('agent') and S_ISFIFO(stat('agent').st_mode)
+    def process(self, percept):
+        if percept.scream:
+            self.killed = True
+        if percept.bump:
+            self.bumped = self.position.getAdjacent(self.orientation, self.size + 1)
+        elif self.previousAction == Action.GOFORWARD:
+            self.position = self.position.getAdjacent(self.orientation, self.size)
+        elif self.previousAction in {Action.TURNLEFT, Action.TURNRIGHT}:
+            self.orientation = self.orientation.turn(self.previousAction)
+        elif self.previousAction == Action.SHOOT:
+            self.shot = (self.position, self.orientation)
+        elif self.previousAction == Action.GRAB:
+            self.grabbed = self.position
+        if self.actions != []:
+            self.previousAction = self.actions.pop(0)
+            return self.previousAction
+
+        self.world[self.position] = (percept.stench, percept.breeze, percept.glitter)
+
+        result = self.solve()
+
+        self.size = result.singleton('size')
+
+        if self.paint:
+            paint(
+                self.size,
+                [(result.tofun(pred),) for pred, _ in painted[0].items()] +
+                [(result.tobfun(pred), symbol) for pred, symbol in painted[1].items()],
+                'agent',
+                result.pretty(interesting.keys())
+            )
+
+        if self.bad(result):
+            return None
+
+        if not result.proposition('autopilot'):
+            self.previousAction = result.singleton('do')
+            return self.previousAction
+
+        goal = result.singleton('goal')
+        self.actions = self.bfs(result['safe'], goal)
+
+        mode = result.singleton('mode')
+        if mode == Mode.ESCAPE and goal == Location(1, 1) and len(self.actions) > 0:
+            self.actions.append(Action.CLIMB)
+
+        self.previousAction = self.actions.pop(0)
+        return self.previousAction
+
 
     def facts(self):
         # now/3 and killed/0 are certain.
@@ -115,7 +162,7 @@ class ASPAgent():
         return result
 
     def solve(self):
-        return run(
+        result = run(
             [
                 self.dlv,
                 '-n=1',
@@ -128,7 +175,39 @@ class ASPAgent():
             stdout=PIPE,
             input='\n'.join(self.facts()),
             encoding='utf-8'
-        )
+        ).stdout
+
+        if len(result) == 0:
+            logger.debug('ASP program did not return any answer sets! Inconsistency?')
+            return None
+
+        if result.startswith('Best model: {'):
+            start, end = result.find('{'), result.find('}')
+            result = result[start:end+1]
+
+        if result[0] != '{':
+            logger.error('ASP Errors:\n  \033[31m' + result.replace('\n', '\n  ') + '\033[0m')
+            return None
+
+        return AnswerSet.parse(result.strip().split('\n')[0], extract)
+
+    def bad(self, result):
+        bads = result.true('bad')
+        if len(bads) == 0:
+            return False
+
+        for (x,) in bads:
+            prefix = '%{} '.format(x)
+            found = False
+            with open(self.prog) as f:
+                for ln in f:
+                    if ln.startswith(prefix):
+                        found = True
+                        logger.debug('\033[31mCONSISTENCY ' + str(x) + ': ' + ln[len(prefix):].strip() + '\033[0m')
+                if not found:
+                    logger.debug('No comment describing bad({}). Add a line starting with \'%{} \' followed by a description.'.format(x, x))
+
+        return True
 
     def bfs(self, safe, target):
         source = (self.position, self.orientation)
@@ -160,76 +239,5 @@ class ASPAgent():
 
         return None
 
-    def process(self, percept):
-        if percept.scream:
-            self.killed = True
-        if percept.bump:
-            self.bumped = self.position.getAdjacent(self.orientation, self.size + 1)
-        elif self.previousAction == Action.GOFORWARD:
-            self.position = self.position.getAdjacent(self.orientation, self.size)
-        elif self.previousAction in {Action.TURNLEFT, Action.TURNRIGHT}:
-            self.orientation = self.orientation.turn(self.previousAction)
-        elif self.previousAction == Action.SHOOT:
-            self.shot = (self.position, self.orientation)
-        elif self.previousAction == Action.GRAB:
-            self.grabbed = self.position
-        if self.actions != []:
-            self.previousAction = self.actions.pop(0)
-            return self.previousAction
-
-        self.world[self.position] = (percept.stench, percept.breeze, percept.glitter)
-
-        result = self.solve().stdout
-
-        if len(result) == 0:
-            logger.debug('ASP program did not return any answer sets! Inconsistency?')
-            return None
-
-        if result.startswith('Best model: {'):
-            start, end = result.find('{'), result.find('}')
-            result = result[start:end+1]
-
-        if result[0] != '{':
-            logger.error('ASP Errors:\n  \033[31m' + result.replace('\n', '\n  ') + '\033[0m')
-            return None
-
-        result = AnswerSet.parse(result.strip().split('\n')[0], extract)
-
-        self.size = result.singleton('size')
-
-        if self.paint:
-            paint(
-                self.size,
-                [(result.tofun(pred),) for pred, _ in painted[0].items()] +
-                [(result.tobfun(pred), symbol) for pred, symbol in painted[1].items()],
-                'agent',
-                result.pretty(interesting.keys())
-            )
-
-        bads = result.true('bad')
-        if len(bads) > 0:
-            for (x,) in bads:
-                prefix = '%{} '.format(x)
-                found = False
-                with open(self.prog) as f:
-                    for ln in f:
-                        if ln.startswith(prefix):
-                            found = True
-                            logger.debug('\033[31mCONSISTENCY ' + str(x) + ': ' + ln[len(prefix):].strip() + '\033[0m')
-                    if not found:
-                        logger.debug('No comment describing bad({}). Add a line starting with \'%{} \' followed by a description.'.format(x, x))
-            return None
-
-        if not result.proposition('autopilot'):
-            self.previousAction = result.singleton('do')
-            return self.previousAction
-
-        goal = result.singleton('goal')
-        self.actions = self.bfs(result['safe'], goal)
-
-        mode = result.singleton('mode')
-        if mode == Mode.ESCAPE and goal == Location(1, 1) and len(self.actions) > 0:
-            self.actions.append(Action.CLIMB)
-
-        self.previousAction = self.actions.pop(0)
-        return self.previousAction
+    def getStats(self):
+        return '{:2} {:2}'.format(self.size, len(self.world))

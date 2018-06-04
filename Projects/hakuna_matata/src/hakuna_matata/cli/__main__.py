@@ -12,30 +12,9 @@ from ..simulator import World
 from ..agent import *
 
 def generate(size, seedV, base):
-    fname = join(base, 'world-{}-{}.txt'.format(size, seedV))
+    World(size).writeTo(join(base, 'world-{}-{}.txt'.format(size, seedV)))
 
-    world = World(size)
-    world.writeTo(fname)
-    agent = PerfectAgent(world)
-
-    while world.execute(agent.process(world.percept)):
-        ''
-
-    with open(fname, 'a') as f:
-        f.write('optimum {}\n'.format(world.getScore()))
-
-def instantiate(agentName, world):
-    if agentName == 'proxy':
-        return ProxyAgent()
-    elif agentName == 'perfect':
-        return PerfectAgent(world)
-    elif agentName == 'asp':
-        return ASPAgent()
-
-def play(world, agentName):
-    world.writeTo('last-world.txt')
-    agent = instantiate(agentName, world)
-
+def play(world, agent):
     while True:
         world.paint()
 
@@ -48,42 +27,38 @@ def play(world, agentName):
         if not world.execute(action):
             return world.getScore()
 
-def benchmark(bglob, agentName):
+def benchmark(bglob):
     for instance in glob(bglob):
-        wumpusWorld = World.readFrom(instance)
-        stdout.write('{}\t{:2}\t{:2}\t'.format(instance, wumpusWorld.size, len(wumpusWorld.pits)))
+        world = World.readFrom(instance)
+        agent = PerfectAgent(world)
+        stdout.write('{}\t{:2}\t{:2}\t'.format(instance, world.size, len(world.pits)))
         stdout.flush()
 
         start = time()
-        play(
-            wumpusWorld,
-            'perfect'
-        )
+        play(world, agent)
         end = time()
-        stdout.write('\t{}\t{:7.4f}'.format(wumpusWorld.complexScore(), end - start))
+        stdout.write('\t{}\t{:7.4f}'.format(world.complexScore(), end - start))
         stdout.flush()
 
-        wumpusWorld = World.readFrom(instance)
+        world = World.readFrom(instance)
+        agent = ASPAgent()
         start = time()
-        play(
-            wumpusWorld,
-            agentName
-        )
+        play(world, agent)
         end = time()
-        result = wumpusWorld.complexScore()
+        result = world.complexScore()
         if result == None:
             result = '! ! ! !     !'
 
-        stdout.write('\t{}\t{:7.4f}\n'.format(result, end - start))
+        stdout.write('\t{}\t{}\t{:7.4f}\n'.format(result, agent.getStats(), end - start))
         stdout.flush()
 
 size = 4
 seedV = None
 worldFile = None
-agentName = 'proxy'
 generationMode = False
 base = None
 bench = None
+human = '-human' in argv
 
 for arg, val in zip(argv[1:], argv[2:]):
     if arg == "-size":
@@ -92,8 +67,6 @@ for arg, val in zip(argv[1:], argv[2:]):
         seedV = bytes.fromhex(val)
     elif arg == "-world":
         worldFile = val
-    elif arg == "-agent":
-        agentName = val
     elif arg == '-generate':
         base = val
     elif arg == '-benchmark':
@@ -108,7 +81,7 @@ else:
 seedV = seedV.hex()
 
 if bench != None:
-    benchmark(bench, agentName)
+    benchmark(bench)
 elif base != None:
     generate(size, seedV, base)
 else:
@@ -118,12 +91,10 @@ else:
     if worldFile != None:
         world = World.readFrom(worldFile)
     else:
-        print("World " + seedV)
+        print('World ' + seedV)
         world = World(size)
+        world.writeTo('last-world.txt')
 
-    play(
-        world,
-        agentName
-    )
+    play(world, ProxyAgent() if human else ASPAgent())
 
     print(world.getScore())

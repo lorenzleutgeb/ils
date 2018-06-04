@@ -63,3 +63,6 @@ class PerfectAgent():
 
     def process(self, percept):
         return self.plan.pop(0)
+
+    def getStats(self):
+        return ''

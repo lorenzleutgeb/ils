@@ -205,11 +205,9 @@ class World():
         return score
 
     def complexScore(self):
-        return '{:1}\t{:1}\t{:1}\t{:1}\t{:5}'.format(
-            int(self.hasGold),
+        return '{:1}\t{:1}\t{:5}'.format(
+            int(self.hasGold and not self.inCave),
             int(self.hasArrow),
-            int(not self.inCave),
-            int(self.alive),
             self.getScore()
         )
 
