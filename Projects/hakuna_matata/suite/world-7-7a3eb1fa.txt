@@ -1,0 +1,14 @@
+size 7
+wumpus 6 7
+gold 5 7
+pit 2 2
+pit 2 4
+pit 3 4
+pit 3 7
+pit 4 1
+pit 5 2
+pit 6 1
+pit 6 2
+pit 6 4
+pit 6 5
+pit 6 7
