@@ -62,7 +62,7 @@ class PerfectAgent():
         self.plan = goThere + pickUpThatShiny + turnAround + comeBack + climbOut
 
         # Count the number of rooms that the agent enters.
-        self.explored = len(filter(lambda x: x == Action.MOVE, goThere)) + 1
+        self.explored = len(list(filter(lambda x: x == Action.GOFORWARD, goThere))) + 1
 
     def process(self, percept):
         return self.plan.pop(0)
