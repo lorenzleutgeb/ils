@@ -6,6 +6,8 @@ from ..simulator import World
 
 class PerfectAgent():
     def __init__(self, world: World):
+        self.explored = 1
+
         if world.gold in world.pits:
             self.plan = [Action.CLIMB]
             return

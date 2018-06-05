@@ -31,7 +31,7 @@ def benchmark(bglob):
     for instance in glob(bglob):
         world = World.readFrom(instance)
         agent = PerfectAgent(world)
-        stdout.write('{}\t{:2}\t{:2}\t'.format(instance, world.size, len(world.pits)))
+        stdout.write('{}\t{:2}\t{:2}'.format(instance, world.size, len(world.pits)))
         play(world, agent)
         stdout.write('\t{}\t{}'.format(world.complexScore(), agent.getStats()))
         stdout.flush()

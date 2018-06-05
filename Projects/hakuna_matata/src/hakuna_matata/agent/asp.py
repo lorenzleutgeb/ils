@@ -240,4 +240,4 @@ class ASPAgent():
         return None
 
     def getStats(self):
-        return '{:2} {:2}'.format(self.size, len(self.world))
+        return '{:2}\t{:2}'.format(self.size, len(self.world))
